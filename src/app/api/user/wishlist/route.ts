@@ -1,0 +1,144 @@
+﻿/**
+ * LIKEFOOD - Vietnamese Specialty Marketplace
+ * Copyright (c) 2026 LIKEFOOD Team
+ * Licensed under the MIT License
+ * https://github.com/tranquocvu-3011/likefood
+ */
+
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { logger } from "@/lib/logger";
+import { applyRateLimit, apiRateLimit, getRateLimitIdentifier } from "@/lib/ratelimit";
+
+// GET user's wishlist
+export async function GET(req: NextRequest) {
+    const rl = await applyRateLimit(getRateLimitIdentifier(req), apiRateLimit, { windowMs: 60000, maxRequests: 30 });
+    if (!rl.success) return rl.error!;
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    try {
+        const wishlist = await prisma.wishlist.findMany({
+            where: {
+                userId: session.user.id,
+            },
+            take: 200,
+            include: {
+                product: {
+                    select: {
+                        id: true,
+                        name: true,
+                        slug: true,
+                        price: true,
+                        salePrice: true,
+                        image: true,
+                        category: true,
+                        inventory: true,
+                        ratingAvg: true,
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: "desc",
+            },
+        });
+
+        return NextResponse.json(wishlist.map(item => item.product));
+    } catch (error) {
+        logger.error("Wishlist fetch error", error as Error, { context: "user-wishlist-api-get", userId: session?.user?.id });
+        return NextResponse.json({ error: "Failed to fetch wishlist" }, { status: 500 });
+    }
+}
+
+// POST add to wishlist
+export async function POST(req: Request) {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    try {
+        const { productId } = await req.json();
+
+        if (!productId) {
+            return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
+        }
+
+        // Check if product exists
+        const product = await prisma.product.findUnique({
+            where: { id: productId },
+        });
+
+        if (!product) {
+            return NextResponse.json({ error: "Product not found" }, { status: 404 });
+        }
+
+        // Check if already in wishlist
+        const existing = await prisma.wishlist.findUnique({
+            where: {
+                userId_productId: {
+                    userId: session.user.id,
+                    productId,
+                },
+            },
+        });
+
+        if (existing) {
+            return NextResponse.json({ error: "Product already in wishlist" }, { status: 400 });
+        }
+
+        // Add to wishlist
+        const wishlistItem = await prisma.wishlist.create({
+            data: {
+                userId: session.user.id,
+                productId,
+            },
+            include: {
+                product: true,
+            },
+        });
+
+        return NextResponse.json(wishlistItem.product, { status: 201 });
+    } catch (error) {
+        logger.error("Wishlist add error", error as Error, { context: "user-wishlist-api-post", userId: session?.user?.id });
+        return NextResponse.json({ error: "Failed to add to wishlist" }, { status: 500 });
+    }
+}
+
+// DELETE remove from wishlist
+export async function DELETE(req: Request) {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    try {
+        const { searchParams } = new URL(req.url);
+        const productId = searchParams.get("productId");
+
+        if (!productId) {
+            return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
+        }
+
+        await prisma.wishlist.delete({
+            where: {
+                userId_productId: {
+                    userId: session.user.id,
+                    productId,
+                },
+            },
+        });
+
+        return NextResponse.json({ message: "Removed from wishlist" });
+    } catch (error) {
+        logger.error("Wishlist remove error", error as Error, { context: "user-wishlist-api-delete", userId: session?.user?.id });
+        return NextResponse.json({ error: "Failed to remove from wishlist" }, { status: 500 });
+    }
+}
