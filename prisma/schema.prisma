@@ -1,3 +1,8 @@
+// LIKEFOOD - Vietnamese Specialty Marketplace
+// Copyright (c) 2026 LIKEFOOD Team
+// Licensed under the MIT License
+// https://github.com/tranquocvu-3011/likefood
+
 generator client {
   provider        = "prisma-client-js"
   output          = "../src/generated/client"
