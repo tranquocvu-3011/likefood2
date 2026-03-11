@@ -71,7 +71,7 @@ export default function UserDropdown({ isOpen, onClose, user }: UserDropdownProp
     const menuItems = [
         { icon: Package, label: "Đơn hàng của tôi", href: "/profile/orders", badge: null },
         { icon: Heart, label: "Sản phẩm yêu thích", href: "/profile/wishlist", badge: stats?.wishlist ? String(stats.wishlist) : null },
-        { icon: Sparkles, label: "Điểm danh nhận quà", onClick: () => setIsCheckInOpen(true), badge: "HOT" },
+        { icon: Sparkles, label: "Điểm danh nhận quà", onClick: () => setIsCheckInOpen(true), badge: null },
         { icon: Ticket, label: "Voucher của tôi", href: "/profile/vouchers", badge: stats?.vouchers ? String(stats.vouchers) : null },
         { icon: Settings, label: "Cài đặt tài khoản", href: "/profile", badge: null },
     ];

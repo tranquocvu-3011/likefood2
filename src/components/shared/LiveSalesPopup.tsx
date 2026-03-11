@@ -28,12 +28,12 @@ const NOTIFICATION_INTERVAL_MS = 10 * 60 * 1000;
 /** Độ lệch ngẫu nhiên ±1 phút để tránh quá đều */
 const INTERVAL_JITTER_MS = 60 * 1000;
 
-const MOCK_SALES: SaleNotification[] = [
-    { id: "1", userName: "Anh Tuấn", location: "Hà Nội", productName: "Cá Lóc Khô Đồng", timeAgo: "2 phút trước" },
-    { id: "2", userName: "Chị Hạnh", location: "TP.HCM", productName: "Tôm Khô Cà Mau", timeAgo: "5 phút trước" },
-    { id: "3", userName: "Minh Hoàng", location: "Đà Nẵng", productName: "Mực Khô Câu", timeAgo: "8 phút trước" },
-    { id: "4", userName: "Thu Thủy", location: "Cần Thơ", productName: "Xoài Sấy Dẻo", timeAgo: "12 phút trước" },
-    { id: "5", userName: "Bác Ba", location: "Vũng Tàu", productName: "Nước Mắm Truyền Thống", timeAgo: "15 phút trước" },
+const SAMPLE_SALES: SaleNotification[] = [
+    { id: "1", userName: "Khách hàng", location: "California", productName: "Cá Lóc Khô Đồng Tháp", timeAgo: "2 phút trước" },
+    { id: "2", userName: "Khách hàng", location: "Texas", productName: "Tôm Khô Cà Mau", timeAgo: "5 phút trước" },
+    { id: "3", userName: "Khách hàng", location: "Washington", productName: "Mực Khô Câu Phú Quốc", timeAgo: "8 phút trước" },
+    { id: "4", userName: "Khách hàng", location: "Florida", productName: "Xoài Sấy Dẻo Cam Ranh", timeAgo: "12 phút trước" },
+    { id: "5", userName: "Khách hàng", location: "New York", productName: "Nước Mắm Phú Quốc", timeAgo: "15 phút trước" },
 ];
 
 export default function LiveSalesPopup() {
@@ -54,8 +54,8 @@ export default function LiveSalesPopup() {
             NOTIFICATION_INTERVAL_MS + (Math.random() * 2 - 1) * INTERVAL_JITTER_MS;
 
         const showRandomSale = () => {
-            const randomIndex = Math.floor(Math.random() * MOCK_SALES.length);
-            setCurrentSale(MOCK_SALES[randomIndex]);
+            const randomIndex = Math.floor(Math.random() * SAMPLE_SALES.length);
+            setCurrentSale(SAMPLE_SALES[randomIndex]);
             setIsVisible(true);
 
             setTimeout(() => {

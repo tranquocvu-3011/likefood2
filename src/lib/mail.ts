@@ -99,7 +99,7 @@ export const sendVerificationEmail = async (
         return { success: true };
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "Unknown mail error";
-        logger.info(`[MAIL ERROR] ${message}`);
+        logger.error(`[MAIL ERROR] ${message}`, { error: error as Error, email, smtpHost: process.env.SMTP_HOST });
         return { success: false, error: message };
     }
 };

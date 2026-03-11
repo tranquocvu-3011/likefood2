@@ -214,9 +214,9 @@ export default function MegaMenu({ isOpen, onClose }: MegaMenuProps) {
                                 <Link
                                     href="/flash-sale"
                                     onClick={onClose}
-                                    className="flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white text-xs font-bold rounded-xl transition-all shadow-sm hover:shadow-md hover:shadow-red-200"
+                                    className="flex items-center justify-center gap-2 py-2.5 text-slate-600 hover:text-primary hover:bg-primary/5 text-xs font-bold rounded-xl transition-all border border-slate-100 hover:border-primary/20"
                                 >
-                                    🔥 Flash Sale
+                                    Flash Sale
                                 </Link>
                             </div>
                         </div>

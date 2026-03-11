@@ -618,19 +618,16 @@ function NavbarContent() {
                                         {/* Divider */}
                                         <div className="w-px h-4 bg-slate-200/80 mx-1" />
 
-                                        {/* Flash Sale — highlighted pill */}
-                                        <Link href="/flash-sale" className="relative flex items-center gap-1.5 px-4 py-2 text-[11px] font-black uppercase tracking-wider text-white bg-gradient-to-r from-red-500 to-rose-500 rounded-2xl shadow-sm shadow-red-200 hover:shadow-md hover:shadow-red-200 hover:from-red-600 hover:to-rose-600 transition-all group">
-                                            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-300 rounded-full animate-ping" />
-                                            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-400 rounded-full" />
-                                            <Flame className="w-3.5 h-3.5" />
+                                        {/* Flash Sale */}
+                                        <Link href="/flash-sale" className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group">
+                                            <Flame className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                                             <span>Flash Sale</span>
                                         </Link>
 
                                         {/* Voucher */}
-                                        <Link href="/vouchers" className="relative flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-2xl hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all group">
+                                        <Link href="/vouchers" className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group">
                                             <Gift className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                                             <span>{t("navbar.voucher")}</span>
-                                            <span className="text-[8px] font-black px-1 py-0.5 bg-emerald-500 text-white rounded-full leading-none group-hover:bg-white group-hover:text-emerald-600 transition-colors">HOT</span>
                                         </Link>
 
                                         {/* Compare */}

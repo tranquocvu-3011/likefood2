@@ -30,7 +30,7 @@ const INITIAL_MESSAGE: Message = {
   id: "initial",
   role: "model",
   content:
-    "Xin chào! Mình là trợ lý AI của LIKEFOOD. Mình có thể gợi ý sản phẩm, giải thích chính sách giao hàng và hướng dẫn bạn đến đúng bước mua hàng nhanh hơn. Bạn cần hỗ trợ gì ạ?",
+    "Xin chào! Mình là **LIKEFOOD AI** - trợ lý thông minh của cửa hàng. Mình có thể:\n\n• Gợi ý sản phẩm phù hợp với nhu cầu của bạn\n• Giải đáp về chính sách giao hàng, đổi trả\n• Hướng dẫn theo dõi đơn hàng\n• Tư vấn quà biếu, combo tiết kiệm\n\nBạn cần hỗ trợ gì ạ?",
   timestamp: new Date(),
 };
 
@@ -243,8 +243,8 @@ export default function ChatbotAI() {
                     </div>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold tracking-tight text-slate-800">Trợ lý mua hàng</p>
-                    <p className="text-[11px] text-slate-500">Gợi ý sản phẩm · Giao hàng · Đơn hàng</p>
+                    <p className="text-sm font-bold tracking-tight text-slate-800">LIKEFOOD AI</p>
+                    <p className="text-[11px] text-slate-500">Trợ lý AI thông minh · Hỗ trợ 24/7</p>
                   </div>
                   <div className="flex items-center gap-1">
                     
