@@ -21,8 +21,9 @@ RUN npm install -g prisma@6.4.0
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
 
-# Install dependencies (Prisma CLI is already installed globally)
-RUN npm install
+# Install dependencies FIRST, then downgrade Prisma to 6.4.0
+RUN npm install && \
+    npm install prisma@6.4.0 @prisma/client@6.4.0 --save-exact
 
 COPY . .
 
