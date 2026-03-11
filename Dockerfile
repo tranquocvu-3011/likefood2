@@ -66,13 +66,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/src/generated ./src/generated
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
-# Copy Prisma CLI from builder (avoid npx downloading 7.x)
-COPY --from=builder /app/node_modules/.bin/prisma /usr/local/bin/prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-
-# Copy Prisma engines directory (required for Prisma CLI to work)
-COPY --from=builder /app/node_modules/@prisma/engines ./node_modules/@prisma/engines
+# Copy all node_modules (needed for Prisma CLI to work)
+# This is needed for 'prisma' command at runtime
+COPY --from=builder /app/node_modules ./node_modules
 
 # Add node_modules/.bin to PATH so 'prisma' command works
 ENV PATH="/app/node_modules/.bin:${PATH}"
