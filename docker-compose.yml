@@ -38,8 +38,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./prisma/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
-    ports:
-      - "3306:3306"          # Remove in production if external access not needed
+    # Port 3306 không expose ra ngoài host — chỉ app nội bộ mới truy cập được
     networks:
       - weblikefood_net
     healthcheck:

@@ -7,7 +7,7 @@
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/client";
 import { authOptions } from "@/lib/auth";
 import { createOrderNotification } from "@/lib/notifications";
 import { logger } from "@/lib/logger";

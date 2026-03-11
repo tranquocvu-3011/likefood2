@@ -13,7 +13,7 @@ import { createOrderNotification } from "@/lib/notifications";
 import { sendOrderConfirmationEmail } from "@/lib/mail";
 import { logger } from "@/lib/logger";
 import { checkoutRateLimit, getRateLimitIdentifier, applyRateLimit } from "@/lib/ratelimit";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/client";
 import { getOrderStatusFilter, getShippingFeeUsd, normalizeOrderStatus } from "@/lib/commerce";
 
 interface FormattedOrder {

@@ -1,11 +1,4 @@
 /**
- * LIKEFOOD - Vietnamese Specialty Marketplace
- * Copyright (c) 2026 LIKEFOOD Team
- * Licensed under the MIT License
- * https://github.com/tranquocvu-3011/likefood
- */
-
-/**
  * @param this
  */
 declare function $extends(this: Client, extension: ExtensionArgs | ((client: Client) => Client)): Client;
