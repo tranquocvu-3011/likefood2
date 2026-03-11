@@ -6,7 +6,9 @@ RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+# Install exact Prisma version to avoid Prisma 7.x breaking changes
+RUN npm install --omit=dev --ignore-scripts && \
+    npm install prisma@6.4.0 @prisma/client@6.4.0 --save-exact --omit=dev
 
 # ─────────────────────────────────────────────────────────
 # Stage 2: builder — compile the Next.js app
@@ -17,7 +19,10 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
-RUN npm ci
+
+# Install exact Prisma version to avoid Prisma 7.x breaking changes
+RUN npm install --ignore-scripts && \
+    npm install prisma@6.4.0 @prisma/client@6.4.0 --save-exact
 
 COPY . .
 
