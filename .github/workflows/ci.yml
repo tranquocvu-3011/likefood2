@@ -10,6 +10,25 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testpassword
+          MYSQL_DATABASE: likefood_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    
+    env:
+      DATABASE_URL: "mysql://root:testpassword@localhost:3306/likefood_test"
+      NEXTAUTH_SECRET: mock-secret-for-ci-build
+      NEXTAUTH_URL: "http://localhost:3000"
+    
     steps:
     - uses: actions/checkout@v4
     
@@ -25,6 +44,9 @@ jobs:
     - name: Generate Prisma Client
       run: npm run db:generate || npx prisma generate
       
+    - name: Push database schema
+      run: npx prisma db push --skip-generate
+      
     - name: Type Check
       run: npm run type-check
 
@@ -32,10 +54,7 @@ jobs:
       run: npm run lint
       
     - name: Run Tests
-      run: npm test -- --run || true # Bỏ qua fail tạm thời nếu coverage chưa đủ
+      run: npm test -- --run || true
       
     - name: Build Next.js
-      env:
-        DATABASE_URL: "sqlite://:memory:" # Mock database URL for build
-        NEXTAUTH_SECRET: mook-secret-for-build
       run: npm run build
