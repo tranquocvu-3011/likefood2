@@ -24,10 +24,12 @@ COPY . .
 # Generate Prisma client first (needed at build time)
 RUN npx prisma generate
 
-# Build Next.js (standalone output for minimal image)
+# Skip env validation during Docker build - set BEFORE build
 ENV NEXT_TELEMETRY_DISABLED=1
-    # Skip env validation during Docker build — runtime will validate
-    ENV SKIP_ENV_VALIDATION=true
+ENV SKIP_ENV_VALIDATION=true
+
+# Build Next.js (standalone output for minimal image)
+RUN npm run build
 # ─────────────────────────────────────────────────────────
 # Stage 3: runner — minimal production image
 # ─────────────────────────────────────────────────────────
