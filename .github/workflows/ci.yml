@@ -26,7 +26,7 @@ jobs:
     
     env:
       DATABASE_URL: "mysql://root:testpassword@localhost:3306/likefood_test"
-      NEXTAUTH_SECRET: mock-secret-for-ci-build
+      NEXTAUTH_SECRET: mock-secret-for-ci-build-at-least-32-chars
       NEXTAUTH_URL: "http://localhost:3000"
     
     steps:
