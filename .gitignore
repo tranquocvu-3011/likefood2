@@ -46,8 +46,8 @@ next-env.d.ts
 *.swp
 *.bak
 
-# generated prisma query engine temp files
-src/generated/client/*.tmp*
+# generated prisma client (platform-specific, regenerated on each platform)
+src/generated/client/
 
 # test output
 vitest_results.txt
