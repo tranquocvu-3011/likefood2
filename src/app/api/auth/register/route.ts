@@ -154,11 +154,15 @@ export async function POST(req: Request) {
         const emailResult = await sendVerificationEmail(email, otp, "VERIFY", undefined, verifyUrl);
 
         if (!emailResult.success) {
-            logger.warn("[MAIL] Failed to send verification email", {
+            logger.error("[MAIL] Failed to send verification email", {
                 context: "auth-register",
                 email,
                 error: emailResult.error,
             });
+            return NextResponse.json(
+                { error: "Không thể gửi email xác thực. Vui lòng kiểm tra cấu hình SMTP." },
+                { status: 500 }
+            );
         }
 
         return NextResponse.json(

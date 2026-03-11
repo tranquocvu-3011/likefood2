@@ -55,7 +55,15 @@ export async function POST(req: NextRequest) {
 
         const magicUrl = `${process.env.NEXTAUTH_URL}/api/auth/magic-link/confirm?token=${token}&email=${encodeURIComponent(email)}`;
 
-        await sendVerificationEmail(email, token, "MAGIC_LINK", magicUrl);
+        const emailResult = await sendVerificationEmail(email, token, "MAGIC_LINK", magicUrl);
+        
+        if (!emailResult.success) {
+            logger.error(`[magic-link] Failed to send email: ${emailResult.error}`);
+            return NextResponse.json(
+                { error: "Không thể gửi email. Vui lòng kiểm tra cấu hình SMTP." },
+                { status: 500 }
+            );
+        }
 
         return NextResponse.json({ message: "Link đăng nhập đã được gửi vào email của bạn." });
     } catch (error) {

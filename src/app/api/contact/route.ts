@@ -56,11 +56,15 @@ export async function POST(req: Request) {
         });
 
         if (!result.success) {
-            logger.warn("Failed to send contact email notification", {
+            logger.error("Failed to send contact email notification", {
                 context: "contact-email",
                 contactId: contactMessage.id,
                 error: result.error,
             });
+            return NextResponse.json(
+                { error: "Không thể gửi email. Vui lòng kiểm tra cấu hình SMTP." },
+                { status: 500 }
+            );
         }
 
         return NextResponse.json(

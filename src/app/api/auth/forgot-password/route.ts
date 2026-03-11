@@ -76,11 +76,15 @@ export async function POST(req: Request) {
         const emailResult = await sendVerificationEmail(email, otp, "PASSWORD_RESET");
 
         if (!emailResult.success) {
-            logger.warn("[MAIL] Failed to send password reset email", {
+            logger.error("[MAIL] Failed to send password reset email", {
                 context: "forgot-password",
                 email,
                 error: emailResult.error,
             });
+            return NextResponse.json(
+                { error: "Không thể gửi email. Vui lòng kiểm tra cấu hình SMTP." },
+                { status: 500 }
+            );
         }
 
         return NextResponse.json(

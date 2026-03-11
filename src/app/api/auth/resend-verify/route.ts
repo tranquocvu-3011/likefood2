@@ -80,7 +80,10 @@ export async function POST(req: Request) {
 
         if (!emailResult.success) {
             console.error("[MAIL] Failed to send email:", emailResult.error);
-            // Security: Never log OTP codes in production
+            return NextResponse.json(
+                { error: "Không thể gửi email. Vui lòng kiểm tra cấu hình SMTP." },
+                { status: 500 }
+            );
         }
 
         return NextResponse.json(

@@ -48,7 +48,12 @@ export async function POST(req: NextRequest) {
         });
 
         // Gửi email OTP
-        await sendVerificationEmail(email, otp, "2FA");
+        const emailResult = await sendVerificationEmail(email, otp, "2FA");
+        
+        if (!emailResult.success) {
+            logger.error("[2FA] Failed to send email:", emailResult.error);
+            return NextResponse.json({ error: "Không thể gửi email. Vui lòng kiểm tra cấu hình SMTP." }, { status: 500 });
+        }
 
         return NextResponse.json({ message: "OTP đã được gửi" });
     } catch (error) {
