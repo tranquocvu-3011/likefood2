@@ -64,6 +64,11 @@ export type EnvConfig = z.infer<typeof envSchema>;
  * Call this at app startup to fail fast if env vars are missing
  */
 export function validateEnv() {
+  // Skip validation if explicitly disabled (CI/testing)
+  if (process.env.SKIP_ENV_VALIDATION === "true") {
+    return {} as EnvConfig;
+  }
+  
   // Check if we're in build time (Next.js build process)
   const isBuilding = process.env.__NEXT_BUILDING === "true";
   // Only check production runtime requirements when NOT building
