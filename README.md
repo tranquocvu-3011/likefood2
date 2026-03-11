@@ -264,18 +264,6 @@ npm test -- --watch
 
 ---
 
-## 📊 Điểm Hệ Thống
-
-| Tiêu chí | Điểm |
-|----------|-------|
-| Kiến trúc | 9.5/10 |
-| Tính năng | 9.8/10 |
-| Bảo mật | 9.7/10 |
-| Hiệu năng | 8.5/10 |
-| **Tổng** | **9.35/10** |
-
----
-
 ## 🌐 Triển Khai
 
 ### Vercel (Khuyến nghị)
@@ -319,7 +307,7 @@ Mỗi file mã nguồn `.ts` / `.tsx` đều chứa tiêu đề giấy phép:
 ```typescript
 /**
  * LIKEFOOD - Vietnamese Specialty Marketplace
- * Copyright (c) 2026 LIKEFOOD Team
+ * Copyright (c) 2026 Trần Quốc Vũ
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */

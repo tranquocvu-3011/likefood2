@@ -2,6 +2,7 @@
   "name": "likefood",
   "version": "1.0.0",
   "description": "Nền tảng thương mại điện tử đặc sản Việt Nam tại Mỹ — tích hợp AI Gemini, thanh toán Stripe, đa ngôn ngữ",
+  "author": "Trần Quốc Vũ",
   "homepage": "https://github.com/tranquocvu-3011/likefood#readme",
   "repository": {
     "type": "git",
