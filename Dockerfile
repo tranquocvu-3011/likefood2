@@ -71,6 +71,9 @@ COPY --from=builder /app/node_modules/.bin/prisma /usr/local/bin/prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
+# Copy Prisma engines directory (required for Prisma CLI to work)
+COPY --from=builder /app/node_modules/@prisma/engines ./node_modules/@prisma/engines
+
 # Add node_modules/.bin to PATH so 'prisma' command works
 ENV PATH="/app/node_modules/.bin:${PATH}"
 
