@@ -28,14 +28,18 @@ RUN npm install && \
 COPY . .
 
 # Generate Prisma client first (needed at build time)
-RUN npx prisma generate
+# Use local prisma instead of npx to avoid downloading newer version
+RUN ./node_modules/.bin/prisma generate
 
 # Skip env validation during Docker build - set BEFORE build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV SKIP_ENV_VALIDATION=true
 
-# Build Next.js (standalone output for minimal image)
-RUN npm run build
+# Limit Node.js memory to avoid OOM on low-memory VPS
+ENV NODE_OPTIONS="--max-old-space-size=1024"
+
+# Build Next.js with webpack (less memory than Turbopack)
+RUN npx next build --no-turbopack
 # ─────────────────────────────────────────────────────────
 # Stage 3: runner — minimal production image
 # ─────────────────────────────────────────────────────────
@@ -60,6 +64,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Prisma client (generated into src/generated/client)
 COPY --from=builder --chown=nextjs:nodejs /app/src/generated ./src/generated
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+
+# Copy Prisma CLI from builder (avoid npx downloading 7.x)
+COPY --from=builder /app/node_modules/.bin/prisma /usr/local/bin/prisma
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 USER nextjs
 
