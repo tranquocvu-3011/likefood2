@@ -37,7 +37,6 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./prisma/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
     # Port 3306 không expose ra ngoài host — chỉ app nội bộ mới truy cập được
     networks:
       - weblikefood_net
