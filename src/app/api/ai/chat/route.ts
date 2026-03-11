@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -89,6 +89,7 @@ export async function POST(req: NextRequest) {
       shouldEscalate: result.shouldEscalate,
       isNewUser: result.isNewUser,
       sessionId: chatSessionId,
+      quickReplies: result.quickReplies,
     });
   } catch (error) {
     console.error("AI Chat Error:", error);

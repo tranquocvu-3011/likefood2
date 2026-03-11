@@ -1,14 +1,14 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-"use client";
-
 import { useCompare } from "@/contexts/CompareContext";
-import Image from "next/image";
+import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { X, ArrowLeft, Check, Star, ShoppingBag, Trash2 } from "lucide-react";
@@ -116,11 +116,7 @@ export function CompareContent() {
                                     <td key={item.id} className="p-4">
                                         <Link href={`/products/${item.slug || item.id}`}>
                                             <div className="w-48 h-48 relative rounded-2xl overflow-hidden mx-auto">
-                                                {item.image ? (
-                                                    <Image src={item.image} alt={item.name} fill className="object-cover" sizes="192px" />
-                                                ) : (
-                                                    <div className="w-full h-full bg-slate-100" />
-                                                )}
+                                                <ImageWithFallback src={item.image} alt={item.name} fill className="object-cover" sizes="192px" />
                                             </div>
                                         </Link>
                                     </td>

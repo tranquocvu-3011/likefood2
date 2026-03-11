@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
@@ -13,6 +13,7 @@ import Link from "next/link";
 import { Sparkles, TrendingUp, ChevronRight } from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
 import { ProductCardSkeleton } from "@/components/ui/product-skeleton";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface RecommendedProduct {
   id: string;
@@ -33,9 +34,10 @@ interface RecommendedProduct {
 
 export default function PersonalizedRecommendationsSection() {
   const { data: session } = useSession();
+  const { t } = useLanguage();
   const [products, setProducts] = useState<RecommendedProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [title, setTitle] = useState("Gợi ý cho bạn");
+  const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
 
   useEffect(() => {
@@ -54,8 +56,8 @@ export default function PersonalizedRecommendationsSection() {
             const data = await res.json();
             if (data.products?.length > 0) {
               setProducts(data.products);
-              setTitle("Gợi ý cho bạn");
-              setSubtitle("Dựa trên lịch sử mua sắm của bạn");
+              setTitle(t("home.suggestionsForYou"));
+              setSubtitle(t("home.basedOnHistory"));
               return;
             }
           }
@@ -66,8 +68,8 @@ export default function PersonalizedRecommendationsSection() {
         if (res.ok) {
           const data = await res.json();
           setProducts(data.products ?? []);
-          setTitle("Sản phẩm nổi bật");
-          setSubtitle("Được yêu thích nhất trong tuần");
+          setTitle(t("home.featuredProducts"));
+          setSubtitle(t("home.mostLovedWeek"));
         }
       } catch {
         // Silently fall through — section simply won't render
@@ -77,11 +79,13 @@ export default function PersonalizedRecommendationsSection() {
     };
 
     fetchRecommendations();
-  }, [session?.user?.id]);
+  }, [session?.user?.id, t]);
 
   if (!isLoading && products.length === 0) return null;
 
   const isPersonalized = !!session?.user;
+  const displayTitle = title || t("home.suggestionsForYou");
+  const displaySubtitle = subtitle;
 
   return (
     <section className="w-full px-4 sm:px-6 lg:px-[6%] py-16">
@@ -95,30 +99,30 @@ export default function PersonalizedRecommendationsSection() {
               <TrendingUp className="w-4 h-4 text-orange-500" />
             )}
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-widest">
-              {isPersonalized ? "AI Gợi ý" : "Xu hướng"}
+              {isPersonalized ? t("home.aiSuggestion") : t("home.trending")}
             </span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">{title}</h2>
-          {subtitle && (
-            <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">{displayTitle}</h2>
+          {displaySubtitle && (
+            <p className="text-sm text-muted-foreground mt-1">{displaySubtitle}</p>
           )}
         </div>
         <Link
           href="/products"
           className="flex items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors shrink-0"
         >
-          Xem tất cả
+          {t("common.viewAll")}
           <ChevronRight className="w-4 h-4" />
         </Link>
       </div>
 
-      {/* Product Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      {/* Product Grid — cards nhỏ hơn, dễ nhìn */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
         {isLoading
           ? Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)
-          : products.map((p) => (
+          : products.map((p, i) => (
               <ProductCard
-                key={p.id}
+                key={p.id || p.slug || `rec-${i}`}
                 product={{
                   id: p.id,
                   slug: p.slug,

@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/contexts/CartContext";
@@ -18,6 +18,7 @@ import { Elements, CardElement, useStripe, useElements } from "@stripe/react-str
 import { loadStripe } from "@stripe/stripe-js";
 import { useSession } from "next-auth/react";
 import VoucherPickerModal from "@/components/checkout/VoucherPickerModal";
+import CheckoutAddressSkeleton from "@/components/checkout/CheckoutAddressSkeleton";
 import { tracking } from "@/lib/tracking";
 import { logger } from "@/lib/logger";
 import { toast } from "sonner";
@@ -27,9 +28,9 @@ import { EXPRESS_SHIPPING_FEE_USD, FREE_SHIPPING_THRESHOLD_USD, OVERNIGHT_SHIPPI
 // STEPS moved inside component for i18n
 
 const stripePromise =
-    typeof window === "undefined"
+    typeof window === "undefined" || !process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
         ? null
-        : loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "");
+        : loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
 interface Address {
     id: string;
@@ -43,7 +44,7 @@ interface Address {
     isDefault: boolean;
 }
 
-type PaymentMethod = "COD" | "BANK" | "MOMO" | "PAYPAL" | "STRIPE";
+type PaymentMethod = "COD" | "BANK" | "MOMO" | "PAYPAL" | "STRIPE" | "ZALOPAY";
 
 interface PublicSettings {
     PAYMENT_COD_ENABLED?: string;
@@ -51,6 +52,7 @@ interface PublicSettings {
     PAYMENT_MOMO_ENABLED?: string;
     PAYMENT_PAYPAL_ENABLED?: string;
     PAYMENT_STRIPE_ENABLED?: string;
+    ZALO_PAY_ENABLED?: string;
 }
 
 function CheckoutContent() {
@@ -119,6 +121,7 @@ function CheckoutContent() {
         MOMO: false,
         PAYPAL: false,
         STRIPE: true,
+        ZALOPAY: false,
     });
     const [userPoints, setUserPoints] = useState(0);
     const [usePoints, setUsePoints] = useState(false);
@@ -146,7 +149,7 @@ function CheckoutContent() {
         if (!session?.user) return;
         const loadPoints = async () => {
             try {
-                const res = await fetch("/api/user/checkin");
+                const res = await fetch("/api/user/points");
                 if (res.ok) {
                     const data = await res.json();
                     setUserPoints(data.points || 0);
@@ -165,15 +168,15 @@ function CheckoutContent() {
     useEffect(() => {
         const loadPaymentSettings = async () => {
             try {
-                const res = await fetch("/api/public/settings");
-                if (!res.ok) return;
-                const data: PublicSettings = await res.json();
+                const { getPublicSettings } = await import("@/lib/public-settings");
+                const data: PublicSettings = await getPublicSettings();
 
                 const cod = data.PAYMENT_COD_ENABLED === "true";
                 const bank = data.PAYMENT_BANK_ENABLED === "true";
                 const momo = data.PAYMENT_MOMO_ENABLED === "true";
                 const paypal = data.PAYMENT_PAYPAL_ENABLED === "true";
                 const stripeEnabled = data.PAYMENT_STRIPE_ENABLED === "true";
+                const zaloPay = data.ZALO_PAY_ENABLED === "true";
 
                 const updated: Record<PaymentMethod, boolean> = {
                     COD: cod,
@@ -181,6 +184,7 @@ function CheckoutContent() {
                     MOMO: momo,
                     PAYPAL: paypal,
                     STRIPE: stripeEnabled,
+                    ZALOPAY: zaloPay,
                 };
 
                 // Nếu tất cả đều false, giữ Stripe mặc định (nếu có key env) để không chặn thanh toán
@@ -192,10 +196,11 @@ function CheckoutContent() {
                     MOMO: false,
                     PAYPAL: false,
                     STRIPE: true,
+                    ZALOPAY: false,
                 });
 
                 // Chọn phương thức mặc định là cái đầu tiên được bật
-                const priorityOrder: PaymentMethod[] = ["COD", "BANK", "MOMO", "PAYPAL", "STRIPE"];
+                const priorityOrder: PaymentMethod[] = ["COD", "BANK", "MOMO", "PAYPAL", "ZALOPAY", "STRIPE"];
                 const firstEnabled = priorityOrder.find(m => updated[m]);
                 if (firstEnabled) {
                     setPaymentMethod(firstEnabled);
@@ -306,7 +311,7 @@ function CheckoutContent() {
         try {
             // Calculate discount from voucher
             let discount = 0;
-            let couponCode = null;
+            let couponCode: string | null = null;
             if (selectedVoucher && selectedVoucher.canUse) {
                 discount = selectedVoucher.discountAmount;
                 couponCode = selectedVoucher.code;
@@ -444,8 +449,14 @@ function CheckoutContent() {
             setOrderId(order.id);
             clearCart();
 
-            // Redirect to order success page
-            router.push(`/order-success?orderId=${order.id}`);
+            // For non-Stripe payments (COD, BANK, MOMO, ZALOPAY), show payment instructions in step 3
+            // For Stripe, redirect to order success page
+            if (paymentMethod === "STRIPE") {
+                router.push(`/order-success?orderId=${order.id}`);
+            } else {
+                // Show payment instructions for other methods
+                setStep(3);
+            }
         } catch (error: unknown) {
             const err = error instanceof Error ? error : new Error(typeof error === "string" ? error : "Unknown error");
             logger.error("Order creation error", err, { context: "checkout-page" });
@@ -529,7 +540,7 @@ function CheckoutContent() {
                                         </Link>
                                     </div>
                                     {isLoadingAddresses ? (
-                                        <p className="text-xs text-slate-400">{language === "vi" ? "Đang tải địa chỉ..." : "Loading addresses..."}</p>
+                                        <CheckoutAddressSkeleton />
                                     ) : addresses.length === 0 ? (
                                         <p className="text-xs text-slate-400">
                                             {language === "vi" ? "Bạn chưa có địa chỉ nào. Thêm địa chỉ trong trang Profile để dùng nhanh ở đây." : "You have no addresses yet. Add an address in Profile for quick use here."}
@@ -930,6 +941,30 @@ function CheckoutContent() {
                                         </button>
                                     )}
 
+                                    {availablePayments.ZALOPAY && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setPaymentMethod("ZALOPAY")}
+                                            className={`p-6 rounded-3xl border-2 transition-all text-left flex items-center justify-between ${paymentMethod === "ZALOPAY"
+                                                ? "border-primary bg-primary/5 shadow-sm"
+                                                : "border-slate-100 hover:border-slate-200 bg-white"
+                                                }`}
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                                                    <ShoppingBag className="w-5 h-5 text-blue-500" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-black text-sm">ZaloPay</p>
+                                                    <p className="text-[11px] text-slate-500 font-bold uppercase">
+                                                        {language === "vi" ? "Quét QR hoặc thanh toán qua ZaloPay" : "Scan QR or pay via ZaloPay"}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className={`w-5 h-5 rounded-full border-2 ${paymentMethod === "ZALOPAY" ? "border-primary bg-primary" : "border-slate-300"}`} />
+                                        </button>
+                                    )}
+
                                     {availablePayments.STRIPE && (
                                         <button
                                             type="button"
@@ -986,6 +1021,16 @@ function CheckoutContent() {
                                         )}
                                     </div>
                                 )}
+
+                                {/* QR Code display for BANK, MOMO, ZALOPAY */}
+                                {(paymentMethod === "BANK" || paymentMethod === "MOMO" || paymentMethod === "ZALOPAY") && (
+                                    <QRCodePaymentDisplay
+                                        paymentMethod={paymentMethod}
+                                        amount={finalTotal}
+                                        orderId={orderId}
+                                        language={language}
+                                    />
+                                )}
                             </div>
 
                             <div className="mt-12 pt-10 border-t border-slate-100">
@@ -1041,22 +1086,69 @@ function CheckoutContent() {
                             key="step3"
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="bg-white rounded-[3rem] p-20 shadow-xl shadow-slate-200/50 border border-slate-100 text-center"
+                            className="bg-white rounded-[3rem] p-10 lg:p-16 shadow-xl shadow-slate-200/50 border border-slate-100"
                         >
-                            <div className="w-24 h-24 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-green-500/30">
-                                <CheckCircle2 className="w-12 h-12" />
-                            </div>
-                            <h2 className="text-5xl font-black uppercase tracking-tighter mb-4">{language === "vi" ? "Đặt hàng thành công!" : "Order Placed Successfully!"}</h2>
-                            {orderId && (
-                                <p className="text-lg text-slate-600 mb-4">
-                                    {language === "vi" ? "Mã đơn hàng" : "Order ID"}: <span className="font-black text-primary">#{orderId.slice(-8).toUpperCase()}</span>
+                            <div className="text-center mb-8">
+                                <div className="w-24 h-24 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-green-500/30">
+                                    <CheckCircle2 className="w-12 h-12" />
+                                </div>
+                                <h2 className="text-4xl font-black uppercase tracking-tighter mb-4">{language === "vi" ? "Đặt hàng thành công!" : "Order Placed Successfully!"}</h2>
+                                {orderId && (
+                                    <p className="text-lg text-slate-600 mb-4">
+                                        {language === "vi" ? "Mã đơn hàng" : "Order ID"}: <span className="font-black text-primary">#{orderId.slice(-8).toUpperCase()}</span>
+                                    </p>
+                                )}
+                                <p className="text-xl text-muted-foreground mb-8 max-w-lg mx-auto leading-relaxed">
+                                    {language === "vi"
+                                        ? <>Cảm ơn bạn đã tin tưởng chọn <span className="text-black font-black uppercase">LIKEFOOD</span>. Chúng tôi sẽ sớm liên hệ để xác nhận đơn hàng của bạn.</>
+                                        : <>Thank you for choosing <span className="text-black font-black uppercase">LIKEFOOD</span>. We will contact you shortly to confirm your order.</>}
                                 </p>
+                            </div>
+
+                            {/* Show payment instructions for non-Stripe payment methods */}
+                            {(paymentMethod === "BANK" || paymentMethod === "MOMO" || paymentMethod === "ZALOPAY" || paymentMethod === "COD") && (
+                                <div className="bg-slate-50 rounded-3xl p-6 lg:p-8 mb-8">
+                                    <h3 className="text-xl font-black uppercase tracking-tight mb-6 flex items-center gap-3">
+                                        {paymentMethod === "COD" ? (
+                                            <>
+                                                <Truck className="w-6 h-6 text-primary" />
+                                                {language === "vi" ? "Hướng dẫn thanh toán" : "Payment Instructions"}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CreditCard className="w-6 h-6 text-primary" />
+                                                {language === "vi" ? "Thanh toán ngay" : "Complete Payment"}
+                                            </>
+                                        )}
+                                    </h3>
+
+                                    {paymentMethod === "COD" && (
+                                        <div className="text-left space-y-4">
+                                            <p className="text-slate-600">
+                                                {language === "vi"
+                                                    ? "Đơn hàng của bạn sẽ được giao hàng và bạn thanh toán khi nhận hàng."
+                                                    : "Your order will be delivered and you will pay upon delivery."}
+                                            </p>
+                                            <div className="bg-white rounded-2xl p-4 border border-slate-200">
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-slate-500">{language === "vi" ? "Tổng tiền cần thanh toán" : "Total amount to pay"}:</span>
+                                                    <span className="font-black text-primary text-lg">${finalTotal.toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {(paymentMethod === "BANK" || paymentMethod === "MOMO" || paymentMethod === "ZALOPAY") && (
+                                        <QRCodePaymentDisplay
+                                            paymentMethod={paymentMethod}
+                                            amount={finalTotal}
+                                            orderId={orderId}
+                                            language={language}
+                                        />
+                                    )}
+                                </div>
                             )}
-                            <p className="text-xl text-muted-foreground mb-12 max-w-lg mx-auto leading-relaxed">
-                                {language === "vi"
-                                    ? <>Cảm ơn bạn đã tin tưởng chọn <span className="text-black font-black uppercase">LIKEFOOD</span>. Chúng tôi sẽ sớm liên hệ để xác nhận đơn hàng của bạn.</>
-                                    : <>Thank you for choosing <span className="text-black font-black uppercase">LIKEFOOD</span>. We will contact you shortly to confirm your order.</>}
-                            </p>
+
                             <div className="flex flex-col sm:flex-row gap-6 justify-center">
                                 <Link href="/products" prefetch={true}>
                                     <button className="px-10 py-5 bg-black text-white rounded-full font-black uppercase tracking-widest hover:bg-slate-900 transition-all">
@@ -1093,5 +1185,125 @@ export default function CheckoutPage() {
         <Elements stripe={stripePromise}>
             <CheckoutContent />
         </Elements>
+    );
+}
+
+// QR Code Payment Display Component
+function QRCodePaymentDisplay({
+    paymentMethod,
+    amount,
+    orderId,
+    language
+}: {
+    paymentMethod: string;
+    amount: number;
+    orderId: string | null;
+    language: string;
+}) {
+    const [qrCode, setQrCode] = useState<string>("");
+    const [bankInfo, setBankInfo] = useState<{ bankName: string; accountName: string; accountNumber: string } | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchQRCode = async () => {
+            setIsLoading(true);
+            try {
+                // First get the payment settings
+                const { getPublicSettings } = await import("@/lib/public-settings");
+                const settings = await getPublicSettings();
+
+                // Get bank info from settings
+                const bankName = settings.BANK_NAME || "MB";
+                const accountName = settings.BANK_ACCOUNT_NAME || "LIKEFOOD";
+                const accountNumber = settings.BANK_ACCOUNT_NUMBER || "";
+
+                setBankInfo({ bankName, accountName, accountNumber });
+
+                // Generate QR code
+                const res = await fetch(`/api/payments/qr?type=${paymentMethod}&amount=${amount}&orderId=${orderId || ""}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setQrCode(data.qrCode || "");
+                }
+            } catch (error) {
+                console.error("Failed to fetch QR code:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (amount > 0) {
+            fetchQRCode();
+        }
+    }, [paymentMethod, amount, orderId]);
+
+    if (isLoading) {
+        return (
+            <div className="p-6 rounded-3xl border border-slate-100 bg-slate-50 text-center">
+                <div className="animate-pulse flex flex-col items-center">
+                    <div className="w-48 h-48 bg-slate-200 rounded-lg mb-4"></div>
+                    <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="p-6 rounded-3xl border border-slate-100 bg-slate-50">
+            <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4 text-center">
+                {language === "vi" ? "Quét mã để thanh toán" : "Scan to pay"}
+            </p>
+
+            {qrCode && (
+                <div className="flex justify-center mb-4">
+                    <img src={qrCode} alt="Payment QR Code" className="w-48 h-48 rounded-lg" />
+                </div>
+            )}
+
+            {bankInfo && paymentMethod === "BANK" && (
+                <div className="bg-white rounded-2xl p-4 border border-slate-200">
+                    <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                            <span className="text-slate-500">{language === "vi" ? "Ngân hàng" : "Bank"}:</span>
+                            <span className="font-bold">{bankInfo.bankName}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-slate-500">{language === "vi" ? "Số tài khoản" : "Account Number"}:</span>
+                            <span className="font-bold">{bankInfo.accountNumber}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-slate-500">{language === "vi" ? "Tên tài khoản" : "Account Name"}:</span>
+                            <span className="font-bold">{bankInfo.accountName}</span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t border-slate-100">
+                            <span className="text-slate-500">{language === "vi" ? "Số tiền" : "Amount"}:</span>
+                            <span className="font-black text-primary text-lg">${amount.toFixed(2)}</span>
+                        </div>
+                        {orderId && (
+                            <div className="flex justify-between">
+                                <span className="text-slate-500">{language === "vi" ? "Mã đơn" : "Order ID"}:</span>
+                                <span className="font-bold text-xs">{orderId.slice(-8).toUpperCase()}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {(paymentMethod === "MOMO" || paymentMethod === "ZALOPAY") && (
+                <div className="bg-white rounded-2xl p-4 border border-slate-200 text-center">
+                    <p className="text-sm text-slate-600 mb-2">
+                        {language === "vi"
+                            ? `Quét mã QR bằng app ${paymentMethod === "MOMO" ? "MoMo" : "ZaloPay"} để thanh toán`
+                            : `Scan QR code with ${paymentMethod === "MOMO" ? "MoMo" : "ZaloPay"} app to pay`}
+                    </p>
+                    <p className="font-black text-primary text-lg">${amount.toFixed(2)}</p>
+                    {orderId && (
+                        <p className="text-xs text-slate-500 mt-2">
+                            {language === "vi" ? "Mã đơn hàng" : "Order ID"}: {orderId.slice(-8).toUpperCase()}
+                        </p>
+                    )}
+                </div>
+            )}
+        </div>
     );
 }

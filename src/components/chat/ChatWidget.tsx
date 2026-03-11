@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Loader2 } from "lucide-react";
@@ -115,26 +115,26 @@ export default function ChatWidget() {
 
       {/* Hộp chat */}
       {open && (
-        <div className="w-[320px] max-w-[90vw] h-[420px] rounded-3xl shadow-2xl bg-white border border-slate-200 flex flex-col overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-900 to-slate-800 text-white">
+        <div className="w-[320px] max-w-[90vw] h-[420px] rounded-3xl shadow-2xl bg-white border border-slate-200 flex flex-col overflow-hidden ring-4 ring-slate-900/5">
+          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-gradient-to-br from-emerald-600 via-teal-600 to-slate-800 text-white">
             <div>
               <p className="text-xs font-bold tracking-wide uppercase">
                 LIKEFOOD AI
               </p>
-              <p className="text-[11px] text-slate-200">
+              <p className="text-[11px] text-white/80">
                 Trợ lý 24/7 về mua hàng & đặc sản Việt Nam
               </p>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="p-1 rounded-full hover:bg-white/10 transition-colors"
+              className="p-1.5 rounded-full hover:bg-white/20 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="flex-1 px-3 py-2 space-y-2 overflow-y-auto bg-slate-50/60">
+          <div className="flex-1 px-3 py-2 space-y-2 overflow-y-auto bg-gradient-to-b from-slate-50/80 to-white">
             {messages.map((m, idx) => (
               <div
                 key={idx}
@@ -143,9 +143,9 @@ export default function ChatWidget() {
                 }`}
               >
                 <div
-                  className={`max-w-[80%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed ${
+                  className={`max-w-[80%] rounded-2xl px-3 py-2.5 text-[13px] leading-relaxed shadow-sm ${
                     m.role === "user"
-                      ? "bg-slate-900 text-white rounded-br-sm"
+                      ? "bg-slate-800 text-white rounded-br-sm"
                       : "bg-white text-slate-800 border border-slate-100 rounded-bl-sm"
                   }`}
                 >
@@ -167,7 +167,7 @@ export default function ChatWidget() {
               <p className="text-[11px] text-red-500 mt-1">{error}</p>
             )}
 
-            {/* Quick questions */}
+            {/* Quick questions — chips nhỏ gọn */}
             <div className="pt-1 space-y-1">
               <p className="text-[10px] text-slate-400 uppercase tracking-wide font-semibold">
                 Gợi ý nhanh
@@ -178,7 +178,7 @@ export default function ChatWidget() {
                     key={q}
                     type="button"
                     onClick={() => sendMessage(q)}
-                    className="px-2 py-1 rounded-full bg-white text-[11px] border border-slate-200 hover:bg-slate-900 hover:text-white transition-colors"
+                    className="px-2.5 py-1.5 rounded-lg bg-white text-[11px] border border-slate-200 hover:bg-slate-800 hover:text-white hover:border-slate-700 transition-colors shadow-sm"
                   >
                     {q}
                   </button>
@@ -191,18 +191,18 @@ export default function ChatWidget() {
 
           <form
             onSubmit={handleSubmit}
-            className="border-t border-slate-100 bg-white px-3 py-2 flex items-center gap-2"
+            className="border-t border-slate-100 bg-white px-3 py-2.5 flex items-center gap-2 shadow-[0_-2px_12px_rgba(0,0,0,0.04)]"
           >
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Nhập câu hỏi của bạn..."
-              className="flex-1 text-[13px] px-3 py-2 rounded-full bg-slate-50 border border-transparent focus:border-slate-300 outline-none"
+              className="flex-1 text-[13px] px-3 py-2 rounded-full bg-slate-50 border border-slate-100 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 outline-none transition-all"
             />
             <button
               type="submit"
               disabled={!input.trim() || loading}
-              className="p-2 rounded-full bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
+              className="p-2.5 rounded-full bg-slate-800 text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors shadow-md"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

@@ -1,9 +1,16 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
+
+/**
+* LIKEFOOD - Vietnamese Specialty Marketplace
+* Copyright (c) 2026 LIKEFOOD Team
+* Licensed under the MIT License
+* https://github.com/tranquocvu-3011/likefood
+*/
 
 "use client";
 
@@ -76,6 +83,7 @@ function ProductCardComponent({ product, viewMode = "grid" }: ProductCardProps) 
     const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
+    const [imgError, setImgError] = useState(false);
     const { lastAddedId } = useCart();
     const router = useRouter();
     const { language } = useLanguage();
@@ -143,22 +151,27 @@ function ProductCardComponent({ product, viewMode = "grid" }: ProductCardProps) 
             <div
                 data-product-id={id}
                 onClick={handleCardClick}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleCardClick(); } }}
+                tabIndex={0}
+                role="article"
+                aria-label={name}
                 onMouseEnter={() => { handleMouseEnter(); setIsHovered(true); }}
                 onMouseLeave={() => setIsHovered(false)}
-                className={`group flex gap-0 bg-white rounded-2xl overflow-hidden cursor-pointer border border-slate-100 transition-all duration-300 ${isHovered ? "shadow-[0_8px_32px_rgba(0,0,0,0.10)] -translate-y-0.5" : "shadow-[0_2px_8px_rgba(0,0,0,0.04)]"} ${inventory <= 0 ? "opacity-80 grayscale-[0.2]" : ""}`}
+                className={`group flex gap-0 bg-white rounded-2xl overflow-hidden cursor-pointer border border-slate-100 transition-all duration-300 ${isHovered ? "shadow-[0_8px_32px_rgba(0,0,0,0.10)] -translate-y-0.5" : "shadow-[0_2px_8px_rgba(0,0,0,0.04)]"} ${inventory <= 0 ? "opacity-80 grayscale-[0.2]" : ""} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2`}
             >
                 {/* Image */}
                 <div className="relative shrink-0 w-36 sm:w-44 h-36 sm:h-44 bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 overflow-hidden">
-                    {!imageLoaded && <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200 animate-pulse" />}
-                    {image ? (
+                    {!imageLoaded && !imgError && <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200 animate-pulse" />}
+                    {image && !imgError ? (
                         <Image src={image} alt={name} fill
                             className={`object-cover transition-all duration-500 ${imageLoaded ? "opacity-100" : "opacity-0"} ${isHovered ? "scale-105" : "scale-100"}`}
                             onLoad={() => setImageLoaded(true)}
+                            onError={() => { setImgError(true); setImageLoaded(true); }}
                             sizes="(max-width: 640px) 144px, 176px"
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                            <ShoppingBag className="w-10 h-10 text-slate-200" />
+                        <div className="w-full h-full flex items-center justify-center bg-white p-4">
+                            <Image src="/loadtrang.png" alt="Fallback" fill className="object-cover opacity-50" sizes="100px" />
                         </div>
                     )}
                     {/* Badges in list view */}
@@ -212,7 +225,11 @@ function ProductCardComponent({ product, viewMode = "grid" }: ProductCardProps) 
                             )}
                         </div>
                         <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                            <button onClick={handleQuickView} className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors">
+                            <button
+                                onClick={handleQuickView}
+                                aria-label={language === "vi" ? "Xem nhanh sản phẩm" : "Quick view product"}
+                                className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors"
+                            >
                                 <Eye className="w-4 h-4" />
                             </button>
                             <WishlistButton productId={id} />
@@ -232,15 +249,18 @@ function ProductCardComponent({ product, viewMode = "grid" }: ProductCardProps) 
         <div
             data-product-id={id}
             onClick={handleCardClick}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleCardClick(); } }}
+            tabIndex={0}
+            role="article"
+            aria-label={name}
             onMouseEnter={() => {
                 handleMouseEnter();
                 setIsHovered(true);
             }}
             onMouseLeave={() => {
                 setIsHovered(false);
-                setImageLoaded(false);
             }}
-            className="h-full"
+            className="h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-3xl"
         >
             <Card className="group bg-transparent shadow-none p-0 h-full cursor-pointer">
                 <div
@@ -365,7 +385,7 @@ function ProductCardComponent({ product, viewMode = "grid" }: ProductCardProps) 
                             {/* Image Container with Effects */}
                             <div className="relative w-full h-full">
                                 {/* Skeleton Loading */}
-                                {!imageLoaded && (
+                                {!imageLoaded && !imgError && (
                                     <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200 animate-pulse" />
                                 )}
 
@@ -385,18 +405,19 @@ function ProductCardComponent({ product, viewMode = "grid" }: ProductCardProps) 
                                     animate={{ scale: isHovered ? 1.1 : 1 }}
                                     transition={{ duration: 0.7, ease: "easeOut" }}
                                 >
-                                    {image ? (
+                                    {image && !imgError ? (
                                         <Image
                                             src={image}
                                             alt={name}
                                             fill
                                             className={`object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                                             onLoad={() => setImageLoaded(true)}
+                                            onError={() => { setImgError(true); setImageLoaded(true); }}
                                             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                                         />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-                                            <ShoppingBag className="w-16 h-16 text-slate-200" />
+                                        <div className="w-full h-full flex items-center justify-center bg-white p-8">
+                                            <Image src="/loadtrang.png" alt="Fallback" fill className="object-cover opacity-50 p-4" sizes="200px" />
                                         </div>
                                     )}
                                 </motion.div>
@@ -427,6 +448,7 @@ function ProductCardComponent({ product, viewMode = "grid" }: ProductCardProps) 
                                                 variant="secondary"
                                                 size="sm"
                                                 onClick={handleQuickView}
+                                                aria-label={language === "vi" ? "Xem nhanh sản phẩm" : "Quick view product"}
                                                 className="flex-1 h-11 rounded-2xl bg-white/95 backdrop-blur-sm shadow-lg hover:bg-white border-0 font-bold text-xs uppercase tracking-wider"
                                             >
                                                 <Eye className="w-4 h-4 mr-1.5" />

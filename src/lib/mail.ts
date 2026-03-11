@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -34,7 +34,8 @@ export const sendVerificationEmail = async (
     email: string,
     otp: string,
     type: "VERIFY" | "PASSWORD_RESET" | "2FA" | "MAGIC_LINK" = "VERIFY",
-    magicUrl?: string
+    magicUrl?: string,
+    verifyUrl?: string
 ) => {
     logger.info(`[MAIL SEND] Attempting to send ${type} to ${email}`);
 
@@ -63,9 +64,12 @@ export const sendVerificationEmail = async (
                 ? "Sử dụng mã OTP 6 chữ số bên dưới để hoàn tất xác thực 2 bước. Mã có hiệu lực trong 10 phút."
                 : "Vui lòng sử dụng mã OTP dưới đây để hoàn tất quá trình đăng ký tài khoản.";
 
+    const otpBlock = `<div style="background: white; border: 2px dashed #10b981; padding: 15px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #10b981; display: inline-block;">${otp}</div><p style="color: #9ca3af; font-size: 12px; margin-top: 25px;">Mã này sẽ hết hạn sau ${isReset ? "15 phút" : is2FA ? "10 phút" : "24 giờ"}. Nếu bạn không yêu cầu hành động này, vui lòng bỏ qua email.</p>`;
     const bodyContent = isMagicLink
         ? `<a href="${magicUrl}" style="display: inline-block; background: #10b981; color: white; padding: 14px 32px; border-radius: 8px; font-weight: bold; font-size: 16px; text-decoration: none; margin: 16px 0;">Đăng nhập ngay</a><p style="color:#9ca3af;font-size:12px;margin-top:16px;">Hoặc copy link: ${magicUrl}</p>`
-        : `<div style="background: white; border: 2px dashed #10b981; padding: 15px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #10b981; display: inline-block;">${otp}</div><p style="color: #9ca3af; font-size: 12px; margin-top: 25px;">Mã này sẽ hết hạn sau ${isReset ? "15 phút" : is2FA ? "10 phút" : "24 giờ"}. Nếu bạn không yêu cầu hành động này, vui lòng bỏ qua email.</p>`;
+        : (!isReset && !is2FA && verifyUrl)
+            ? `${otpBlock}<div style="margin-top:20px;"><a href="${verifyUrl}" style="display:inline-block;background:#10b981;color:white;padding:14px 32px;border-radius:8px;font-weight:bold;font-size:16px;text-decoration:none;">Xác thực tài khoản ngay</a></div><p style="color:#9ca3af;font-size:11px;margin-top:12px;">Hoặc dán đường dẫn vào trình duyệt: ${verifyUrl}</p>`
+            : otpBlock;
 
     const mailOptions = {
         from: process.env.SMTP_FROM,

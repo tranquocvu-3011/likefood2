@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -59,7 +59,7 @@ export default function AdminCouponsPage() {
             if (filter !== "all") params.set("status", filter);
             const res = await fetch(`/api/admin/coupons?${params}`);
             const data = await res.json();
-            setCoupons(Array.isArray(data) ? data : data.coupons || []);
+            setCoupons(Array.isArray(data) ? data : (data.coupons || []));
         } catch {
             toast.error("Không thể tải danh sách mã giảm giá");
         } finally {

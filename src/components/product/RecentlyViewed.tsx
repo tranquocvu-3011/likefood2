@@ -1,15 +1,15 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-"use client";
-
 import { useEffect, useState } from "react";
 import { Clock, X, ShoppingBag, Flame } from "lucide-react";
-import Image from "next/image";
+import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import Link from "next/link";
 import { logger } from "@/lib/logger";
 
@@ -159,7 +159,7 @@ export default function RecentlyViewed() {
                                             </div>
                                         )}
                                         {product.image ? (
-                                            <Image
+                                            <ImageWithFallback
                                                 src={product.image}
                                                 alt={product.name}
                                                 fill

@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -48,7 +48,6 @@ export default function TurnstileWidget({
             script.onload = () => setIsLoaded(true);
             document.head.appendChild(script);
         } else if (window.turnstile) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsLoaded(true);
         }
     }, [siteKey]);

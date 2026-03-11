@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -22,6 +22,11 @@ const ALLOWED_SETTING_KEYS = new Set([
     "checkin_points", "referral_points",
     "meta_title", "meta_description", "meta_keywords",
     "announcement_bar", "announcement_text",
+    // Payment settings
+    "payment_cod_enabled", "payment_bank_enabled", "payment_momo_enabled",
+    "payment_paypal_enabled", "payment_stripe_enabled", "zalo_pay_enabled",
+    "bank_name", "bank_account_name", "bank_account_number",
+    "bank_qr_image_url", "momo_qr_image_url", "paypal_client_id", "zalo_pay_qr_url",
 ]);
 
 export async function GET() {

@@ -9,6 +9,7 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
+    "noImplicitAny": false,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -27,7 +28,9 @@
         "./src/*"
       ]
     },
-    "types": ["vitest/globals"]
+    "types": [
+      "vitest/globals"
+    ]
   },
   "include": [
     "next-env.d.ts",

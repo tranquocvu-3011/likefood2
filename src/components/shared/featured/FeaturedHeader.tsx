@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { motion } from "framer-motion";
 
@@ -34,7 +34,7 @@ export default function FeaturedHeader() {
                 className="font-black uppercase tracking-tighter text-slate-900 leading-[0.9] relative"
                 style={{ fontSize: 'clamp(0.75rem,2.1vw,1.8rem)' }}
             >
-                <span className="relative z-10">Sản phẩm Nổi bật</span>
+                <span className="relative z-10">Sản phẩm nổi bật</span>
                 <motion.span
                     className="absolute inset-0 bg-gradient-to-r from-primary/20 via-amber-500/20 to-primary/20 blur-xl"
                     animate={{

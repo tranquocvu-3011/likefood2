@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -85,7 +85,7 @@ export default function RecentPosts() {
                             className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary rounded-full px-3 py-1 text-xs font-semibold"
                         >
                             <BookOpen className="w-3.5 h-3.5" />
-                            <span>Góc chia sẻ nội trợ</span>
+                            <span>Góc ẩm thực & Đặc sản</span>
                         </motion.div>
                         <motion.h2
                             initial={{ opacity: 0, y: 15 }}

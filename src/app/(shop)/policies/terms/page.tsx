@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -58,8 +58,8 @@ export default function TermsPage() {
 
                         <h2>2. Chính Sách Thanh Toán & Giao Hàng</h2>
                         <p>
-                            Mọi thông tin thanh toán hoàn toàn được xử lý dưới lớp mã hóa của các đối tác Cổng Thanh Toán Hàng Đầu VN (VNPay, Momo).
-                            LIKEFOOD hỗ trợ giao hàng toàn quốc bằng dịch vụ <strong>HỎA TỐC 2H</strong> với các đơn nội thành Hà Nội, và <strong>Giao Gấp Trong Ngày</strong> tại mọi tỉnh thành lân cận.
+                            Mọi thông tin thanh toán hoàn toàn được xử lý dưới lớp mã hóa của các đối tác Cổng Thanh Toán uy tín (Stripe, PayPal, MoMo).
+                            LIKEFOOD hỗ trợ giao hàng trên toàn nước Mỹ. Thời gian nhận hàng phụ thuộc khu vực và phương thức vận chuyển được chọn khi thanh toán.
                         </p>
 
                         <h2>3. Quyền Sở Hữu Trí Tuệ</h2>

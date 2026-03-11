@@ -1,15 +1,15 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-"use client";
-
 import { useState, useEffect } from "react";
 import { ShoppingCart, Loader2, Sparkles, Check } from "lucide-react";
-import Image from "next/image";
+import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
@@ -70,6 +70,12 @@ export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyB
         setIsAddingAll(true);
         const selectedProducts = recommended.filter(p => selectedIds.includes(p.id));
 
+        if (selectedProducts.length === 0) {
+            toast.error("Vui lòng chọn ít nhất 1 sản phẩm để thêm vào giỏ hàng");
+            setIsAddingAll(false);
+            return;
+        }
+
         // Always include current product if not already in cart logic (handled by addItem)
         // But here we just add the selected recommended products
 
@@ -81,6 +87,7 @@ export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyB
                 price: p.isOnSale && p.salePrice ? p.salePrice : p.price,
                 image: p.image,
                 quantity: 1,
+                inventory: p.inventory,
             });
         }
 
@@ -93,8 +100,7 @@ export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyB
 
     const totalPrice = recommended
         .filter(p => selectedIds.includes(p.id))
-        .reduce((sum, p) => sum + (p.isOnSale && p.salePrice ? p.salePrice : p.price), 0) +
-        (currentProduct.isOnSale && currentProduct.salePrice ? currentProduct.salePrice : currentProduct.price);
+        .reduce((sum, p) => sum + (p.isOnSale && p.salePrice ? p.salePrice : p.price), 0);
 
     return (
         <section className="mb-20">
@@ -114,8 +120,8 @@ export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyB
                     {/* Current Product (Fixed) */}
                     <div className="relative group grayscale-0 opacity-100 transition-all duration-300">
                         <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-3xl overflow-hidden bg-slate-50 border border-slate-100 relative shadow-sm">
-                            <Image
-                                src={currentProduct.image || "/placeholder.png"}
+                            <ImageWithFallback
+                                src={currentProduct.image}
                                 alt={currentProduct.name}
                                 fill
                                 className="object-cover"
@@ -137,8 +143,8 @@ export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyB
                                 onClick={() => toggleSelection(product.id)}
                             >
                                 <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-3xl overflow-hidden bg-slate-50 border border-slate-100 relative shadow-md group-hover:shadow-xl transition-all">
-                                    <Image
-                                        src={product.image || "/placeholder.png"}
+                                    <ImageWithFallback
+                                        src={product.image}
                                         alt={product.name}
                                         fill
                                         className="object-cover"

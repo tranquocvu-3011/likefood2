@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -7,7 +7,6 @@
 
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
-// Edge Runtime: use Web Crypto API (globalThis.crypto) instead of Node.js crypto
 
 const CSRF_SENSITIVE_PATHS = [
     "/api/orders",
@@ -19,15 +18,13 @@ const CSRF_SENSITIVE_PATHS = [
     "/api/user",
 ];
 
-// Admin routes that require SUPER_ADMIN role
 const SUPER_ADMIN_ONLY_ROUTES = [
     "/api/admin/users",
     "/api/admin/users/",
 ];
 
-// SEC-05: Admin session cookie signing
 const ADMIN_COOKIE_SECRET = process.env.ADMIN_2FA_SECRET || process.env.NEXTAUTH_SECRET;
-const ADMIN_COOKIE_MAX_AGE = 10 * 60; // 10 minutes in seconds
+const ADMIN_COOKIE_MAX_AGE = 10 * 60;
 
 const enc = new TextEncoder();
 
@@ -96,17 +93,14 @@ export default withAuth(
         const pathname = req.nextUrl.pathname;
         const method = req.method.toUpperCase();
 
-        // Bảo vệ phân vùng Admin
         if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login") && !pathname.startsWith("/admin/verify")) {
             if (!isAdmin) {
                 return NextResponse.redirect(new URL("/", req.url));
             }
 
-            // Require Secondary OTP Session for Admin Area with STRICT 10-minute TTL
             const adminAuthSession = req.cookies.get("admin_auth_session");
             const sessionValue = adminAuthSession?.value;
 
-            // SEC-05: Verify signed cookie
             if (!sessionValue) {
                 return NextResponse.redirect(new URL("/admin/verify", req.url));
             }
@@ -116,19 +110,16 @@ export default withAuth(
                 return NextResponse.redirect(new URL("/admin/verify", req.url));
             }
 
-            // Decode timestamp and check expiry (10 minutes)
             const [, timestampStr] = verification.value.split(":");
             const expiresAt = parseInt(timestampStr, 10);
 
             if (isNaN(expiresAt) || Date.now() > expiresAt) {
-                // Hết hạn 10 phút -> ép xác thực lại
                 const response = NextResponse.redirect(new URL("/admin/verify", req.url));
                 response.cookies.delete("admin_auth_session");
                 return response;
             }
         }
 
-        // Admin 2FA enforcement for /api/admin/* routes (mirrors the UI-side check above)
         if (pathname.startsWith("/api/admin/")) {
             if (!isAdmin) {
                 return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -149,7 +140,6 @@ export default withAuth(
             }
         }
 
-        // Check for SUPER_ADMIN only routes
         if (isSuperAdminOnlyRoute(pathname) && ["POST","PUT","PATCH","DELETE"].includes(method)) {
             if (!isSuperAdmin) {
                 return NextResponse.json(
@@ -159,7 +149,6 @@ export default withAuth(
             }
         }
 
-        // Kiểm tra CSRF đơn giản cho các method ghi dữ liệu
         if (["POST", "PUT", "PATCH", "DELETE"].includes(method) && isCsrfSensitivePath(pathname)) {
             const origin = req.headers.get("origin");
             const host = req.headers.get("host");
@@ -168,44 +157,34 @@ export default withAuth(
                 try {
                     const url = new URL(origin);
                     const originHost = url.host;
-                    if (originHost !== host) {
+                    const normalizedOriginHost = originHost.replace(/^https?:\/\//, '');
+                    
+                    const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+                    const isSameOrigin = normalizedOriginHost === host || originHost === host;
+                    
+                    if (!isLocalhost && !isSameOrigin) {
                         return new NextResponse(
                             JSON.stringify({ error: "Invalid origin" }),
-                            {
-                                status: 403,
-                                headers: { "Content-Type": "application/json" },
-                            }
+                            { status: 403, headers: { "Content-Type": "application/json" } }
                         );
                     }
                 } catch {
-                    // Nếu origin không parse được, vẫn chặn
                     return new NextResponse(
                         JSON.stringify({ error: "Invalid origin" }),
-                        {
-                            status: 403,
-                            headers: { "Content-Type": "application/json" },
-                        }
+                        { status: 403, headers: { "Content-Type": "application/json" } }
                     );
                 }
             }
         }
 
-        // Create response
         const response = NextResponse.next();
 
-        // N-01: Generate a cryptographically random nonce for CSP
-        // Use randomUUID() (available in Edge Runtime) and strip hyphens to get
-        // a compact 32-char hex-like nonce safe for use in CSP headers.
         const nonce = globalThis.crypto.randomUUID().replace(/-/g, "");
-
-        // Expose nonce to Server Components via response header
         response.headers.set("x-nonce", nonce);
 
-        // L-04: Unique request ID for tracing / log correlation
         const requestId = globalThis.crypto.randomUUID();
         response.headers.set("x-request-id", requestId);
 
-        // Add security headers
         response.headers.set("X-Frame-Options", "DENY");
         response.headers.set("X-Content-Type-Options", "nosniff");
         response.headers.set("Referrer-Policy", "origin-when-cross-origin");
@@ -215,20 +194,16 @@ export default withAuth(
             "camera=(), microphone=(), geolocation=(), payment=(), usb=(), display-capture=()"
         );
 
-        // CORS headers for API routes - SEC-02: Never fallback to wildcard
         if (pathname.startsWith("/api/")) {
             const allowedOrigin = process.env.ALLOWED_ORIGIN;
             
-            // CRITICAL: Fail fast in production if ALLOWED_ORIGIN is not set
             if (process.env.NODE_ENV === "production" && !allowedOrigin) {
                 throw new Error("CRITICAL: ALLOWED_ORIGIN environment variable must be set in production!");
             }
             
-            // Only set CORS header if origin is explicitly allowed
             if (allowedOrigin) {
                 response.headers.set("Access-Control-Allow-Origin", allowedOrigin);
             }
-            // If no ALLOWED_ORIGIN in development, skip setting header (same-origin requests only)
             response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
             response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
             response.headers.set("Access-Control-Max-Age", "86400");
@@ -239,7 +214,6 @@ export default withAuth(
                 "Strict-Transport-Security",
                 "max-age=31536000; includeSubDomains; preload"
             );
-            // N-01: Nonce-based CSP — nonce is generated fresh per request above
             response.headers.set(
                 "Content-Security-Policy",
                 [
@@ -256,12 +230,10 @@ export default withAuth(
                 ].join("; ")
             );
         } else {
-            // Development CSP - more permissive for hot reload
             response.headers.set(
                 "Content-Security-Policy",
                 [
                     "default-src 'self'",
-                    // Development needs 'unsafe-eval' for Next.js fast refresh
                     "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'unsafe-hashes' https://www.googletagmanager.com https://www.google-analytics.com",
                     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
                     "img-src 'self' data: https: blob:",
@@ -272,9 +244,6 @@ export default withAuth(
             );
         }
 
-        // Tự động gia hạn (Rolling Session) 10 phút nếu người dùng đang ở trong Admin
-        // SEC-05: Sign admin session cookie with HMAC
-        // Also renews on /api/admin/* so that active API usage keeps the session alive
         const isAdminApiPath = pathname.startsWith("/api/admin/");
         const isAdminUiPath = pathname.startsWith("/admin") && !pathname.startsWith("/admin/login") && !pathname.startsWith("/admin/verify");
         if (isAdminUiPath || (isAdminApiPath && isAdmin)) {
@@ -289,7 +258,7 @@ export default withAuth(
                 secure: process.env.NODE_ENV === "production",
                 sameSite: "lax",
                 maxAge: ADMIN_COOKIE_MAX_AGE,
-                path: "/", // Must be / so cookie is sent to /api/ endpoints too
+                path: "/",
             });
         }
 

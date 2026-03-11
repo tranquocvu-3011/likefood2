@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -28,9 +28,9 @@ interface DashboardData {
 }
 
 const RANGES = [
-  { value: "week", label: "7 days" },
-  { value: "month", label: "30 days" },
-  { value: "quarter", label: "90 days" },
+  { value: "week", label: "7 ngày" },
+  { value: "month", label: "30 ngày" },
+  { value: "quarter", label: "90 ngày" },
 ];
 
 export default function AdminDashboardPage() {
@@ -99,20 +99,20 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <section className="overflow-hidden rounded-[2.25rem] border border-slate-200 bg-white shadow-[0_18px_70px_rgba(15,23,42,0.07)]">
-        <div className="bg-[linear-gradient(135deg,#0f172a_0%,#164e63_45%,#16a34a_100%)] px-6 py-8 text-white lg:px-8 lg:py-10">
-          <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-            <div className="max-w-3xl">
-              <p className="text-[11px] font-black uppercase tracking-[0.24em] text-white/60">Admin dashboard</p>
-              <h1 className="mt-3 text-4xl font-black tracking-tight lg:text-5xl">Operate the store with fewer clicks</h1>
-              <p className="mt-3 text-base leading-7 text-white/75">
-                Welcome back, {session?.user?.name || 'Admin'}. This workspace surfaces revenue, risk, fulfillment, and AI prompts in one place.
+    <div className="space-y-4">
+      <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+        <div className="bg-gradient-to-r from-slate-900 via-teal-900 to-emerald-800 px-4 py-5 text-white lg:px-6 lg:py-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-[9px] font-semibold uppercase tracking-wider text-white/50">Bảng quản trị</p>
+              <h1 className="mt-1.5 text-xl font-bold tracking-tight lg:text-2xl">Quản lý cửa hàng nhanh chóng</h1>
+              <p className="mt-1.5 text-xs text-white/70">
+                Chào mừng trở lại, {session?.user?.name || 'Admin'}. Không gian này tổng hợp doanh thu, rủi ro, vận hành và gợi ý AI tại một nơi.
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2 rounded-full border border-white/15 bg-white/10 p-1 backdrop-blur">
+            <div className="flex flex-wrap items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-0.5 backdrop-blur">
               {RANGES.map((option) => (
-                <button key={option.value} type="button" onClick={() => setRange(option.value)} className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] transition ${range === option.value ? 'bg-white text-slate-950' : 'text-white/75 hover:text-white'}`}>
+                <button key={option.value} type="button" onClick={() => setRange(option.value)} className={`rounded-md px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition ${range === option.value ? 'bg-white text-slate-900' : 'text-white/70 hover:text-white'}`}>
                   {option.label}
                 </button>
               ))}
@@ -121,33 +121,33 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-4">
-        <MetricCard label="Revenue" value={formatPrice(data.revenue.total)} meta={`${data.revenue.change.toFixed(1)}%`} tone="emerald" />
-        <MetricCard label="Orders" value={`${data.orders.total}`} meta={`${data.orders.pending} pending`} tone="sky" />
-        <MetricCard label="Customers" value={`${data.customers.total}`} meta={`${data.customers.change.toFixed(1)}%`} tone="violet" />
-        <MetricCard label="Low stock" value={`${data.products.lowStock}`} meta={`${data.products.total} products`} tone="amber" />
+      <div className="grid gap-3 lg:grid-cols-4">
+        <MetricCard label="Doanh thu" value={formatPrice(data.revenue.total)} meta={`${data.revenue.change.toFixed(1)}%`} tone="emerald" />
+        <MetricCard label="Đơn hàng" value={`${data.orders.total}`} meta={`${data.orders.pending} đang chờ`} tone="sky" />
+        <MetricCard label="Khách hàng" value={`${data.customers.total}`} meta={`${data.customers.change.toFixed(1)}% thay đổi`} tone="violet" />
+        <MetricCard label="Sắp hết hàng" value={`${data.products.lowStock}`} meta={`${data.products.total} sản phẩm`} tone="amber" />
       </div>
 
-      <div className="grid gap-8 xl:grid-cols-[1.05fr_0.95fr]">
-        <div className="space-y-8">
-          <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm">
-            <CardContent className="p-6 lg:p-8">
-              <div className="flex items-center justify-between gap-3">
+      <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+        <div className="space-y-4">
+          <Card className="rounded-xl border-slate-200/80 bg-white shadow-sm">
+            <CardContent className="p-4 lg:p-5">
+              <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Revenue trend</p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Last seven data points</h2>
+                  <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Xu hướng doanh thu</p>
+                  <h2 className="mt-1 text-base font-bold tracking-tight text-slate-900">7 điểm dữ liệu gần nhất</h2>
                 </div>
-                <Link href="/admin/analytics"><Button variant="outline" size="sm">Open analytics<ArrowRight className="h-4 w-4" /></Button></Link>
+                <Link href="/admin/analytics"><Button variant="outline" size="sm" className="h-7 text-xs">Xem phân tích<ArrowRight className="h-3 w-3" /></Button></Link>
               </div>
-              {data.revenueChart.length === 0 ? <EmptyState message="No revenue data available yet." /> : (
-                <div className="mt-8 flex h-64 items-end gap-3">
+              {data.revenueChart.length === 0 ? <EmptyState message="Chưa có dữ liệu doanh thu." /> : (
+                <div className="mt-5 flex h-44 items-end gap-2">
                   {data.revenueChart.map((item) => (
-                    <div key={item.label} className="flex flex-1 flex-col items-center gap-3">
-                      <div className="text-[11px] font-bold text-slate-400">{formatPrice(item.value)}</div>
-                      <div className="flex h-48 w-full items-end rounded-3xl bg-slate-100 p-2">
-                        <div className="w-full rounded-[1rem] bg-[linear-gradient(180deg,#34d399_0%,#0f766e_100%)]" style={{ height: `${Math.max((item.value / maxChartValue) * 100, 6)}%` }} />
+                    <div key={item.label} className="flex flex-1 flex-col items-center gap-1.5">
+                      <div className="text-[9px] font-medium text-slate-400">{formatPrice(item.value)}</div>
+                      <div className="flex h-32 w-full items-end rounded-lg bg-slate-100 p-1.5">
+                        <div className="w-full rounded-md bg-gradient-to-t from-teal-600 to-emerald-400" style={{ height: `${Math.max((item.value / maxChartValue) * 100, 6)}%` }} />
                       </div>
-                      <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">{item.label}</div>
+                      <div className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">{item.label}</div>
                     </div>
                   ))}
                 </div>
@@ -155,25 +155,25 @@ export default function AdminDashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm">
-            <CardContent className="p-6 lg:p-8">
-              <div className="flex items-center justify-between gap-3">
+          <Card className="rounded-xl border-slate-200/80 bg-white shadow-sm">
+            <CardContent className="p-4 lg:p-5">
+              <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Recent fulfillment</p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Latest orders</h2>
+                  <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Vận hành gần đây</p>
+                  <h2 className="mt-1 text-base font-bold tracking-tight text-slate-900">Đơn hàng mới nhất</h2>
                 </div>
-                <Link href="/admin/orders"><Button variant="outline" size="sm">Open orders<ArrowRight className="h-4 w-4" /></Button></Link>
+                <Link href="/admin/orders"><Button variant="outline" size="sm" className="h-7 text-xs">Xem đơn hàng<ArrowRight className="h-3 w-3" /></Button></Link>
               </div>
-              <div className="mt-6 space-y-3">
-                {data.recentOrders.length === 0 ? <EmptyState message="No orders available yet." /> : data.recentOrders.map((order) => (
-                  <div key={order.id} className="flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="mt-4 space-y-2">
+                {data.recentOrders.length === 0 ? <EmptyState message="Chưa có đơn hàng nào." /> : data.recentOrders.map((order) => (
+                  <div key={order.id} className="flex flex-col gap-2 rounded-lg border border-slate-100 bg-slate-50/80 p-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <p className="font-black text-slate-950">#{order.id.slice(-8).toUpperCase()}</p>
-                      <p className="mt-1 text-sm text-slate-500">{order.userEmail || 'Guest checkout'}</p>
+                      <p className="text-sm font-semibold text-slate-800">#{order.id.slice(-8).toUpperCase()}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">{order.userEmail || 'Khách vãng lai'}</p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="rounded-full bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-500">{order.status}</span>
-                      <span className="text-sm font-black text-slate-950">{formatPrice(order.total)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">{order.status}</span>
+                      <span className="text-xs font-bold text-slate-800">{formatPrice(order.total)}</span>
                     </div>
                   </div>
                 ))}
@@ -182,25 +182,25 @@ export default function AdminDashboardPage() {
           </Card>
         </div>
 
-        <div className="space-y-8">
-          <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm">
-            <CardContent className="p-6 lg:p-8">
-              <div className="flex items-center justify-between gap-3">
+        <div className="space-y-4">
+          <Card className="rounded-xl border-slate-200/80 bg-white shadow-sm">
+            <CardContent className="p-4 lg:p-5">
+              <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">AI signals</p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Suggested actions</h2>
+                  <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Tín hiệu AI</p>
+                  <h2 className="mt-1 text-base font-bold tracking-tight text-slate-900">Gợi ý hành động</h2>
                 </div>
-                <Link href="/admin/ai"><Button variant="outline" size="sm"><Sparkles className="h-4 w-4" />Open AI lab</Button></Link>
+                <Link href="/admin/ai"><Button variant="outline" size="sm" className="h-7 text-xs"><Sparkles className="h-3 w-3" />Mở phòng AI</Button></Link>
               </div>
-              <div className="mt-6 space-y-3">
-                {data.aiInsights.length === 0 ? <EmptyState message="AI has no recommendations yet." /> : data.aiInsights.slice(0, 4).map((insight) => (
-                  <div key={insight.title} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                    <div className="flex items-start justify-between gap-3">
+              <div className="mt-4 space-y-2">
+                {data.aiInsights.length === 0 ? <EmptyState message="AI chưa có gợi ý nào." /> : data.aiInsights.slice(0, 4).map((insight) => (
+                  <div key={insight.title} className="rounded-lg border border-slate-100 bg-slate-50/80 p-3">
+                    <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="font-black text-slate-950">{insight.title}</p>
-                        <p className="mt-2 text-sm leading-6 text-slate-500">{insight.description}</p>
+                        <p className="text-sm font-semibold text-slate-800">{insight.title}</p>
+                        <p className="mt-1 text-xs text-slate-500">{insight.description}</p>
                       </div>
-                      <span className={`rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] ${insight.type === 'warning' ? 'bg-amber-100 text-amber-700' : insight.type === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'}`}>{insight.metric || insight.type}</span>
+                      <span className={`shrink-0 rounded-md px-2 py-1 text-[9px] font-semibold uppercase tracking-wider ${insight.type === 'warning' ? 'bg-amber-100 text-amber-700' : insight.type === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'}`}>{insight.metric || insight.type}</span>
                     </div>
                   </div>
                 ))}
@@ -208,23 +208,23 @@ export default function AdminDashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm">
-            <CardContent className="p-6 lg:p-8">
-              <div className="flex items-center justify-between gap-3">
+          <Card className="rounded-xl border-slate-200/80 bg-white shadow-sm">
+            <CardContent className="p-4 lg:p-5">
+              <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Stock risk</p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Low inventory watchlist</h2>
+                  <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Rủi ro tồn kho</p>
+                  <h2 className="mt-1 text-base font-bold tracking-tight text-slate-900">Danh sách sắp hết hàng</h2>
                 </div>
-                <Link href="/admin/products"><Button variant="outline" size="sm">Review products<ArrowRight className="h-4 w-4" /></Button></Link>
+                <Link href="/admin/products"><Button variant="outline" size="sm" className="h-7 text-xs">Xem sản phẩm<ArrowRight className="h-3 w-3" /></Button></Link>
               </div>
-              <div className="mt-6 space-y-3">
-                {data.lowStockProducts.length === 0 ? <EmptyState message="No low-stock products in the current slice." /> : data.lowStockProducts.map((product) => (
-                  <div key={product.id} className="flex items-center justify-between gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+              <div className="mt-4 space-y-2">
+                {data.lowStockProducts.length === 0 ? <EmptyState message="Không có sản phẩm sắp hết hàng." /> : data.lowStockProducts.map((product) => (
+                  <div key={product.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50/80 p-3">
                     <div className="min-w-0">
-                      <p className="truncate font-black text-slate-950">{product.name}</p>
-                      <p className="mt-1 text-sm text-slate-500">{product.inventory} units left</p>
+                      <p className="truncate text-sm font-semibold text-slate-800">{product.name}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">Còn {product.inventory} đơn vị</p>
                     </div>
-                    <AlertTriangle className="h-5 w-5 text-amber-500" />
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
                   </div>
                 ))}
               </div>
@@ -238,10 +238,10 @@ export default function AdminDashboardPage() {
 
 function MetricCard({ label, value, meta, tone }: { label: string; value: string; meta: string; tone: 'emerald' | 'sky' | 'violet' | 'amber' }) {
   const styles = {
-    emerald: 'bg-emerald-100 text-emerald-700',
-    sky: 'bg-sky-100 text-sky-700',
-    violet: 'bg-violet-100 text-violet-700',
-    amber: 'bg-amber-100 text-amber-700',
+    emerald: 'bg-emerald-100 text-emerald-600',
+    sky: 'bg-sky-100 text-sky-600',
+    violet: 'bg-violet-100 text-violet-600',
+    amber: 'bg-amber-100 text-amber-600',
   } satisfies Record<string, string>;
   const icons = {
     emerald: TrendingUp,
@@ -252,15 +252,15 @@ function MetricCard({ label, value, meta, tone }: { label: string; value: string
   const Icon = icons[tone];
 
   return (
-    <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between gap-3">
+    <Card className="rounded-xl border-slate-200/80 bg-white shadow-sm">
+      <CardContent className="p-3 lg:p-4">
+        <div className="flex items-center justify-between gap-2">
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{label}</p>
-            <p className="mt-2 text-3xl font-black text-slate-950">{value}</p>
-            <p className="mt-2 text-sm text-slate-500">{meta}</p>
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">{label}</p>
+            <p className="mt-1 text-xl font-bold text-slate-900">{value}</p>
+            <p className="mt-1 text-xs text-slate-500">{meta}</p>
           </div>
-          <div className={`flex h-12 w-12 items-center justify-center rounded-[1.2rem] ${styles[tone]}`}><Icon className="h-5 w-5" /></div>
+          <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${styles[tone]}`}><Icon className="h-4 w-4" /></div>
         </div>
       </CardContent>
     </Card>
@@ -268,5 +268,5 @@ function MetricCard({ label, value, meta, tone }: { label: string; value: string
 }
 
 function EmptyState({ message }: { message: string }) {
-  return <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 p-6 text-sm leading-6 text-slate-500">{message}</div>;
+  return <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-4 text-xs text-slate-500">{message}</div>;
 }

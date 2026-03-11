@@ -1,11 +1,11 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -579,6 +579,28 @@ export async function POST(req: Request) {
             }
         } catch (mailError) {
             logger.error("Failed to send order confirmation email", mailError as Error, { context: "orders-api-post", orderId: order.id });
+        }
+
+        // Send Telegram notification for new order
+        try {
+            const { sendOrderNotification } = await import("@/lib/telegram");
+            const orderItems = order.orderItems.map((item) => ({
+                name: item.nameSnapshot || item.product?.name || "Unknown Product",
+                quantity: item.quantity,
+                price: item.price,
+            }));
+
+            await sendOrderNotification({
+                orderId: order.id,
+                customerName: session.user.name || "Customer",
+                customerPhone: shippingPhone || "N/A",
+                shippingAddress: `${shippingAddress}, ${shippingCity} ${shippingZipCode}`,
+                paymentMethod: paymentMethod || "STRIPE",
+                totalAmount: order.total,
+                items: orderItems,
+            });
+        } catch (telegramError) {
+            logger.error("Failed to send Telegram notification", telegramError as Error, { context: "orders-api-post", orderId: order.id });
         }
 
         return NextResponse.json({

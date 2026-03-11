@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Package, Truck, Home, Star, Shield, Zap } from "lucide-react";
@@ -94,17 +94,23 @@ export default function VietnamStory() {
 
             {/* Floating dots - Safe SVG with validated values */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-                {floatingDots.filter(dot => dot != null && dot.cx != null && dot.cy != null && dot.r != null).map((dot, i) => (
-                    <motion.circle
-                        key={i}
-                        cx={Number(dot.cx) || 0}
-                        cy={Number(dot.cy) || 0}
-                        r={Number(dot.r) || 1}
-                        fill="rgba(16,185,129,0.12)"
-                        animate={{ cy: [Number(dot.cy) - 2, Number(dot.cy) + 2] }}
-                        transition={{ duration: 3 + i * 0.5, repeat: Infinity, repeatType: "reverse", delay: dot.delay, ease: "easeInOut" }}
-                    />
-                ))}
+                {floatingDots.filter(dot => dot != null && dot.cx != null && dot.cy != null && dot.r != null).map((dot, i) => {
+                    const cx = Number(dot.cx) || 0;
+                    const cy = Number(dot.cy) || 0;
+                    const r = Number(dot.r) || 1;
+                    return (
+                        <motion.circle
+                            key={i}
+                            cx={cx}
+                            cy={cy}
+                            r={r}
+                            fill="rgba(16,185,129,0.12)"
+                            initial={{ cy }}
+                            animate={{ cy: [cy - 2, cy + 2] }}
+                            transition={{ duration: 3 + i * 0.5, repeat: Infinity, repeatType: "reverse", delay: dot.delay, ease: "easeInOut" }}
+                        />
+                    );
+                })}
             </svg>
 
             <motion.div style={{ opacity }} className="w-full px-6 sm:px-10 lg:px-[8%] relative z-10">

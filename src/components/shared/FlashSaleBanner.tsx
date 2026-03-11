@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { motion } from "framer-motion";
 import { Zap, ArrowRight } from "lucide-react";
@@ -143,7 +143,7 @@ export default function FlashSaleBanner() {
 
                         <div className="min-w-0">
                             <div className="flex items-center gap-3 mb-1">
-                                <span className="bg-rose-500/10 text-rose-600 border border-rose-500/20 text-[10px] md:text-xs font-black px-3 py-1 rounded-sm uppercase tracking-[0.2em] flex-shrink-0">Exclusive</span>
+                                <span className="bg-rose-500/10 text-rose-600 border border-rose-500/20 text-[10px] md:text-xs font-black px-3 py-1 rounded-sm uppercase tracking-[0.2em] flex-shrink-0">{language === "vi" ? "Ưu đãi" : "Exclusive"}</span>
                                 <h3 className="text-slate-900 font-extrabold text-2xl md:text-3xl tracking-widest truncate">
                                     FLASH <span className="text-rose-600 font-black hidden sm:inline">SALE</span>
                                 </h3>

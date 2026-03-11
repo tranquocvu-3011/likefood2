@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useState, useEffect } from "react";
 import { RefreshCcw } from "lucide-react";
@@ -42,10 +42,10 @@ export default function MathCaptcha({ onValidate }: MathCaptchaProps) {
     };
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsClient(true);
         generateCaptcha();
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;

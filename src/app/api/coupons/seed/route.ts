@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -85,7 +85,7 @@ export async function POST() {
             },
         ];
 
-        const results = [];
+        const results: { code: string; status: string; error?: string }[] = [];
 
         for (const coupon of coupons) {
             try {

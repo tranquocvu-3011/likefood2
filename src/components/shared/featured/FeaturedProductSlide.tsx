@@ -1,14 +1,14 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-"use client";
-
 import { motion } from "framer-motion";
-import Image from "next/image";
+import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import FeaturedProductFrame from "./FeaturedProductFrame";
@@ -74,8 +74,8 @@ export default function FeaturedProductSlide({ product, direction, onAddToCart }
                                 boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1), 0 0 20px rgba(16, 185, 129, 0.05)'
                             }}
                         >
-                            <Image
-                                src={product.image || "/placeholder.png"}
+                            <ImageWithFallback
+                                src={product.image}
                                 alt={product.name}
                                 fill
                                 className="object-cover transition-all duration-500"

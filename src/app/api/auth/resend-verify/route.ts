@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
 
         if (user.emailVerified) {
             return NextResponse.json(
-                { message: "Tài khoản của bạn đã được xác thực trước đó." },
+                { alreadyVerified: true, message: "Tài khoản của bạn đã được xác thực trước đó." },
                 { status: 200 }
             );
         }
@@ -74,7 +74,9 @@ export async function POST(req: Request) {
         });
 
         // Gửi email xác thực thật
-        const emailResult = await sendVerificationEmail(email, otp);
+        const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+        const verifyUrl = `${baseUrl}/verify-email?token=${otp}`;
+        const emailResult = await sendVerificationEmail(email, otp, "VERIFY", undefined, verifyUrl);
 
         if (!emailResult.success) {
             console.error("[MAIL] Failed to send email:", emailResult.error);

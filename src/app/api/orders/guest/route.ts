@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -274,6 +274,32 @@ export async function POST(req: NextRequest) {
                 context: "guest-checkout",
                 orderId: order.id,
                 error: notifError
+            });
+        }
+
+        // Send Telegram notification for new order
+        try {
+            const { sendOrderNotification } = await import("@/lib/telegram");
+            const orderItems = order.orderItems.map((item) => ({
+                name: item.nameSnapshot || item.product?.name || "Unknown Product",
+                quantity: item.quantity,
+                price: item.price,
+            }));
+
+            await sendOrderNotification({
+                orderId: order.id,
+                customerName: guestName || "Guest Customer",
+                customerPhone: shippingPhone || "N/A",
+                shippingAddress: `${shippingAddress}, ${shippingCity} ${shippingZipCode}`,
+                paymentMethod: paymentMethod || "STRIPE",
+                totalAmount: order.total,
+                items: orderItems,
+            });
+        } catch (telegramError) {
+            logger.warn("Failed to send Telegram notification", {
+                context: "guest-checkout",
+                orderId: order.id,
+                error: telegramError
             });
         }
 

@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -59,12 +59,12 @@ export default function CustomersPage() {
         if (debouncedSearch) params.set('search', debouncedSearch);
         const response = await fetch(`/api/admin/customers?${params.toString()}`);
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data?.error || 'Unable to load customers.');
+        if (!response.ok) throw new Error(data?.error || 'Không thể tải danh sách khách hàng.');
         setCustomers(Array.isArray(data.customers) ? data.customers : []);
         setTotal(data.pagination?.total || 0);
         setTotalPages(data.pagination?.totalPages || 1);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : 'Unable to load customers.');
+        toast.error(error instanceof Error ? error.message : 'Không thể tải danh sách khách hàng.');
       } finally {
         setIsLoading(false);
       }
@@ -82,10 +82,10 @@ export default function CustomersPage() {
     try {
       const response = await fetch('/api/ai/admin?type=customers');
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data?.error || 'Unable to generate customer segments.');
+      if (!response.ok) throw new Error(data?.error || 'Không thể tạo phân khúc khách hàng.');
       setSegments(Array.isArray(data.segments) ? data.segments : []);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to generate customer segments.');
+      toast.error(error instanceof Error ? error.message : 'Không thể tạo phân khúc khách hàng.');
     } finally {
       setIsLoadingSegments(false);
     }
@@ -99,28 +99,28 @@ export default function CustomersPage() {
 
   return (
     <AdminPageContainer
-      title="Customer relationships"
-      subtitle="Track customer value, intent signals, and AI-generated segments in one operator view."
+      title="Quản lý khách hàng"
+      subtitle="Theo dõi giá trị khách hàng, tín hiệu và phân khúc AI trong một giao diện quản trị."
       action={
         <>
           <a href="/api/admin/export?type=customers" download>
             <Button variant="outline" size="lg">
               <Download className="h-4 w-4" />
-              Export CSV
+              Xuất CSV
             </Button>
           </a>
           <Button size="lg" onClick={() => void loadSegments()} disabled={isLoadingSegments}>
             {isLoadingSegments ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            AI segments
+            Phân khúc AI
           </Button>
         </>
       }
     >
       <div className="grid gap-4 lg:grid-cols-4">
-        <AdminCard className="p-5"><Stat label="Visible customers" value={`${total}`} tone="text-slate-950" /></AdminCard>
-        <AdminCard className="p-5"><Stat label="Visible revenue" value={formatPrice(stats.revenue)} tone="text-emerald-600" /></AdminCard>
-        <AdminCard className="p-5"><Stat label="Visible orders" value={`${stats.orders}`} tone="text-sky-600" /></AdminCard>
-        <AdminCard className="p-5"><Stat label="AI segments" value={`${segments.length}`} tone="text-violet-600" /></AdminCard>
+        <AdminCard className="p-5"><Stat label="Khách hàng hiển thị" value={`${total}`} tone="text-slate-950" /></AdminCard>
+        <AdminCard className="p-5"><Stat label="Doanh thu" value={formatPrice(stats.revenue)} tone="text-emerald-600" /></AdminCard>
+        <AdminCard className="p-5"><Stat label="Đơn hàng" value={`${stats.orders}`} tone="text-sky-600" /></AdminCard>
+        <AdminCard className="p-5"><Stat label="Phân khúc AI" value={`${segments.length}`} tone="text-violet-600" /></AdminCard>
       </div>
 
       {segments.length > 0 ? (
@@ -129,16 +129,16 @@ export default function CustomersPage() {
             <AdminCard key={segment.segment} className="p-5">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{segment.segment}</p>
               <p className="mt-2 text-3xl font-black text-slate-950">{segment.count}</p>
-              <p className="mt-2 text-sm text-slate-500">Revenue {formatPrice(segment.totalRevenue)} · AOV {formatPrice(segment.avgOrderValue)}</p>
+              <p className="mt-2 text-sm text-slate-500">Doanh thu {formatPrice(segment.totalRevenue)} · Giá TB {formatPrice(segment.avgOrderValue)}</p>
             </AdminCard>
           ))}
         </div>
       ) : null}
 
-      <AdminFilterBar searchQuery={search} setSearchQuery={setSearch} searchPlaceholder="Search by customer name or email">
+      <AdminFilterBar searchQuery={search} setSearchQuery={setSearch} searchPlaceholder="Tìm theo tên hoặc email khách hàng">
         <Button variant="outline" size="sm" onClick={() => setSearch('')}>
           <RefreshCw className="h-4 w-4" />
-          Reset
+          Đặt lại
         </Button>
       </AdminFilterBar>
 
@@ -148,8 +148,8 @@ export default function CustomersPage() {
         <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm">
           <CardContent className="py-20 text-center">
             <Users className="mx-auto h-10 w-10 text-slate-200" />
-            <h3 className="mt-4 text-lg font-black text-slate-950">No customers matched</h3>
-            <p className="mt-2 text-sm text-slate-500">Try another query or clear the search box.</p>
+            <h3 className="mt-4 text-lg font-black text-slate-950">Không tìm thấy khách hàng</h3>
+            <p className="mt-2 text-sm text-slate-500">Thử tìm kiếm khác hoặc xóa bộ lọc.</p>
           </CardContent>
         </Card>
       ) : (
@@ -168,30 +168,30 @@ export default function CustomersPage() {
                   </div>
 
                   <div className="mt-4">
-                    <h3 className="text-lg font-black text-slate-950">{customer.name || 'No display name'}</h3>
-                    <p className="mt-1 text-sm text-slate-500">Joined {new Date(customer.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</p>
+                    <h3 className="text-lg font-black text-slate-950">{customer.name || 'Không có tên'}</h3>
+                    <p className="mt-1 text-sm text-slate-500">Tham gia {new Date(customer.createdAt).toLocaleDateString('vi-VN', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                   </div>
 
                   <div className="mt-5 space-y-2 text-sm text-slate-600">
                     <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-slate-400" />{customer.email}</div>
-                    <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-slate-400" />{customer.phone || 'No phone on file'}</div>
+                    <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-slate-400" />{customer.phone || 'Không có SĐT'}</div>
                   </div>
 
                   <div className="mt-5 grid grid-cols-3 gap-3 border-t border-slate-100 pt-5">
-                    <MiniStat icon={Package} label="Orders" value={`${customer.orderCount}`} />
-                    <MiniStat icon={Heart} label="Wishlists" value={`${customer._count.wishlists}`} />
-                    <MiniStat icon={Sparkles} label="Reviews" value={`${customer._count.reviews}`} />
+                    <MiniStat icon={Package} label="Đơn hàng" value={`${customer.orderCount}`} />
+                    <MiniStat icon={Heart} label="Yêu thích" value={`${customer._count.wishlists}`} />
+                    <MiniStat icon={Sparkles} label="Đánh giá" value={`${customer._count.reviews}`} />
                   </div>
 
                   <div className="mt-5 rounded-[1.35rem] border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Lifetime value</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Giá trị khách hàng</p>
                     <p className="mt-2 text-2xl font-black text-slate-950">{formatPrice(customer.totalSpent)}</p>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
-          <AdminPagination page={page} setPage={setPage} pageSize={12} total={totalPages * 12 >= total ? total : total} itemLabel="customers" />
+          <AdminPagination page={page} setPage={setPage} pageSize={12} total={totalPages * 12 >= total ? total : total} itemLabel="khách hàng" />
         </>
       )}
     </AdminPageContainer>

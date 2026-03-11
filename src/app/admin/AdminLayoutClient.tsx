@@ -1,15 +1,14 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-"use client";
-
 import AdminSidebar from "@/components/shared/AdminSidebar";
 import AdminBreadcrumbs from "@/components/shared/AdminBreadcrumbs";
-import AIAssistantWidget from "@/components/admin/AIAssistantWidget";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
@@ -81,13 +80,14 @@ export default function AdminLayoutClient({
     }
 
     return (
-        <div className="flex bg-slate-50 min-h-screen">
+        <div className="flex min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/80">
             <AdminSidebar />
-            <main className="flex-1 lg:ml-72 p-6 lg:p-12 transition-all duration-300">
+            <main className="flex-1 lg:ml-64 p-3 lg:p-4 transition-all duration-200">
                 <AdminBreadcrumbs />
-                {children}
+                <div className="mt-2">
+                    {children}
+                </div>
             </main>
-            <AIAssistantWidget />
         </div>
     );
 }

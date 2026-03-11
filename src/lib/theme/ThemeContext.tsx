@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
@@ -24,7 +24,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
         const stored = localStorage.getItem("theme") as Theme | null;
         if (stored) {

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
             // Directory might already exist
         }
 
-        const uploadedUrls = [];
+        const uploadedUrls: string[] = [];
 
         for (const file of files) {
             const bytes = await file.arrayBuffer();

@@ -1,14 +1,14 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-"use client";
-
 import { useState, useRef, useCallback } from "react";
-import Image from "next/image";
+import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import { X, ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -103,7 +103,7 @@ export default function ImageGallery({ images, productName }: ImageGalleryProps)
                             transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
                             className="absolute inset-0"
                         >
-                            <Image
+                            <ImageWithFallback
                                 src={currentImage.imageUrl}
                                 alt={currentImage.altText || productName}
                                 fill
@@ -163,7 +163,7 @@ export default function ImageGallery({ images, productName }: ImageGalleryProps)
                                 }`}
                             aria-label={`Xem ảnh ${idx + 1}`}
                         >
-                            <Image
+                            <ImageWithFallback
                                 src={img.imageUrl}
                                 alt={img.altText || `${productName} ${idx + 1}`}
                                 fill
@@ -230,7 +230,7 @@ export default function ImageGallery({ images, productName }: ImageGalleryProps)
                                 className="relative w-full max-w-5xl aspect-square"
                             >
                                 {currentImage && (
-                                    <Image
+                                    <ImageWithFallback
                                         src={currentImage.imageUrl}
                                         alt={currentImage.altText || productName}
                                         fill

@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { Bot, Loader2, Package, RefreshCw, Send, Sparkles, TrendingUp, Users } from "lucide-react";
@@ -44,10 +44,10 @@ interface Message {
 }
 
 const QUICK_PROMPTS = [
-  'Give me the top commercial risks in the next 7 days.',
-  'Summarize which customer segment deserves the next campaign.',
-  'Which products need restock attention first?',
-  'What should I improve on product pages this week?',
+  'Cho tôi biết các rủi ro thương mại hàng đầu trong 7 ngày tới.',
+  'Tóm tắt phân khúc khách hàng nào phù hợp cho chiến dịch tiếp theo.',
+  'Sản phẩm nào cần nhập hàng ngay?',
+  'Tôi nên cải thiện gì trên trang sản phẩm tuần này?',
 ];
 
 export default function AIInsightsPage() {
@@ -58,7 +58,7 @@ export default function AIInsightsPage() {
   const [segments, setSegments] = useState<CustomerSegment[]>([]);
   const [summary, setSummary] = useState('');
   const [messages, setMessages] = useState<Message[]>([
-    { id: 'welcome', role: 'assistant', content: 'I can summarize revenue risk, customer behavior, product opportunities, and operational next steps for the admin team.' },
+    { id: 'welcome', role: 'assistant', content: 'Tôi có thể tóm tắt rủi ro doanh thu, hành vi khách hàng, cơ hội sản phẩm và các bước vận hành tiếp theo cho nhóm quản trị.' },
   ]);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -83,7 +83,7 @@ export default function AIInsightsPage() {
       setSegments(Array.isArray(customerData.segments) ? customerData.segments : []);
       setSummary(summaryData.summary || '');
     } catch (error) {
-      toast.error('Unable to load AI signals.');
+      toast.error('Không thể tải tín hiệu AI.');
     } finally {
       setIsLoading(false);
     }
@@ -115,10 +115,10 @@ export default function AIInsightsPage() {
         body: JSON.stringify({ action: 'chat', message }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data?.error || 'Unable to reach the admin AI assistant.');
+      if (!response.ok) throw new Error(data?.error || 'Không thể kết nối với Trợ lý AI quản trị.');
       setMessages((prev) => [...prev, { id: `${Date.now()}-a`, role: 'assistant', content: data.response || 'No response available.' }]);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to reach the admin AI assistant.');
+      toast.error(error instanceof Error ? error.message : 'Không thể kết nối với Trợ lý AI quản trị.');
     } finally {
       setIsSending(false);
     }
@@ -134,31 +134,31 @@ export default function AIInsightsPage() {
         <div className="bg-[linear-gradient(135deg,#111827_0%,#0f766e_45%,#1d4ed8_100%)] px-6 py-8 text-white lg:px-8 lg:py-9">
           <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
             <div className="max-w-3xl">
-              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-white/60">AI operations</p>
-              <h1 className="mt-3 text-4xl font-black tracking-tight lg:text-5xl">Manage AI like a real operator</h1>
-              <p className="mt-3 text-sm leading-6 text-white/75">Use one screen to inspect AI insights, restock signals, customer segments, and direct admin chat prompts.</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-white/60">Phân tích AI</p>
+              <h1 className="mt-3 text-4xl font-black tracking-tight lg:text-5xl">Quản lý AI như một nhà vận hành thực thụ</h1>
+              <p className="mt-3 text-sm leading-6 text-white/75">Dùng một màn hình để xem AI, tín hiệu nhập hàng, phân khúc khách và trực tiếp hỏi AI quản trị.</p>
             </div>
             <Button variant="outline" size="lg" onClick={() => void loadAllData()} className="border-white/20 bg-white/10 text-white hover:bg-white/20">
               <RefreshCw className="h-4 w-4" />
-              Refresh AI data
+              Làm mới dữ liệu AI
             </Button>
           </div>
         </div>
       </section>
 
       <div className="grid gap-4 lg:grid-cols-4">
-        <Metric label="Insights" value={`${insights.length}`} icon={Sparkles} />
-        <Metric label="Warnings" value={`${totals.warnings}`} icon={TrendingUp} />
-        <Metric label="Restock soon" value={`${totals.urgentRestocks}`} icon={Package} />
-        <Metric label="Segment revenue" value={formatPrice(totals.totalSegmentRevenue)} icon={Users} />
+        <Metric label="Phân tích" value={`${insights.length}`} icon={Sparkles} />
+        <Metric label="Cảnh báo" value={`${totals.warnings}`} icon={TrendingUp} />
+        <Metric label="Cần nhập hàng" value={`${totals.urgentRestocks}`} icon={Package} />
+        <Metric label="Doanh thu phân khúc" value={formatPrice(totals.totalSegmentRevenue)} icon={Users} />
       </div>
 
       <div className="flex flex-wrap gap-2 rounded-full border border-slate-200 bg-white p-1 shadow-sm">
         {[
-          { id: 'overview', label: 'Overview' },
-          { id: 'inventory', label: 'Inventory AI' },
-          { id: 'customers', label: 'Customer AI' },
-          { id: 'chat', label: 'AI chat' },
+          { id: 'overview', label: 'Tổng quan' },
+          { id: 'inventory', label: 'AI Kho hàng' },
+          { id: 'customers', label: 'AI Khách hàng' },
+          { id: 'chat', label: 'Trò chuyện AI' },
         ].map((tab) => (
           <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id as typeof activeTab)} className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] transition ${activeTab === tab.id ? 'bg-slate-950 text-white' : 'text-slate-500 hover:text-slate-900'}`}>
             {tab.label}
@@ -168,21 +168,21 @@ export default function AIInsightsPage() {
 
       {activeTab === 'overview' ? (
         <div className="grid gap-8 xl:grid-cols-[1.05fr_0.95fr]">
-          <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm"><CardContent className="p-6 lg:p-8"><h2 className="text-2xl font-black tracking-tight text-slate-950">Executive summary</h2><p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-600">{summary || 'No summary available yet.'}</p></CardContent></Card>
-          <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm"><CardContent className="p-6 lg:p-8"><h2 className="text-2xl font-black tracking-tight text-slate-950">Suggested actions</h2><div className="mt-6 space-y-3">{insights.length === 0 ? <p className="text-sm text-slate-500">No AI insights available.</p> : insights.map((insight) => <div key={insight.title} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-black text-slate-950">{insight.title}</p><p className="mt-2 text-sm leading-6 text-slate-500">{insight.description}</p></div><span className={`rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] ${insight.type === 'warning' ? 'bg-amber-100 text-amber-700' : insight.type === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'}`}>{insight.metric || insight.type}</span></div></div>)}</div></CardContent></Card>
+          <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm"><CardContent className="p-6 lg:p-8"><h2 className="text-2xl font-black tracking-tight text-slate-950">Tóm tắt điều hành</h2><p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-600">{summary || 'Chưa có tóm tắt.'}</p></CardContent></Card>
+          <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm"><CardContent className="p-6 lg:p-8"><h2 className="text-2xl font-black tracking-tight text-slate-950">Gợi ý hành động</h2><div className="mt-6 space-y-3">{insights.length === 0 ? <p className="text-sm text-slate-500">Chưa có phân tích AI.</p> : insights.map((insight) => <div key={insight.title} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-black text-slate-950">{insight.title}</p><p className="mt-2 text-sm leading-6 text-slate-500">{insight.description}</p></div><span className={`rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] ${insight.type === 'warning' ? 'bg-amber-100 text-amber-700' : insight.type === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'}`}>{insight.metric || insight.type}</span></div></div>)}</div></CardContent></Card>
         </div>
       ) : null}
 
       {activeTab === 'inventory' ? (
-        <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm"><CardContent className="p-6 lg:p-8"><h2 className="text-2xl font-black tracking-tight text-slate-950">Inventory forecasts</h2><div className="mt-6 space-y-3">{forecasts.length === 0 ? <p className="text-sm text-slate-500">No forecast data yet.</p> : forecasts.map((item) => <div key={item.productId} className="flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 lg:flex-row lg:items-center lg:justify-between"><div><p className="font-black text-slate-950">{item.productName}</p><p className="mt-1 text-sm text-slate-500">Current stock {item.currentStock} · Suggested restock {item.recommendedRestock}</p></div><div className="flex flex-wrap gap-2"><span className={`rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] ${item.daysUntilStockout < 7 ? 'bg-rose-100 text-rose-700' : item.daysUntilStockout < 14 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{item.daysUntilStockout} days left</span><span className="rounded-full bg-white px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">{Math.round(item.confidence * 100)}% confidence</span></div></div>)}</div></CardContent></Card>
+        <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm"><CardContent className="p-6 lg:p-8"><h2 className="text-2xl font-black tracking-tight text-slate-950">Dự báo tồn kho</h2><div className="mt-6 space-y-3">{forecasts.length === 0 ? <p className="text-sm text-slate-500">Chưa có dữ liệu dự báo.</p> : forecasts.map((item) => <div key={item.productId} className="flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 lg:flex-row lg:items-center lg:justify-between"><div><p className="font-black text-slate-950">{item.productName}</p><p className="mt-1 text-sm text-slate-500">Tồn kho {item.currentStock} · Đề xuất nhập {item.recommendedRestock}</p></div><div className="flex flex-wrap gap-2"><span className={`rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] ${item.daysUntilStockout < 7 ? 'bg-rose-100 text-rose-700' : item.daysUntilStockout < 14 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>Còn {item.daysUntilStockout} ngày</span><span className="rounded-full bg-white px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">{Math.round(item.confidence * 100)}% độ tin cậy</span></div></div>)}</div></CardContent></Card>
       ) : null}
 
       {activeTab === 'customers' ? (
-        <div className="grid gap-4 lg:grid-cols-4">{segments.length === 0 ? <Card className="lg:col-span-4 rounded-[2rem] border-slate-200 bg-white shadow-sm"><CardContent className="p-8 text-sm text-slate-500">No customer segmentation data available.</CardContent></Card> : segments.map((segment) => <Card key={segment.segment} className="rounded-[2rem] border-slate-200 bg-white shadow-sm"><CardContent className="p-6"><p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{segment.segment}</p><p className="mt-2 text-3xl font-black text-slate-950">{segment.count}</p><p className="mt-2 text-sm text-slate-500">Revenue {formatPrice(segment.totalRevenue)}</p><p className="mt-1 text-sm text-slate-500">AOV {formatPrice(segment.avgOrderValue)}</p></CardContent></Card>)}</div>
+        <div className="grid gap-4 lg:grid-cols-4">{segments.length === 0 ? <Card className="lg:col-span-4 rounded-[2rem] border-slate-200 bg-white shadow-sm"><CardContent className="p-8 text-sm text-slate-500">Chưa có dữ liệu phân khúc khách hàng.</CardContent></Card> : segments.map((segment) => <Card key={segment.segment} className="rounded-[2rem] border-slate-200 bg-white shadow-sm"><CardContent className="p-6"><p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{segment.segment}</p><p className="mt-2 text-3xl font-black text-slate-950">{segment.count}</p><p className="mt-2 text-sm text-slate-500">Doanh thu {formatPrice(segment.totalRevenue)}</p><p className="mt-1 text-sm text-slate-500">Giá TB {formatPrice(segment.avgOrderValue)}</p></CardContent></Card>)}</div>
       ) : null}
 
       {activeTab === 'chat' ? (
-        <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm"><CardContent className="p-6 lg:p-8"><div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-[1.2rem] bg-slate-950 text-white"><Bot className="h-5 w-5" /></div><div><h2 className="text-2xl font-black tracking-tight text-slate-950">Admin AI assistant</h2><p className="mt-1 text-sm text-slate-500">Ask for decisions, next steps, or summaries grounded in current store data.</p></div></div><div className="mt-6 flex flex-wrap gap-2">{QUICK_PROMPTS.map((prompt) => <button key={prompt} type="button" onClick={() => void sendMessage(prompt)} className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-slate-600 transition hover:border-slate-300 hover:text-slate-900">{prompt}</button>)}</div><div className="mt-6 space-y-3 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4">{messages.map((message) => <div key={message.id} className={`flex ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}><div className={`max-w-[85%] rounded-[1.5rem] px-4 py-3 text-sm leading-6 ${message.role === 'assistant' ? 'border border-slate-200 bg-white text-slate-700' : 'bg-slate-950 text-white'}`}>{message.content}</div></div>)}</div><div className="mt-4 flex flex-col gap-3 sm:flex-row"><textarea value={input} onChange={(event) => setInput(event.target.value)} rows={4} className="min-h-[120px] flex-1 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700 outline-none" placeholder="Ask the admin AI what to prioritize next..." /><Button size="lg" onClick={() => void sendMessage()} disabled={isSending || !input.trim()}>{isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Send</Button></div></CardContent></Card>
+        <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm"><CardContent className="p-6 lg:p-8"><div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-[1.2rem] bg-slate-950 text-white"><Bot className="h-5 w-5" /></div><div><h2 className="text-2xl font-black tracking-tight text-slate-950">Trợ lý AI quản trị</h2><p className="mt-1 text-sm text-slate-500">Hỏi để đưa ra quyết định, bước tiếp theo hoặc tóm tắt dựa trên dữ liệu cửa hàng hiện tại.</p></div></div><div className="mt-6 flex flex-wrap gap-2">{QUICK_PROMPTS.map((prompt) => <button key={prompt} type="button" onClick={() => void sendMessage(prompt)} className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-slate-600 transition hover:border-slate-300 hover:text-slate-900">{prompt}</button>)}</div><div className="mt-6 space-y-3 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4">{messages.map((message) => <div key={message.id} className={`flex ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}><div className={`max-w-[85%] rounded-[1.5rem] px-4 py-3 text-sm leading-6 ${message.role === 'assistant' ? 'border border-slate-200 bg-white text-slate-700' : 'bg-slate-950 text-white'}`}>{message.content}</div></div>)}</div><div className="mt-4 flex flex-col gap-3 sm:flex-row"><textarea value={input} onChange={(event) => setInput(event.target.value)} rows={4} className="min-h-[120px] flex-1 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700 outline-none" placeholder="Hỏi AI quản trị cần ưu tiên gì tiếp theo..." /><Button size="lg" onClick={() => void sendMessage()} disabled={isSending || !input.trim()}>{isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Gửi</Button></div></CardContent></Card>
       ) : null}
     </div>
   );

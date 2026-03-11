@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -42,9 +42,14 @@ const PUBLIC_KEYS = [
     "PAYMENT_MOMO_ENABLED",
     "PAYMENT_PAYPAL_ENABLED",
     "PAYMENT_STRIPE_ENABLED",
+    "ZALO_PAY_ENABLED",
     "BANK_NAME",
     "BANK_ACCOUNT_NAME",
     "BANK_ACCOUNT_NUMBER",
+    "BANK_QR_IMAGE_URL",
+    "MOMO_QR_IMAGE_URL",
+    "PAYPAL_CLIENT_ID",
+    "ZALO_PAY_QR_URL",
     // Feature flags
     "FEATURE_VOUCHER_ENABLED",
     "FEATURE_FLASH_SALE_ENABLED",

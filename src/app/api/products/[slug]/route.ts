@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -35,6 +35,11 @@ export async function GET(
                 productVariants: {
                     where: { isActive: true },
                     orderBy: { createdAt: "asc" },
+                },
+                reviews: {
+                    include: { user: { select: { name: true, image: true } } },
+                    orderBy: { createdAt: "desc" },
+                    take: 20,
                 },
             },
         });

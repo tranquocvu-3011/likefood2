@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -13,7 +13,7 @@ import { logger } from "@/lib/logger";
 import { mkdir, writeFile } from "fs/promises";
 import { join } from "path";
 import { randomUUID } from "crypto";
-import { applyRateLimit, apiRateLimit, getRateLimitIdentifier } from "@/lib/ratelimit";
+import { applyRateLimit } from "@/lib/ratelimit";
 
 const AVATAR_EXTENSIONS = new Set(["jpg", "jpeg", "png", "gif", "webp"]);
 
@@ -34,13 +34,16 @@ function isAllowedAvatarBuffer(buffer: Buffer): boolean {
 
 // POST upload avatar
 export async function POST(req: NextRequest) {
-    const rl = await applyRateLimit(getRateLimitIdentifier(req), apiRateLimit, { windowMs: 60000, maxRequests: 10 });
-    if (!rl.success) return rl.error!;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Rate limit: per-user, 20 uploads/minute (tránh "Quá nhiều yêu cầu" khi thử nhiều lần)
+    const identifier = `avatar:${session.user.id}`;
+    const rl = await applyRateLimit(identifier, null, { windowMs: 60000, maxRequests: 20 });
+    if (!rl.success) return rl.error!;
 
     try {
         const formData = await req.formData();

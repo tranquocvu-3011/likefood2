@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -10,13 +10,17 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { logger } from "@/lib/logger";
-import { applyRateLimit, apiRateLimit, getRateLimitIdentifier } from "@/lib/ratelimit";
+import { applyRateLimit } from "@/lib/ratelimit";
 
 export async function POST(req: NextRequest) {
-    const rl = await applyRateLimit(getRateLimitIdentifier(req), apiRateLimit, { windowMs: 60000, maxRequests: 10 });
-    if (!rl.success) return rl.error as unknown as NextResponse;
-
     const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    // Rate limit: per-user, 20 requests/minute (tránh "Quá nhiều yêu cầu" khi điểm danh)
+    const identifier = `checkin:${session.user.id}`;
+    const rl = await applyRateLimit(identifier, null, { windowMs: 60000, maxRequests: 20 });
+    if (!rl.success) return rl.error as unknown as NextResponse;
 
     if (!session || !session.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

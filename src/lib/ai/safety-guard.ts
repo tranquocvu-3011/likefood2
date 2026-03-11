@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -80,6 +80,46 @@ export function getFallbackResponse(intent: Intent, language: "vi" | "en"): stri
     ORDER_PLACING: {
       vi: "Nếu bạn đã có sản phẩm muốn mua, mình sẽ hướng dẫn bạn vào giỏ và checkout nhanh hơn.",
       en: "If you already know what you want, I can guide you through cart and checkout quickly.",
+    },
+    PRODUCT_BENEFITS: {
+      vi: "Mình có thể cung cấp thông tin về lợi ích sức khỏe và giá trị dinh dưỡng của sản phẩm. Bạn quan tâm sản phẩm nào?",
+      en: "I can provide health benefits and nutritional value information. Which product are you interested in?",
+    },
+    PRODUCT_USAGE: {
+      vi: "Mình có thể hướng dẫn cách sử dụng và pha chế sản phẩm. Bạn cần hướng dẫn cho sản phẩm nào?",
+      en: "I can guide you on how to use and prepare the product. Which product do you need instructions for?",
+    },
+    PRODUCT_STORAGE: {
+      vi: "Mình có thể tư vấn cách bảo quản để giữ được chất lượng tốt nhất. Bạn cần hướng dẫn bảo quản sản phẩm nào?",
+      en: "I can advise on proper storage to maintain the best quality. Which product do you need storage tips for?",
+    },
+    PRODUCT_NUTRITION: {
+      vi: "Mình có thể cung cấp thông tin thành phần dinh dưỡng của sản phẩm. Bạn muốn xem thông tin dinh dưỡng của sản phẩm nào?",
+      en: "I can provide nutritional information for our products. Which product's nutrition facts do you want to see?",
+    },
+    PRODUCT_ORIGIN: {
+      vi: "LIKEFOOD chuyên cung cấp đặc sản từ các vùng miền Việt Nam. Bạn muốn biết nguồn gốc của sản phẩm nào?",
+      en: "LIKEFOOD specializes in specialties from regions across Vietnam. Which product's origin do you want to know?",
+    },
+    COMPARISON: {
+      vi: "Mình có thể so sánh các sản phẩm để giúp bạn chọn lựa phù hợp hơn. Bạn muốn so sánh những sản phẩm nào?",
+      en: "I can compare products to help you make a better choice. Which products would you like to compare?",
+    },
+    DIET_SPECIFIC: {
+      vi: "LIKEFOOD có nhiều sản phẩm phù hợp với các chế độ ăn đặc biệt. Bạn đang theo chế độ ăn nào?",
+      en: "LIKEFOOD has many products suitable for special diets. Which dietary requirement do you follow?",
+    },
+    GIFT_IDEA: {
+      vi: "Mình có thể gợi ý các set quà tặng phù hợp theo dịp và ngân sách. Bạn cần quà cho dịp nào và ngân sách bao nhiêu?",
+      en: "I can suggest gift sets suitable for any occasion and budget. What occasion and budget do you have in mind?",
+    },
+    COOKING_HELP: {
+      vi: "Mình có thể hướng dẫn công thức và cách chế biến các món từ đặc sản Việt. Bạn muốn nấu món gì?",
+      en: "I can share recipes and cooking instructions using Vietnamese specialties. What dish would you like to make?",
+    },
+    CHITCHAT: {
+      vi: "Mình là trợ lý AI của LIKEFOOD, luôn sẵn sàng hỗ trợ bạn. Bạn cần mình giúp gì về sản phẩm hoặc đơn hàng không?",
+      en: "I'm LIKEFOOD's AI assistant, always ready to help. Is there anything about our products or your order I can assist with?",
     },
     GREETING: {
       vi: "Xin chào! Mình là trợ lý AI của LIKEFOOD. Mình có thể gợi ý sản phẩm, giao hàng và hỗ trợ đặt hàng.",

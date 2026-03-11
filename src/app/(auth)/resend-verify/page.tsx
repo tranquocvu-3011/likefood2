@@ -1,13 +1,14 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-"use client";
-
-import { useState, useRef } from "react";
+import { useState, useRef, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
     Mail, Loader2, ArrowRight, CheckCircle2, AlertCircle,
     ChefHat, ShieldCheck, Zap
@@ -18,10 +19,14 @@ import { isValidEmailFormat } from "@/lib/validation";
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/context";
 
-export default function ResendVerifyPage() {
+function ResendVerifyContent() {
     const { t } = useLanguage();
-    const [step, setStep] = useState<"email" | "otp">("email");
-    const [email, setEmail] = useState("");
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const initialEmail = searchParams.get("email") || "";
+    const initialStep = (searchParams.get("step") === "otp" && initialEmail) ? "otp" : "email";
+    const [step, setStep] = useState<"email" | "otp">(initialStep as "email" | "otp");
+    const [email, setEmail] = useState(initialEmail);
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -46,10 +51,16 @@ export default function ResendVerifyPage() {
                 body: JSON.stringify({ email }),
             });
 
+            const data = await res.json();
+
             if (res.ok) {
+                if (data.alreadyVerified) {
+                    // Account is already verified — redirect to login
+                    router.push("/login?message=" + encodeURIComponent("Tài khoản đã xác thực. Hãy đăng nhập."));
+                    return;
+                }
                 setStep("otp");
             } else {
-                const data = await res.json();
                 setError(data.error || t("auth.connError"));
             }
         } catch {
@@ -287,5 +298,13 @@ export default function ResendVerifyPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function ResendVerifyPage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-emerald-500" /></div>}>
+            <ResendVerifyContent />
+        </Suspense>
     );
 }

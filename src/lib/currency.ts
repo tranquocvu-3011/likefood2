@@ -1,11 +1,11 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-﻿/**
+/**
  * Currency formatting utilities for the storefront and admin UI.
  * The application is standardized on USD.
  */

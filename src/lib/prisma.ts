@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -25,9 +25,11 @@ const prismaClientSingleton = () => {
     return new PrismaClient();
 };
 
+/* eslint-disable no-var */
 declare global {
     var prisma: undefined | ReturnType<typeof prismaClientSingleton>;
 }
+/* eslint-enable no-var */
 
 const prisma = globalThis.prisma ?? prismaClientSingleton();
 

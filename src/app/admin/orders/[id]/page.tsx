@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
@@ -85,13 +85,13 @@ interface Order {
 }
 
 const STATUS_OPTIONS = [
-  { value: "PENDING", label: "Dang cho xac nhan", desc: "Moi tao", icon: Clock3, tone: "bg-amber-100 text-amber-700 border-amber-200" },
-  { value: "CONFIRMED", label: "Da xac nhan", desc: "Da nhan don", icon: CheckCircle2, tone: "bg-sky-100 text-sky-700 border-sky-200" },
-  { value: "PROCESSING", label: "Dang chuan bi", desc: "Dong goi", icon: Package, tone: "bg-violet-100 text-violet-700 border-violet-200" },
-  { value: "SHIPPING", label: "Dang giao", desc: "Fulfillment", icon: Truck, tone: "bg-cyan-100 text-cyan-700 border-cyan-200" },
-  { value: "DELIVERED", label: "Da giao", desc: "Da den noi", icon: Check, tone: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  { value: "COMPLETED", label: "Hoan thanh", desc: "Dong don", icon: CheckCircle2, tone: "bg-green-100 text-green-700 border-green-200" },
-  { value: "CANCELLED", label: "Da huy", desc: "Dung xu ly", icon: XCircle, tone: "bg-rose-100 text-rose-700 border-rose-200" },
+  { value: "PENDING", label: "Đang chờ xác nhận", desc: "Mới tạo", icon: Clock3, tone: "bg-amber-100 text-amber-700 border-amber-200" },
+  { value: "CONFIRMED", label: "Đã xác nhận", desc: "Đã nhận đơn", icon: CheckCircle2, tone: "bg-sky-100 text-sky-700 border-sky-200" },
+  { value: "PROCESSING", label: "Đang chuẩn bị", desc: "Đóng gói", icon: Package, tone: "bg-violet-100 text-violet-700 border-violet-200" },
+  { value: "SHIPPING", label: "Đang giao", desc: "Fulfillment", icon: Truck, tone: "bg-cyan-100 text-cyan-700 border-cyan-200" },
+  { value: "DELIVERED", label: "Đã giao", desc: "Đã đến nơi", icon: Check, tone: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+  { value: "COMPLETED", label: "Hoàn thành", desc: "Đóng đơn", icon: CheckCircle2, tone: "bg-green-100 text-green-700 border-green-200" },
+  { value: "CANCELLED", label: "Đã hủy", desc: "Dừng xử lý", icon: XCircle, tone: "bg-rose-100 text-rose-700 border-rose-200" },
 ];
 
 function formatDate(value: string) {
@@ -105,17 +105,17 @@ function formatDate(value: string) {
 }
 
 function shippingLabel(value?: string | null) {
-  if (value === "express") return "Express";
-  if (value === "overnight") return "Priority";
-  return "Standard";
+  if (value === "express") return "Giao nhanh";
+  if (value === "overnight") return "Ưu tiên";
+  return "Tiêu chuẩn";
 }
 
 function paymentLabel(value?: string | null) {
-  if (value === "COD") return "Cash on delivery";
-  if (value === "BANK_TRANSFER" || value === "BANK") return "Bank transfer";
+  if (value === "COD") return "Thanh toán khi nhận";
+  if (value === "BANK_TRANSFER" || value === "BANK") return "Chuyển khoản";
   if (value === "PAYPAL") return "PayPal";
-  if (value === "STRIPE") return "Card payment";
-  return value || "Not set";
+  if (value === "STRIPE") return "Thẻ thanh toán";
+  return value || "Chưa cài đặt";
 }
 
 export default function AdminOrderDetailPage() {
@@ -136,14 +136,14 @@ export default function AdminOrderDetailPage() {
       setError(null);
       const response = await fetch(`/api/admin/orders/${orderId}`);
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data?.error || "Khong the tai don hang.");
+      if (!response.ok) throw new Error(data?.error || "Không thể tải đơn hàng.");
       setOrder({ ...data, items: data.items || data.orderItems || [], events: data.events || [] });
       setStatus(data.status || "PENDING");
       setNotes(data.notes || "");
       setTrackingCode(data.trackingCode || "");
       setCarrier(data.carrier || "");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Khong the tai don hang.");
+      setError(err instanceof Error ? err.message : "Không thể tải đơn hàng.");
     } finally {
       setIsLoading(false);
     }
@@ -168,11 +168,11 @@ export default function AdminOrderDetailPage() {
         body: JSON.stringify({ status, notes, trackingCode, carrier }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data?.error || "Khong the cap nhat don hang.");
-      toast.success("Da cap nhat don hang.");
+      if (!response.ok) throw new Error(data?.error || "Không thể cập nhật đơn hàng.");
+      toast.success("Đã cập nhật đơn hàng.");
       await fetchOrder();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Khong the cap nhat don hang.");
+      toast.error(err instanceof Error ? err.message : "Không thể cập nhật đơn hàng.");
     } finally {
       setIsSaving(false);
     }
@@ -188,10 +188,10 @@ export default function AdminOrderDetailPage() {
         <Card className="mx-auto max-w-3xl rounded-[2rem] border border-rose-200 bg-white shadow-sm">
           <CardContent className="p-10 text-center">
             <XCircle className="mx-auto h-12 w-12 text-rose-500" />
-            <h1 className="mt-4 text-2xl font-black text-slate-950">Khong the mo don hang</h1>
-            <p className="mt-2 text-sm text-slate-500">{error || "Du lieu khong ton tai hoac ban khong co quyen truy cap."}</p>
+            <h1 className="mt-4 text-2xl font-black text-slate-950">Không thể mở đơn hàng</h1>
+            <p className="mt-2 text-sm text-slate-500">{error || "Dữ liệu không tồn tại hoặc bạn không có quyền truy cập."}</p>
             <Button asChild className="mt-6" size="lg">
-              <Link href="/admin/orders">Quay lai danh sach don</Link>
+              <Link href="/admin/orders">Quay lại danh sách đơn</Link>
             </Button>
           </CardContent>
         </Card>
@@ -204,7 +204,7 @@ export default function AdminOrderDetailPage() {
       <div className="mx-auto max-w-[1500px] space-y-8">
         <Link href="/admin/orders" className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.2em] text-slate-500 transition hover:text-primary">
           <ArrowLeft className="h-4 w-4" />
-          Quay lai orders
+          Quay lại đơn hàng
         </Link>
 
         <section className="overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-[0_20px_70px_rgba(15,23,42,0.08)]">
@@ -214,22 +214,22 @@ export default function AdminOrderDetailPage() {
                 <selectedStatus.icon className="h-7 w-7" />
               </div>
               <div className="space-y-3">
-                <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">Order detail</p>
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">Chi tiết đơn hàng</p>
                 <h1 className="text-4xl font-black tracking-tight text-slate-950 lg:text-5xl">#{order.id.slice(-8).toUpperCase()}</h1>
-                <p className="max-w-2xl text-base leading-7 text-slate-600 lg:text-lg">{selectedStatus.label} · {selectedStatus.desc}. Theo doi khach hang, fulfillment va payment trong cung mot man hinh.</p>
+                <p className="max-w-2xl text-base leading-7 text-slate-600 lg:text-lg">{selectedStatus.label} · {selectedStatus.desc}. Theo dõi khách hàng, fulfillment và payment trong cùng một màn hình.</p>
               </div>
               <div className="flex flex-wrap items-center gap-3 text-sm font-bold text-slate-600">
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2">Created {formatDate(order.createdAt)}</span>
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2">Updated {formatDate(order.updatedAt)}</span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2">Tạo lúc {formatDate(order.createdAt)}</span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2">Cập nhật {formatDate(order.updatedAt)}</span>
                 <span className={`rounded-full border px-4 py-2 ${selectedStatus.tone}`}>{selectedStatus.label}</span>
               </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
               {[
-                { label: "Order total", value: formatPrice(order.total) },
-                { label: "Payment", value: order.paymentStatus === "PAID" ? "Paid" : order.paymentStatus || "Pending" },
-                { label: "Shipping", value: shippingLabel(order.shippingMethod) },
+                { label: "Tổng tiền", value: formatPrice(order.total) },
+                { label: "Thanh toán", value: order.paymentStatus === "PAID" ? "Đã thanh toán" : order.paymentStatus || "Chờ xử lý" },
+                { label: "Vận chuyển", value: shippingLabel(order.shippingMethod) },
               ].map((entry) => (
                 <div key={entry.label} className="rounded-[1.75rem] border border-slate-200 bg-slate-50/80 p-4">
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">{entry.label}</p>
@@ -246,20 +246,20 @@ export default function AdminOrderDetailPage() {
               <CardContent className="p-6 lg:p-8">
                 <div className="flex items-center gap-3">
                   <User className="h-5 w-5 text-primary" />
-                  <h2 className="text-2xl font-black tracking-tight text-slate-950">Customer and shipping</h2>
+                  <h2 className="text-2xl font-black tracking-tight text-slate-950">Khách hàng & vận chuyển</h2>
                 </div>
                 <div className="mt-6 grid gap-4 lg:grid-cols-2">
                   <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Customer</p>
-                    <p className="mt-2 text-lg font-black text-slate-950">{order.user?.name || "Guest checkout"}</p>
-                    <p className="mt-1 text-sm text-slate-600">{order.user?.email || "No email"}</p>
-                    <p className="mt-1 text-sm text-slate-600">{order.user?.phone || order.shippingPhone || "No phone"}</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Khách hàng</p>
+                    <p className="mt-2 text-lg font-black text-slate-950">{order.user?.name || "Khách vãng lai"}</p>
+                    <p className="mt-1 text-sm text-slate-600">{order.user?.email || "Không có email"}</p>
+                    <p className="mt-1 text-sm text-slate-600">{order.user?.phone || order.shippingPhone || "Không có số điện thoại"}</p>
                   </div>
                   <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Shipping address</p>
-                    <p className="mt-2 text-sm font-bold leading-6 text-slate-950">{[order.shippingAddress, order.shippingCity, order.shippingZipCode].filter(Boolean).join(", ") || "Address not set"}</p>
-                    <p className="mt-2 text-sm text-slate-600">Method: {shippingLabel(order.shippingMethod)}</p>
-                    {(order.trackingCode || order.carrier) && <p className="mt-1 text-sm text-slate-600">Tracking: {order.carrier || "Carrier pending"} · {order.trackingCode || "Code pending"}</p>}
+                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Địa chỉ giao hàng</p>
+                    <p className="mt-2 text-sm font-bold leading-6 text-slate-950">{[order.shippingAddress, order.shippingCity, order.shippingZipCode].filter(Boolean).join(", ") || "Chưa có địa chỉ"}</p>
+                    <p className="mt-2 text-sm text-slate-600">Hình thức: {shippingLabel(order.shippingMethod)}</p>
+                    {(order.trackingCode || order.carrier) && <p className="mt-1 text-sm text-slate-600">Mã vận đơn: {order.carrier || "Chờ đơn vị vận chuyển"} · {order.trackingCode || "Chờ mã vận đơn"}</p>}
                   </div>
                 </div>
               </CardContent>
@@ -269,7 +269,7 @@ export default function AdminOrderDetailPage() {
               <CardContent className="p-6 lg:p-8">
                 <div className="flex items-center gap-3">
                   <Package className="h-5 w-5 text-primary" />
-                  <h2 className="text-2xl font-black tracking-tight text-slate-950">Items in this order</h2>
+                  <h2 className="text-2xl font-black tracking-tight text-slate-950">Sản phẩm trong đơn</h2>
                 </div>
                 <div className="mt-6 space-y-4">
                   {items.map((item) => {
@@ -305,7 +305,7 @@ export default function AdminOrderDetailPage() {
                 <CardContent className="p-6 lg:p-8">
                   <div className="flex items-center gap-3">
                     <FileText className="h-5 w-5 text-primary" />
-                    <h2 className="text-2xl font-black tracking-tight text-slate-950">Status timeline</h2>
+                    <h2 className="text-2xl font-black tracking-tight text-slate-950">Lịch sử trạng thái</h2>
                   </div>
                   <div className="mt-6 space-y-5">
                     {events.map((event, index) => {
@@ -338,8 +338,8 @@ export default function AdminOrderDetailPage() {
               <CardContent className="p-6 lg:p-8">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">Fulfillment control</p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Cap nhat trang thai</h2>
+                    <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">Điều chỉnh đơn hàng</p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Cập nhật trạng thái</h2>
                   </div>
                   <div className={`rounded-full border px-4 py-2 text-sm font-black ${selectedStatus.tone}`}>{selectedStatus.label}</div>
                 </div>
@@ -366,15 +366,15 @@ export default function AdminOrderDetailPage() {
 
                 <div className="mt-6 grid gap-4">
                   <div>
-                    <label className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">Tracking code</label>
+                    <label className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">Mã vận đơn</label>
                     <input value={trackingCode} onChange={(event) => setTrackingCode(event.target.value)} placeholder="UPS123456789" className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-primary" />
                   </div>
                   <div>
-                    <label className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">Carrier</label>
+                    <label className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">Đơn vị vận chuyển</label>
                     <input value={carrier} onChange={(event) => setCarrier(event.target.value)} placeholder="UPS, FedEx, USPS..." className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-primary" />
                   </div>
                   <div>
-                    <label className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">Internal note</label>
+                    <label className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">Ghi chú nội bộ</label>
                     <textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Them ghi chu cho doi van hanh, giao nhan hoac ho tro khach hang..." className="mt-2 min-h-[150px] w-full rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-700 outline-none transition focus:border-primary" />
                   </div>
                 </div>
@@ -382,7 +382,7 @@ export default function AdminOrderDetailPage() {
                 <Button size="xl" className="mt-6 w-full justify-between" onClick={handleSave} disabled={isSaving}>
                   <span className="inline-flex items-center gap-2">
                     <Save className="h-4 w-4" />
-                    Luu cap nhat
+                    Lưu cập nhật
                   </span>
                   {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 </Button>
@@ -391,16 +391,16 @@ export default function AdminOrderDetailPage() {
 
             <Card className="rounded-[2.25rem] border-slate-200 bg-white shadow-sm">
               <CardContent className="p-6 lg:p-8">
-                <h2 className="text-2xl font-black tracking-tight text-slate-950">Payment and totals</h2>
+                <h2 className="text-2xl font-black tracking-tight text-slate-950">Thanh toán & Tổng tiền</h2>
                 <div className="mt-6 space-y-4 text-sm text-slate-600">
-                  <SummaryRow label="Subtotal" value={formatPrice(order.subtotal || 0)} />
-                  <SummaryRow label="Shipping fee" value={formatPrice(order.shippingFee || 0)} />
-                  <SummaryRow label="Discount" value={`-${formatPrice(order.discount || 0)}`} />
-                  {order.couponCode && <SummaryRow label="Coupon" value={order.couponCode} />}
-                  <SummaryRow label="Payment method" value={paymentLabel(order.paymentMethod)} />
-                  <SummaryRow label="Payment status" value={order.paymentStatus || "Pending"} />
+                  <SummaryRow label="Tạm tính" value={formatPrice(order.subtotal || 0)} />
+                  <SummaryRow label="Phí vận chuyển" value={formatPrice(order.shippingFee || 0)} />
+                  <SummaryRow label="Giảm giá" value={`-${formatPrice(order.discount || 0)}`} />
+                  {order.couponCode && <SummaryRow label="Mã giảm giá" value={order.couponCode} />}
+                  <SummaryRow label="Phương thức thanh toán" value={paymentLabel(order.paymentMethod)} />
+                  <SummaryRow label="Trạng thái thanh toán" value={order.paymentStatus || "Chờ xử lý"} />
                   <div className="border-t border-dashed border-slate-200 pt-4">
-                    <SummaryRow label="Order total" value={formatPrice(order.total)} strong />
+                    <SummaryRow label="Tổng đơn hàng" value={formatPrice(order.total)} strong />
                   </div>
                 </div>
               </CardContent>
@@ -410,23 +410,23 @@ export default function AdminOrderDetailPage() {
               <CardContent className="p-6 lg:p-8">
                 <div className="flex items-center gap-3">
                   <CreditCard className="h-5 w-5 text-primary" />
-                  <h2 className="text-2xl font-black tracking-tight text-slate-950">Operational snapshot</h2>
+                  <h2 className="text-2xl font-black tracking-tight text-slate-950">Tóm tắt vận hành</h2>
                 </div>
                 <div className="mt-6 grid gap-4">
                   <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Contact</p>
-                    <p className="mt-2 text-sm font-bold text-slate-950">{order.user?.email || "Guest"}</p>
-                    <p className="mt-1 text-sm text-slate-600">{order.user?.phone || order.shippingPhone || "No phone"}</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Liên hệ</p>
+                    <p className="mt-2 text-sm font-bold text-slate-950">{order.user?.email || "Khách"}</p>
+                    <p className="mt-1 text-sm text-slate-600">{order.user?.phone || order.shippingPhone || "Không có SĐT"}</p>
                   </div>
                   <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Tracking readiness</p>
-                    <p className="mt-2 text-sm font-bold text-slate-950">{trackingCode ? "Tracking code da san sang" : "Can them tracking code khi giao hang"}</p>
-                    <p className="mt-1 text-sm text-slate-600">{carrier ? `Carrier: ${carrier}` : "Carrier chua duoc gan"}</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Trạng thái vận đơn</p>
+                    <p className="mt-2 text-sm font-bold text-slate-950">{trackingCode ? "Tracking code đã sẵn sàng" : "Cần thêm tracking code khi giao hàng"}</p>
+                    <p className="mt-1 text-sm text-slate-600">{carrier ? `Carrier: ${carrier}` : "Carrier chưa được gán"}</p>
                   </div>
                   <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Delivery checkpoint</p>
-                    <p className="mt-2 text-sm font-bold text-slate-950">{order.deliveredAt ? `Delivered ${formatDate(order.deliveredAt)}` : "Chua ghi nhan moc giao thanh cong"}</p>
-                    <p className="mt-1 text-sm text-slate-600">{order.shippedAt ? `Shipped ${formatDate(order.shippedAt)}` : "Chua ghi nhan moc giao van chuyen"}</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Mốc giao hàng</p>
+                    <p className="mt-2 text-sm font-bold text-slate-950">{order.deliveredAt ? `Delivered ${formatDate(order.deliveredAt)}` : "Chưa ghi nhận mốc giao thành công"}</p>
+                    <p className="mt-1 text-sm text-slate-600">{order.shippedAt ? `Shipped ${formatDate(order.shippedAt)}` : "Chưa ghi nhận mốc giao vận chuyển"}</p>
                   </div>
                 </div>
               </CardContent>

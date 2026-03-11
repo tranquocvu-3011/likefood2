@@ -1,14 +1,14 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-"use client";
-
 import { motion } from "framer-motion";
-import Image from "next/image";
+import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import FeaturedProductFrame from "./FeaturedProductFrame";
 
 interface FeaturedProductPreviewProps {
@@ -58,8 +58,8 @@ export default function FeaturedProductPreview({ image, onClick, side }: Feature
                                 boxShadow: '0 20px 60px rgba(0, 0, 0, 0.15), 0 0 40px rgba(16, 185, 129, 0.1)'
                             }}
                         >
-                            <Image
-                                src={image || "/placeholder.png"}
+                            <ImageWithFallback
+                                src={image}
                                 alt="Preview"
                                 fill
                                 className="object-cover"

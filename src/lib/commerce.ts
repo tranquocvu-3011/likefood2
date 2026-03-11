@@ -1,11 +1,11 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-﻿export const SITE_CURRENCY = "USD" as const;
+export const SITE_CURRENCY = "USD" as const;
 
 export const DEFAULT_SHIPPING_FEE_USD = 5.99;
 export const EXPRESS_SHIPPING_FEE_USD = 12.99;

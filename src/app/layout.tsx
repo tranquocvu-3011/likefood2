@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -30,12 +30,12 @@ export const metadata: Metadata = {
   authors: [{ name: "Trần Quốc Vũ", url: "https://facebook.com/vudev05" }],
   creator: "Trần Quốc Vũ",
   publisher: "LIKEFOOD",
-  metadataBase: new URL("https://weblikefood.com"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://likefood.vn"),
   alternates: {
     canonical: "/",
     languages: {
-      'vi': 'https://weblikefood.com',
-      'en': 'https://weblikefood.com?lang=en',
+      'vi': 'https://likefood.vn',
+      'en': 'https://likefood.vn?lang=en',
     },
   },
   robots: {
@@ -100,7 +100,7 @@ import { Toaster } from "sonner";
 
 // Xóa ChatWidgetClient vì đã có ChatbotAI trong ShopLayout
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;

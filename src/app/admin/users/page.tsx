@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, RefreshCw, Shield, UserCog, Users } from "lucide-react";
@@ -86,7 +86,7 @@ export default function AdminUsersPage() {
       }
 
       setUsers((prev) => prev.map((user) => (user.id === userId ? { ...user, role: data.user.role } : user)));
-      toast.success("Role updated.");
+      toast.success("Đã cập nhật vai trò.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to update role.");
     } finally {
@@ -102,23 +102,23 @@ export default function AdminUsersPage() {
 
   return (
     <AdminPageContainer
-      title="Users and permissions"
-      subtitle="Search, review, and update account roles without leaving the admin shell."
+      title="Người dùng & Phân quyền"
+      subtitle="Tìm kiếm, xem và cập nhật vai trò tài khoản ngay trong trang quản trị."
       action={
         <Button variant="outline" size="lg" onClick={() => void loadUsers()} disabled={isLoading}>
           <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-          Refresh
+          Làm mới
         </Button>
       }
     >
       <div className="grid gap-4 lg:grid-cols-4">
-        <AdminCard className="p-5"><Stat label="Visible users" value={`${total}`} tone="text-slate-950" /></AdminCard>
-        <AdminCard className="p-5"><Stat label="Members" value={`${stats.members}`} tone="text-slate-700" /></AdminCard>
-        <AdminCard className="p-5"><Stat label="Admins" value={`${stats.admins}`} tone="text-sky-600" /></AdminCard>
-        <AdminCard className="p-5"><Stat label="Super admins" value={`${stats.superAdmins}`} tone="text-violet-600" /></AdminCard>
+        <AdminCard className="p-5"><Stat label="Người dùng hiển thị" value={`${total}`} tone="text-slate-950" /></AdminCard>
+        <AdminCard className="p-5"><Stat label="Thành viên" value={`${stats.members}`} tone="text-slate-700" /></AdminCard>
+        <AdminCard className="p-5"><Stat label="Quản trị viên" value={`${stats.admins}`} tone="text-sky-600" /></AdminCard>
+        <AdminCard className="p-5"><Stat label="Quản trị cao cấp" value={`${stats.superAdmins}`} tone="text-violet-600" /></AdminCard>
       </div>
 
-      <AdminFilterBar searchQuery={search} setSearchQuery={setSearch} searchPlaceholder="Search by email or name">
+      <AdminFilterBar searchQuery={search} setSearchQuery={setSearch} searchPlaceholder="Tìm theo email hoặc tên">
         <div className="flex flex-wrap gap-2">
           {['all', ...ROLE_OPTIONS].map((option) => (
             <button
@@ -127,7 +127,7 @@ export default function AdminUsersPage() {
               onClick={() => setRoleFilter(option)}
               className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] transition ${roleFilter === option ? 'bg-slate-950 text-white' : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}
             >
-              {option === 'all' ? 'All roles' : option}
+              {option === 'all' ? 'Tất cả vai trò' : option}
             </button>
           ))}
         </div>
@@ -137,7 +137,7 @@ export default function AdminUsersPage() {
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50/80">
-              {['Account', 'Name', 'Role', 'Created', 'Actions'].map((header) => (
+              {['Tài khoản', 'Tên', 'Vai trò', 'Ngày tạo', 'Thao tác'].map((header) => (
                 <th key={header} className="px-6 py-4 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{header}</th>
               ))}
             </tr>
@@ -151,8 +151,8 @@ export default function AdminUsersPage() {
               <tr>
                 <td colSpan={5} className="px-6 py-20 text-center">
                   <Users className="mx-auto h-10 w-10 text-slate-200" />
-                  <h3 className="mt-4 text-lg font-black text-slate-950">No users matched this filter</h3>
-                  <p className="mt-2 text-sm text-slate-500">Try a broader search or switch role segments.</p>
+                  <h3 className="mt-4 text-lg font-black text-slate-950">Không tìm thấy người dùng</h3>
+                  <p className="mt-2 text-sm text-slate-500">Thử tìm kiếm rộng hơn hoặc đổi bộ lọc vai trò.</p>
                 </td>
               </tr>
             ) : users.map((user) => (
@@ -168,9 +168,9 @@ export default function AdminUsersPage() {
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-5 text-sm font-medium text-slate-600">{user.name || 'No display name'}</td>
+                <td className="px-6 py-5 text-sm font-medium text-slate-600">{user.name || 'Không có tên'}</td>
                 <td className="px-6 py-5"><RoleBadge role={user.role} /></td>
-                <td className="px-6 py-5 text-sm font-medium text-slate-600">{new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</td>
+                <td className="px-6 py-5 text-sm font-medium text-slate-600">{new Date(user.createdAt).toLocaleDateString('vi-VN', { month: 'short', day: '2-digit', year: 'numeric' })}</td>
                 <td className="px-6 py-5">
                   <div className="flex flex-wrap gap-2">
                     {ROLE_OPTIONS.map((role) => (
@@ -185,7 +185,7 @@ export default function AdminUsersPage() {
             ))}
           </tbody>
         </table>
-        <AdminPagination page={page} setPage={setPage} pageSize={PAGE_SIZE} total={total} itemLabel="users" />
+        <AdminPagination page={page} setPage={setPage} pageSize={PAGE_SIZE} total={total} itemLabel="người dùng" />
       </AdminTableContainer>
     </AdminPageContainer>
   );

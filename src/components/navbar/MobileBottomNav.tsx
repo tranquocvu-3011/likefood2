@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-﻿"use client";
 
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -14,22 +14,24 @@ import { Home, Search, ShoppingBag, Heart, User } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
-
-const navItems = [
-    { icon: Home, label: "Trang chá»§", href: "/" },
-    { icon: Search, label: "TÃ¬m kiáº¿m", href: "/products" },
-    { icon: ShoppingBag, label: "Giá» hÃ ng", href: "/cart", hasBadge: true },
-    { icon: Heart, label: "YÃªu thÃ­ch", href: "/profile/wishlist" },
-    { icon: User, label: "TÃ i khoáº£n", href: "/profile" },
-];
+import { useLanguage } from "@/lib/i18n/context";
 
 export default function MobileBottomNav() {
     const pathname = usePathname();
     const { totalItems } = useCart();
     const { data: session } = useSession();
+    const { t } = useLanguage();
     const [isMounted, setIsMounted] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
+
+    const navItems = [
+        { icon: Home, label: t("mobileNav.home"), href: "/" },
+        { icon: Search, label: t("mobileNav.products"), href: "/products" },
+        { icon: ShoppingBag, label: t("mobileNav.cart"), href: "/cart", hasBadge: true },
+        { icon: Heart, label: t("mobileNav.wishlist"), href: "/profile/wishlist" },
+        { icon: User, label: t("mobileNav.account"), href: "/profile" },
+    ];
 
     useEffect(() => {
         const id = requestAnimationFrame(() => setIsMounted(true));

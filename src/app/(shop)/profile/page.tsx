@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
@@ -153,7 +153,7 @@ export default function ProfilePage() {
 
     const fetchPoints = async () => {
         try {
-            const res = await fetch("/api/user/checkin");
+            const res = await fetch("/api/user/points");
             if (res.ok) {
                 const data = await res.json();
                 setUserPoints(data.points || 0);
@@ -350,7 +350,7 @@ export default function ProfilePage() {
             color: "bg-cyan-50 text-cyan-500",
             badge: null,
         },
-        ...(session.user.role === "ADMIN" ? [{
+        ...(session.user.role === "ADMIN" || session.user.role === "SUPER_ADMIN" ? [{
             href: "/admin/dashboard",
             label: language === "vi" ? "Quản trị" : "Admin",
             desc: language === "vi" ? "Quản lý cửa hàng" : "Store management",
@@ -371,7 +371,15 @@ export default function ProfilePage() {
                         <div className="relative group shrink-0">
                             <div className="w-28 h-28 rounded-3xl bg-white/20 ring-4 ring-white/40 overflow-hidden flex items-center justify-center text-white shadow-2xl">
                                 {profileData.image ? (
-                                    <Image src={profileData.image} alt={session.user.name || "Avatar"} width={112} height={112} className="w-full h-full object-cover" />
+                                    <Image
+                                        src={profileData.image}
+                                        alt={session.user.name || "Avatar"}
+                                        width={112}
+                                        height={112}
+                                        className="w-full h-full object-cover"
+                                        unoptimized
+                                        onError={() => setProfileData(p => ({ ...p, image: "" }))}
+                                    />
                                 ) : (
                                     <User className="w-14 h-14" />
                                 )}
@@ -416,7 +424,7 @@ export default function ProfilePage() {
                                     <div className="flex items-center gap-2 justify-center sm:justify-start">
                                         <h1 className="text-2xl font-black tracking-tight">{session.user.name || "Khách hàng"}</h1>
                                         <span className="text-xs font-black bg-white/20 px-2.5 py-1 rounded-full uppercase tracking-widest">
-                                            {session.user.role === "ADMIN" ? "Admin" : language === "vi" ? "Thành viên" : "Member"}
+                                            {session.user.role === "ADMIN" || session.user.role === "SUPER_ADMIN" ? "Admin" : language === "vi" ? "Thành viên" : "Member"}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-4 mt-2 text-white/70 text-sm font-medium justify-center sm:justify-start flex-wrap">

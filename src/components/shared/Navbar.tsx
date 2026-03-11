@@ -1,14 +1,15 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-"use client";
-
 import Link from "next/link";
 import Image from "next/image";
+import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import { ShoppingCart, User, Search, Menu, X, ChevronDown, Heart, Phone, Sparkles, Headphones, Mic, Home, Flame, Settings, FileText, ShoppingBag, Scale, Info, HelpCircle, Gift } from "lucide-react";
 import { useState, useEffect, Suspense, useRef } from "react";
 import { useCart } from "@/contexts/CartContext";
@@ -69,9 +70,8 @@ function NavbarContent() {
     useEffect(() => {
         const loadSiteConfig = async () => {
             try {
-                const res = await fetch("/api/public/settings");
-                if (!res.ok) return;
-                const data = await res.json();
+                const { getPublicSettings } = await import("@/lib/public-settings");
+                const data = await getPublicSettings();
                 if (data.SITE_SUPPORT_PHONE) {
                     setSupportPhone(data.SITE_SUPPORT_PHONE);
                 }
@@ -214,7 +214,7 @@ function NavbarContent() {
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             >
                 {/* Skip to Content Link for Accessibility */}
-                <a href="#main-content" className="skip-to-content">
+                <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:p-4 focus:bg-white focus:text-slate-900 focus:font-bold focus:rounded-br-2xl focus:shadow-xl top-0 left-0 transition-transform">
                     Skip to main content
                 </a>
 
@@ -289,7 +289,7 @@ function NavbarContent() {
                         {/* Logo */}
                         <Link href="/" className="flex-shrink-0">
                             <motion.img
-                                src="/logo.png"
+                                src="/logo.png?v=2"
                                 alt="LIKEFOOD"
                                 className={`w-auto object-contain transition-all duration-300 ${isScrolled ? "h-6 xs:h-7 sm:h-8" : "h-7 xs:h-9 sm:h-10"}`}
                                 whileHover={{ scale: 1.03 }}
@@ -318,7 +318,7 @@ function NavbarContent() {
                                 className={`flex items-center gap-2.5 px-5 py-2.5 text-[12px] font-black uppercase tracking-wider rounded-2xl transition-all border ${isMegaMenuOpen
                                     ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
                                     : "bg-slate-50 text-slate-700 border-slate-200/50 hover:border-primary/30 hover:text-primary hover:bg-primary/5"
-                                }`}
+                                    }`}
                                 whileTap={{ scale: 0.98 }}
                             >
                                 <Menu className="w-4 h-4" />
@@ -373,7 +373,7 @@ function NavbarContent() {
                                         >
                                             {searchQuery.length < 2 ? (
                                                 /* Trending Keywords */
-                                                    <div className="p-5">
+                                                <div className="p-5">
                                                     <div className="flex items-center gap-2 mb-4">
                                                         <Sparkles className="w-4 h-4 text-primary" />
                                                         <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">{t("common.popularSearches")}</span>
@@ -416,17 +416,13 @@ function NavbarContent() {
                                                                 className="w-full px-4 py-3 flex items-center gap-4 hover:bg-primary/5 rounded-2xl transition-all text-left group"
                                                             >
                                                                 <div className="w-14 h-14 rounded-2xl bg-slate-100 flex-shrink-0 flex items-center justify-center overflow-hidden border border-slate-200/50 relative">
-                                                                    {item.image ? (
-                                                                        <Image
-                                                                            src={item.image}
-                                                                            alt={item.name}
-                                                                            fill
-                                                                            className="object-cover group-hover:scale-110 transition-transform duration-500"
-                                                                            sizes="56px"
-                                                                        />
-                                                                    ) : (
-                                                                        <ShoppingCart className="w-5 h-5 text-slate-300" />
-                                                                    )}
+                                                                    <ImageWithFallback
+                                                                        src={item.image}
+                                                                        alt={item.name}
+                                                                        fill
+                                                                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                                                        sizes="56px"
+                                                                    />
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="text-[13px] font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-1">{item.name}</div>
@@ -545,6 +541,7 @@ function NavbarContent() {
                                                 fill
                                                 className="object-cover rounded-2xl"
                                                 sizes="40px"
+                                                unoptimized
                                             />
                                         ) : (
                                             <div className="w-full h-full bg-primary/10 flex items-center justify-center">
@@ -597,73 +594,73 @@ function NavbarContent() {
                                         ))}
                                     </div>
                                 ) : (
-                                /* Default beautiful nav */
-                                <div className="flex items-center justify-center gap-0.5 py-1.5">
+                                    /* Default beautiful nav */
+                                    <div className="flex items-center justify-center gap-0.5 py-1.5">
 
-                                    {/* Home */}
-                                    <Link href="/" className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group">
-                                        <Home className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                                        <span>{t("common.home")}</span>
-                                    </Link>
+                                        {/* Home */}
+                                        <Link href="/" className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group">
+                                            <Home className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                                            <span>{t("common.home")}</span>
+                                        </Link>
 
-                                    {/* Products */}
-                                    <Link href="/products" className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group">
-                                        <ShoppingBag className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                                        <span>{t("common.products")}</span>
-                                    </Link>
+                                        {/* Products */}
+                                        <Link href="/products" className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group">
+                                            <ShoppingBag className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                                            <span>{t("common.products")}</span>
+                                        </Link>
 
-                                    {/* About */}
-                                    <Link href="/about" className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group">
-                                        <Info className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                                        <span>{t("common.about")}</span>
-                                    </Link>
+                                        {/* About */}
+                                        <Link href="/about" className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group">
+                                            <Info className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                                            <span>{t("common.about")}</span>
+                                        </Link>
 
-                                    {/* Divider */}
-                                    <div className="w-px h-4 bg-slate-200/80 mx-1" />
+                                        {/* Divider */}
+                                        <div className="w-px h-4 bg-slate-200/80 mx-1" />
 
-                                    {/* Flash Sale — highlighted pill */}
-                                    <Link href="/flash-sale" className="relative flex items-center gap-1.5 px-4 py-2 text-[11px] font-black uppercase tracking-wider text-white bg-gradient-to-r from-red-500 to-rose-500 rounded-2xl shadow-sm shadow-red-200 hover:shadow-md hover:shadow-red-200 hover:from-red-600 hover:to-rose-600 transition-all group">
-                                        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-300 rounded-full animate-ping" />
-                                        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-400 rounded-full" />
-                                        <Flame className="w-3.5 h-3.5" />
-                                        <span>Flash Sale</span>
-                                    </Link>
+                                        {/* Flash Sale — highlighted pill */}
+                                        <Link href="/flash-sale" className="relative flex items-center gap-1.5 px-4 py-2 text-[11px] font-black uppercase tracking-wider text-white bg-gradient-to-r from-red-500 to-rose-500 rounded-2xl shadow-sm shadow-red-200 hover:shadow-md hover:shadow-red-200 hover:from-red-600 hover:to-rose-600 transition-all group">
+                                            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-300 rounded-full animate-ping" />
+                                            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-yellow-400 rounded-full" />
+                                            <Flame className="w-3.5 h-3.5" />
+                                            <span>Flash Sale</span>
+                                        </Link>
 
-                                    {/* Voucher */}
-                                    <Link href="/vouchers" className="relative flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-2xl hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all group">
-                                        <Gift className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                                        <span>{t("navbar.voucher")}</span>
-                                        <span className="text-[8px] font-black px-1 py-0.5 bg-emerald-500 text-white rounded-full leading-none group-hover:bg-white group-hover:text-emerald-600 transition-colors">HOT</span>
-                                    </Link>
+                                        {/* Voucher */}
+                                        <Link href="/vouchers" className="relative flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-2xl hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all group">
+                                            <Gift className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                                            <span>{t("navbar.voucher")}</span>
+                                            <span className="text-[8px] font-black px-1 py-0.5 bg-emerald-500 text-white rounded-full leading-none group-hover:bg-white group-hover:text-emerald-600 transition-colors">HOT</span>
+                                        </Link>
 
-                                    {/* Compare */}
-                                    <Link href="/compare" className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group">
-                                        <Scale className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                                        <span>So sánh</span>
-                                    </Link>
+                                        {/* Compare */}
+                                        <Link href="/compare" className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group">
+                                            <Scale className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                                            <span>So sánh</span>
+                                        </Link>
 
-                                    {/* Divider */}
-                                    <div className="w-px h-4 bg-slate-200/80 mx-1" />
+                                        {/* Divider */}
+                                        <div className="w-px h-4 bg-slate-200/80 mx-1" />
 
-                                    {/* Posts */}
-                                    <Link href="/posts" className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group">
-                                        <FileText className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                                        <span>{t("navbar.posts")}</span>
-                                    </Link>
+                                        {/* Posts */}
+                                        <Link href="/posts" className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group">
+                                            <FileText className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                                            <span>{t("navbar.posts")}</span>
+                                        </Link>
 
-                                    {/* FAQ */}
-                                    <Link href="/faq" className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group">
-                                        <HelpCircle className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                                        <span>FAQ</span>
-                                    </Link>
+                                        {/* FAQ */}
+                                        <Link href="/faq" className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group">
+                                            <HelpCircle className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                                            <span>FAQ</span>
+                                        </Link>
 
-                                    {/* Contact */}
-                                    <Link href="/contact" className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group">
-                                        <Phone className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                                        <span>{t("common.contact")}</span>
-                                    </Link>
+                                        {/* Contact */}
+                                        <Link href="/contact" className="flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-primary/5 rounded-2xl transition-all group">
+                                            <Phone className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                                            <span>{t("common.contact")}</span>
+                                        </Link>
 
-                                </div>
+                                    </div>
                                 )}
                             </div>
                         </motion.div>
@@ -701,7 +698,7 @@ function NavbarContent() {
                                 <div className="sticky top-0 bg-white/95 backdrop-blur-xl px-5 py-4 flex items-center justify-between border-b border-slate-100 z-10">
                                     <Link href="/" onClick={() => setIsOpen(false)}>
                                         <motion.img
-                                            src="/logo.png"
+                                            src="/logo.png?v=2"
                                             alt="Logo"
                                             className="h-7 xs:h-8 sm:h-9 w-auto"
                                             initial={{ opacity: 0, x: -20 }}
@@ -844,6 +841,7 @@ function NavbarContent() {
                                                     alt="User"
                                                     fill
                                                     sizes="48px"
+                                                    unoptimized
                                                 />
                                             </div>
                                             <div>

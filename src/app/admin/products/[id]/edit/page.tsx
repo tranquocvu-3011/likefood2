@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -58,7 +58,7 @@ export default function EditProductPage() {
 
         const productData = await productResponse.json().catch(() => ({}));
         if (!productResponse.ok) {
-          throw new Error(productData?.error || "Unable to load product.");
+          throw new Error(productData?.error || "Không thể tải sản phẩm.");
         }
 
         setProduct({
@@ -89,7 +89,7 @@ export default function EditProductPage() {
           setVariants(Array.isArray(variantData) ? variantData : []);
         }
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Unable to load product.");
+        toast.error(error instanceof Error ? error.message : "Không thể tải sản phẩm.");
         router.push("/admin/products");
       } finally {
         setIsLoading(false);
@@ -124,22 +124,22 @@ export default function EditProductPage() {
 
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-          toast.error(data?.error || "Unable to save changes.");
+          toast.error(data?.error || "Không thể lưu thay đổi.");
           return;
         }
 
-        toast.success("Product updated.");
+        toast.success("Đã cập nhật sản phẩm.");
         router.refresh();
       }}
       onDelete={async () => {
         const response = await fetch(`/api/products?id=${productId}`, { method: "DELETE" });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-          toast.error(data?.error || "Unable to delete product.");
+          toast.error(data?.error || "Không thể xóa sản phẩm.");
           return;
         }
 
-        toast.success("Product deleted.");
+        toast.success("Đã xóa sản phẩm.");
         router.push("/admin/products");
       }}
     />

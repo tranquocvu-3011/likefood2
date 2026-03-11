@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -50,13 +50,13 @@ const values = [
 
 const testimonials = [
     {
-        name: "Chị Nguyễn Thị Mai",
+        name: "Chị Lê Huỳnh Nhiên",
         location: "California, USA",
         content: "Nhờ LIKEFOOD mà gia đình tôi ở Mỹ vẫn được thưởng thức những món ăn quê hương. Cá khô rất ngon, đúng vị Châu Đốc!",
         rating: 5,
     },
     {
-        name: "Anh Trần Văn Hùng",
+        name: "Anh Trần Quốc Vũ",
         location: "Texas, USA",
         content: "Mua hàng ở đây rất yên tâm, giao hàng nhanh, đóng gói cẩn thận. Sẽ ủng hộ lâu dài!",
         rating: 5,

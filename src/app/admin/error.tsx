@@ -1,10 +1,11 @@
+"use client";
+
 /**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
+ * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useEffect } from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
@@ -49,7 +50,7 @@ export default function AdminError({
                     <Button variant="outline" size="sm" asChild>
                         <Link href="/admin/dashboard">
                             <Home className="w-4 h-4 mr-2" />
-                            Dashboard
+                            Bảng điều khiển
                         </Link>
                     </Button>
                 </div>

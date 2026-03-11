@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import React, { createContext, useContext, useState } from "react";
 import { vi } from "./dictionaries/vi";
@@ -24,16 +24,35 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-    const [language, setLanguageState] = useState<Language>(() => {
-        if (typeof window === "undefined") return "vi";
-        const saved = localStorage.getItem("language") as Language;
-        return saved === "vi" || saved === "en" ? saved : "vi";
-    });
+interface LanguageProviderProps {
+    children: React.ReactNode;
+    initialLanguage?: Language;
+}
+
+export function LanguageProvider({ children }: LanguageProviderProps) {
+    // Try to get initial language from cookie on client side
+    const getInitialLanguage = (): Language => {
+        if (typeof window !== "undefined") {
+            const stored = localStorage.getItem("language");
+            if (stored === "vi" || stored === "en") return stored;
+            const cookies = document.cookie.split(";").find(c => c.trim().startsWith("language="));
+            if (cookies) {
+                const lang = cookies.split("=")[1]?.trim();
+                if (lang === "vi" || lang === "en") return lang;
+            }
+        }
+        return "vi";
+    };
+
+    const [language, setLanguageState] = useState<Language>(getInitialLanguage());
 
     const setLanguage = (lang: Language) => {
         setLanguageState(lang);
-        localStorage.setItem("language", lang);
+        if (typeof window !== "undefined") {
+            localStorage.setItem("language", lang);
+            // Persist in cookie for SSR hydration consistency
+            document.cookie = `language=${lang};path=/;max-age=31536000;SameSite=Lax`;
+        }
     };
 
     const dict = language === "vi" ? vi : en;

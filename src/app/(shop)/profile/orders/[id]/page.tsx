@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
@@ -84,14 +84,14 @@ interface OrderData {
 }
 
 const STATUS_META: Record<string, { label: string; desc: string; tone: string; icon: typeof Clock3 }> = {
-  PENDING: { label: "Dang cho xac nhan", desc: "Don hang da duoc ghi nhan va dang cho doi ngu xac nhan.", tone: "bg-amber-100 text-amber-700 border-amber-200", icon: Clock3 },
-  CONFIRMED: { label: "Da xac nhan", desc: "Don hang da duoc xac nhan va chuyen sang buoc chuan bi.", tone: "bg-sky-100 text-sky-700 border-sky-200", icon: CheckCircle2 },
-  PROCESSING: { label: "Dang chuan bi", desc: "San pham dang duoc dong goi va kiem tra truoc khi giao.", tone: "bg-violet-100 text-violet-700 border-violet-200", icon: Package },
-  SHIPPING: { label: "Dang giao hang", desc: "Don hang dang tren duong den dia chi nhan cua ban.", tone: "bg-cyan-100 text-cyan-700 border-cyan-200", icon: Truck },
-  DELIVERED: { label: "Da giao hang", desc: "Don hang da den noi. Ban co the kiem tra va gui danh gia.", tone: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: CheckCircle2 },
-  COMPLETED: { label: "Hoan thanh", desc: "Don hang da hoan tat. Ban co the mua lai nhanh tu don nay.", tone: "bg-green-100 text-green-700 border-green-200", icon: Check },
-  CANCELLED: { label: "Da huy", desc: "Don hang da duoc huy va khong tiep tuc xu ly.", tone: "bg-rose-100 text-rose-700 border-rose-200", icon: XCircle },
-  REFUNDED: { label: "Da hoan tien", desc: "Yeu cau hoan tien da duoc xu ly cho don hang nay.", tone: "bg-slate-200 text-slate-700 border-slate-300", icon: RefreshCw },
+  PENDING: { label: "Đang chờ xác nhận", desc: "Đơn hàng đã được ghi nhận và đang chờ đội ngũ xác nhận.", tone: "bg-amber-100 text-amber-700 border-amber-200", icon: Clock3 },
+  CONFIRMED: { label: "Đã xác nhận", desc: "Đơn hàng đã được xác nhận và chuyển sang bước chuẩn bị.", tone: "bg-sky-100 text-sky-700 border-sky-200", icon: CheckCircle2 },
+  PROCESSING: { label: "Đang chuẩn bị", desc: "Sản phẩm đang được đóng gói và kiểm tra trước khi giao.", tone: "bg-violet-100 text-violet-700 border-violet-200", icon: Package },
+  SHIPPING: { label: "Đang giao hàng", desc: "Đơn hàng đang trên đường đến địa chỉ nhận của bạn.", tone: "bg-cyan-100 text-cyan-700 border-cyan-200", icon: Truck },
+  DELIVERED: { label: "Đã giao hàng", desc: "Đơn hàng đã đến nơi. Bạn có thể kiểm tra và gửi đánh giá.", tone: "bg-emerald-100 text-emerald-700 border-emerald-200", icon: CheckCircle2 },
+  COMPLETED: { label: "Hoàn thành", desc: "Đơn hàng đã hoàn tất. Bạn có thể mua lại nhanh từ đơn này.", tone: "bg-green-100 text-green-700 border-green-200", icon: Check },
+  CANCELLED: { label: "Đã hủy", desc: "Đơn hàng đã được hủy và không tiếp tục xử lý.", tone: "bg-rose-100 text-rose-700 border-rose-200", icon: XCircle },
+  REFUNDED: { label: "Đã hoàn tiền", desc: "Yêu cầu hoàn tiền đã được xử lý cho đơn hàng này.", tone: "bg-slate-200 text-slate-700 border-slate-300", icon: RefreshCw },
 };
 
 const STEPS = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPING", "DELIVERED"];
@@ -107,17 +107,17 @@ function formatDate(value: string) {
 }
 
 function shippingLabel(value?: string | null) {
-  if (value === "express") return "Giao hang nhanh";
-  if (value === "overnight") return "Giao hang uu tien";
-  return "Giao hang tieu chuan";
+  if (value === "express") return "Giao hàng nhanh";
+  if (value === "overnight") return "Giao hàng ưu tiên";
+  return "Giao hàng tiêu chuẩn";
 }
 
 function paymentLabel(value?: string | null) {
-  if (value === "COD") return "Thanh toan khi nhan hang";
-  if (value === "BANK_TRANSFER" || value === "BANK") return "Chuyen khoan ngan hang";
+  if (value === "COD") return "Thanh toán khi nhận hàng";
+  if (value === "BANK_TRANSFER" || value === "BANK") return "Chuyển khoản ngân hàng";
   if (value === "PAYPAL") return "PayPal";
-  if (value === "STRIPE") return "The thanh toan";
-  return value || "Chua cap nhat";
+  if (value === "STRIPE") return "Thẻ thanh toán";
+  return value || "Chưa cập nhật";
 }
 
 export default function OrderDetailPage() {
@@ -142,10 +142,10 @@ export default function OrderDetailPage() {
       setError(null);
       const response = await fetch(`/api/user/orders/${orderId}`);
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data?.error || "Khong the tai chi tiet don hang.");
+      if (!response.ok) throw new Error(data?.error || "Không thể tải chi tiết đơn hàng.");
       setOrder({ ...data, items: data.items || data.orderItems || [], events: data.events || [] });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Khong the tai chi tiet don hang.");
+      setError(err instanceof Error ? err.message : "Không thể tải chi tiết đơn hàng.");
     } finally {
       setLoading(false);
     }
@@ -180,7 +180,7 @@ export default function OrderDetailPage() {
 
   const submitCancel = async () => {
     if (!cancelReason.trim()) {
-      toast.error("Vui long nhap ly do huy don.");
+      toast.error("Vui lòng nhập lý do hủy đơn.");
       return;
     }
     setBusy("cancel");
@@ -191,13 +191,13 @@ export default function OrderDetailPage() {
         body: JSON.stringify({ reason: cancelReason.trim() }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data?.error || "Khong the huy don hang.");
-      toast.success("Don hang da duoc huy.");
+      if (!response.ok) throw new Error(data?.error || "Không thể hủy đơn hàng.");
+      toast.success("Đơn hàng đã được hủy.");
       setCancelOpen(false);
       setCancelReason("");
       await fetchOrder();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Khong the huy don hang.");
+      toast.error(err instanceof Error ? err.message : "Không thể hủy đơn hàng.");
     } finally {
       setBusy(null);
     }
@@ -205,7 +205,7 @@ export default function OrderDetailPage() {
 
   const submitRefund = async () => {
     if (!refundReason.trim()) {
-      toast.error("Vui long nhap ly do hoan tien.");
+      toast.error("Vui lòng nhập lý do hoàn tiền.");
       return;
     }
     setBusy("refund");
@@ -216,13 +216,13 @@ export default function OrderDetailPage() {
         body: JSON.stringify({ orderId, reason: refundReason.trim(), refundMethod: "ORIGINAL" }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data?.error || "Khong the gui yeu cau hoan tien.");
-      toast.success("Yeu cau hoan tien da duoc gui.");
+      if (!response.ok) throw new Error(data?.error || "Không thể gửi yêu cầu hoàn tiền.");
+      toast.success("Yêu cầu hoàn tiền đã được gửi.");
       setRefundOpen(false);
       setRefundReason("");
       await fetchOrder();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Khong the gui yeu cau hoan tien.");
+      toast.error(err instanceof Error ? err.message : "Không thể gửi yêu cầu hoàn tiền.");
     } finally {
       setBusy(null);
     }
@@ -233,11 +233,11 @@ export default function OrderDetailPage() {
     try {
       const response = await fetch(`/api/user/orders/${orderId}/reorder`, { method: "POST" });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data?.error || "Khong the mua lai don hang.");
-      toast.success(data?.message || "San pham da duoc them vao gio hang.");
+      if (!response.ok) throw new Error(data?.error || "Không thể mua lại đơn hàng.");
+      toast.success(data?.message || "Sản phẩm đã được thêm vào giỏ hàng.");
       router.push("/cart");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Khong the mua lai don hang.");
+      toast.error(err instanceof Error ? err.message : "Không thể mua lại đơn hàng.");
     } finally {
       setBusy(null);
     }
@@ -262,10 +262,10 @@ export default function OrderDetailPage() {
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-rose-100 text-rose-500">
                 <AlertTriangle className="h-7 w-7" />
               </div>
-              <h1 className="mt-5 text-2xl font-black tracking-tight text-slate-950">Khong the mo chi tiet don hang</h1>
-              <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">{error || "Don hang khong ton tai hoac ban khong co quyen xem don nay."}</p>
+              <h1 className="mt-5 text-2xl font-black tracking-tight text-slate-950">Không thể mở chi tiết đơn hàng</h1>
+              <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">{error || "Đơn hàng không tồn tại hoặc bạn không có quyền xem đơn này."}</p>
               <Button asChild size="xl" className="mt-6">
-                <Link href="/profile/orders">Quay lai danh sach don hang</Link>
+                <Link href="/profile/orders">Quay lại danh sách đơn hàng</Link>
               </Button>
             </CardContent>
           </Card>
@@ -280,7 +280,7 @@ export default function OrderDetailPage() {
         <div className="page-container-wide space-y-8">
           <Link href="/profile/orders" className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.2em] text-slate-500 transition hover:text-primary">
             <ArrowLeft className="h-4 w-4" />
-            Quay lai don hang
+            Quay lại đơn hàng
           </Link>
 
           <section className="overflow-hidden rounded-[2.75rem] border border-slate-200 bg-white shadow-[0_20px_70px_rgba(15,23,42,0.08)]">
@@ -290,7 +290,7 @@ export default function OrderDetailPage() {
                   <StatusIcon className="h-7 w-7" />
                 </div>
                 <div className="space-y-3">
-                  <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">Don hang cua ban</p>
+                  <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">Đơn hàng của bạn</p>
                   <h1 className="text-4xl font-black uppercase tracking-tight text-slate-950 lg:text-5xl">{meta.label}</h1>
                   <p className="max-w-2xl text-base leading-7 text-slate-600 lg:text-lg">{meta.desc}</p>
                 </div>
@@ -298,17 +298,17 @@ export default function OrderDetailPage() {
                   <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2">#{order.id.slice(-8).toUpperCase()}</span>
                   <button type="button" onClick={handleCopy} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 transition hover:border-primary/30 hover:text-primary">
                     <Copy className="h-4 w-4" />
-                    {copied ? "Da sao chep" : "Sao chep ma don"}
+                    {copied ? "Đã sao chép" : "Sao chép mã đơn"}
                   </button>
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2">Dat luc {formatDate(order.createdAt)}</span>
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2">Đặt lúc {formatDate(order.createdAt)}</span>
                 </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
                 {[
-                  { label: "Tong thanh toan", value: formatPrice(order.total) },
-                  { label: "Thanh toan", value: order.paymentStatus === "PAID" ? "Da thanh toan" : "Chua thanh toan" },
-                  { label: "Van chuyen", value: shippingLabel(order.shippingMethod) },
+                  { label: "Tổng thanh toán", value: formatPrice(order.total) },
+                  { label: "Thanh toán", value: order.paymentStatus === "PAID" ? "Đã thanh toán" : "Chưa thanh toán" },
+                  { label: "Vận chuyển", value: shippingLabel(order.shippingMethod) },
                 ].map((entry) => (
                   <div key={entry.label} className="rounded-[1.75rem] border border-slate-200 bg-slate-50/80 p-4">
                     <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">{entry.label}</p>
@@ -323,7 +323,7 @@ export default function OrderDetailPage() {
             <section className="rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
               <div className="flex items-center gap-3">
                 <Truck className="h-5 w-5 text-primary" />
-                <h2 className="text-2xl font-black tracking-tight text-slate-950">Tien trinh xu ly</h2>
+                <h2 className="text-2xl font-black tracking-tight text-slate-950">Tiến trình xử lý</h2>
               </div>
               <div className="relative mt-8">
                 <div className="absolute left-0 right-0 top-6 h-1 rounded-full bg-slate-100" />
@@ -349,13 +349,13 @@ export default function OrderDetailPage() {
                 <div className="mt-8 grid gap-4 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
                   {order.trackingCode && (
                     <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Ma van don</p>
+                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Mã vận đơn</p>
                       <p className="mt-1 text-sm font-bold text-slate-900">{order.trackingCode}</p>
                     </div>
                   )}
                   {order.carrier && (
                     <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Don vi van chuyen</p>
+                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Đơn vị vận chuyển</p>
                       <p className="mt-1 text-sm font-bold text-slate-900">{order.carrier}</p>
                     </div>
                   )}
@@ -370,7 +370,7 @@ export default function OrderDetailPage() {
                 <CardContent className="p-6 lg:p-8">
                   <div className="flex items-center gap-3">
                     <Package className="h-5 w-5 text-primary" />
-                    <h2 className="text-2xl font-black tracking-tight text-slate-950">San pham trong don</h2>
+                    <h2 className="text-2xl font-black tracking-tight text-slate-950">Sản phẩm trong đơn</h2>
                   </div>
                   <div className="mt-6 space-y-4">
                     {items.map((item) => {
@@ -406,7 +406,7 @@ export default function OrderDetailPage() {
                   <CardContent className="p-6 lg:p-8">
                     <div className="flex items-center gap-3">
                       <FileText className="h-5 w-5 text-primary" />
-                      <h2 className="text-2xl font-black tracking-tight text-slate-950">Lich su hoat dong</h2>
+                      <h2 className="text-2xl font-black tracking-tight text-slate-950">Lịch sử hoạt động</h2>
                     </div>
                     <div className="mt-6 space-y-5">
                       {events.map((event, index) => {
@@ -439,32 +439,32 @@ export default function OrderDetailPage() {
                 <CardContent className="p-6 lg:p-8">
                   <div className="flex items-center gap-3">
                     <MapPin className="h-5 w-5 text-primary" />
-                    <h2 className="text-2xl font-black tracking-tight text-slate-950">Thong tin giao hang</h2>
+                    <h2 className="text-2xl font-black tracking-tight text-slate-950">Thông tin giao hàng</h2>
                   </div>
                   <div className="mt-6 space-y-4 text-sm leading-6 text-slate-600">
                     <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Dia chi</p>
-                      <p className="mt-2 font-bold text-slate-950">{[order.shippingAddress, order.shippingCity, order.shippingZipCode].filter(Boolean).join(", ") || "Chua cap nhat"}</p>
+                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Địa chỉ</p>
+                      <p className="mt-2 font-bold text-slate-950">{[order.shippingAddress, order.shippingCity, order.shippingZipCode].filter(Boolean).join(", ") || "Chưa cập nhật"}</p>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                        <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">So dien thoai</p>
-                        <p className="mt-2 font-bold text-slate-950">{order.shippingPhone || "Chua cap nhat"}</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Số điện thoại</p>
+                        <p className="mt-2 font-bold text-slate-950">{order.shippingPhone || "Chưa cập nhật"}</p>
                       </div>
                       <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                        <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Hinh thuc giao</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Hình thức giao</p>
                         <p className="mt-2 font-bold text-slate-950">{shippingLabel(order.shippingMethod)}</p>
                       </div>
                     </div>
                     {(order.trackingCode || order.carrier) && (
                       <div className="grid gap-4 sm:grid-cols-2">
                         <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                          <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Ma van don</p>
-                          <p className="mt-2 font-bold text-slate-950">{order.trackingCode || "Dang cap nhat"}</p>
+                          <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Mã vận đơn</p>
+                          <p className="mt-2 font-bold text-slate-950">{order.trackingCode || "Đang cập nhật"}</p>
                         </div>
                         <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                          <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Don vi giao</p>
-                          <p className="mt-2 font-bold text-slate-950">{order.carrier || "Dang cap nhat"}</p>
+                          <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Đơn vị giao</p>
+                          <p className="mt-2 font-bold text-slate-950">{order.carrier || "Đang cập nhật"}</p>
                         </div>
                       </div>
                     )}
@@ -476,16 +476,16 @@ export default function OrderDetailPage() {
                 <CardContent className="p-6 lg:p-8">
                   <div className="flex items-center gap-3">
                     <CreditCard className="h-5 w-5 text-primary" />
-                    <h2 className="text-2xl font-black tracking-tight text-slate-950">Thanh toan</h2>
+                    <h2 className="text-2xl font-black tracking-tight text-slate-950">Thanh toán</h2>
                   </div>
                   <div className="mt-6 grid gap-4">
                     <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Phuong thuc</p>
+                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Phương thức</p>
                       <p className="mt-2 font-bold text-slate-950">{paymentLabel(order.paymentMethod)}</p>
                     </div>
                     <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Trang thai thanh toan</p>
-                      <p className="mt-2 font-bold text-slate-950">{order.paymentStatus === "PAID" ? "Da thanh toan" : "Chua thanh toan"}</p>
+                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Trạng thái thanh toán</p>
+                      <p className="mt-2 font-bold text-slate-950">{order.paymentStatus === "PAID" ? "Đã thanh toán" : "Chưa thanh toán"}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -493,14 +493,14 @@ export default function OrderDetailPage() {
 
               <Card className="rounded-[2.25rem] border-slate-200 bg-white shadow-sm">
                 <CardContent className="p-6 lg:p-8">
-                  <h2 className="text-2xl font-black tracking-tight text-slate-950">Tong ket don hang</h2>
+                  <h2 className="text-2xl font-black tracking-tight text-slate-950">Tổng kết đơn hàng</h2>
                   <div className="mt-6 space-y-4 text-sm text-slate-600">
-                    <SummaryRow label="Tam tinh" value={formatPrice(order.subtotal)} />
-                    <SummaryRow label="Phi giao hang" value={formatPrice(order.shippingFee)} />
-                    <SummaryRow label="Giam gia" value={`-${formatPrice(order.discount)}`} />
-                    {order.couponCode && <SummaryRow label="Ma giam gia" value={order.couponCode} />}
+                    <SummaryRow label="Tạm tính" value={formatPrice(order.subtotal)} />
+                    <SummaryRow label="Phí giao hàng" value={formatPrice(order.shippingFee)} />
+                    <SummaryRow label="Giảm giá" value={`-${formatPrice(order.discount)}`} />
+                    {order.couponCode && <SummaryRow label="Mã giảm giá" value={order.couponCode} />}
                     <div className="border-t border-dashed border-slate-200 pt-4">
-                      <SummaryRow label="Tong thanh toan" value={formatPrice(order.total)} strong />
+                      <SummaryRow label="Tổng thanh toán" value={formatPrice(order.total)} strong />
                     </div>
                   </div>
                 </CardContent>
@@ -508,14 +508,14 @@ export default function OrderDetailPage() {
 
               <Card className="rounded-[2.25rem] border-slate-200 bg-white shadow-sm">
                 <CardContent className="p-6 lg:p-8">
-                  <h2 className="text-2xl font-black tracking-tight text-slate-950">Hanh dong nhanh</h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">Chi hien nhung thao tac phu hop voi trang thai hien tai cua don hang.</p>
+                  <h2 className="text-2xl font-black tracking-tight text-slate-950">Hành động nhanh</h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">Chỉ hiện những thao tác phù hợp với trạng thái hiện tại của đơn hàng.</p>
                   <div className="mt-6 grid gap-3">
                     {canReorder && (
                       <Button size="lg" onClick={reorder} disabled={busy === "reorder"} className="justify-between">
                         <span className="inline-flex items-center gap-2">
                           <ShoppingCart className="h-4 w-4" />
-                          Mua lai don nay
+                          Mua lại đơn này
                         </span>
                         {busy === "reorder" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                       </Button>
@@ -524,7 +524,7 @@ export default function OrderDetailPage() {
                       <Button size="lg" variant="outline" onClick={() => setRefundOpen(true)}>
                         <span className="inline-flex items-center gap-2">
                           <RefreshCw className="h-4 w-4" />
-                          Gui yeu cau hoan tien
+                          Gửi yêu cầu hoàn tiền
                         </span>
                       </Button>
                     )}
@@ -532,12 +532,12 @@ export default function OrderDetailPage() {
                       <Button size="lg" variant="outline" onClick={() => setCancelOpen(true)}>
                         <span className="inline-flex items-center gap-2">
                           <XCircle className="h-4 w-4" />
-                          Huy don hang
+                          Hủy đơn hàng
                         </span>
                       </Button>
                     )}
                     {!canReorder && !canRefund && !canCancel && (
-                      <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-500">Khong co hanh dong bo sung can thuc hien o trang thai hien tai.</div>
+                      <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-500">Không có hành động bổ sung cần thực hiện ở trạng thái hiện tại.</div>
                     )}
                   </div>
                 </CardContent>
@@ -549,25 +549,25 @@ export default function OrderDetailPage() {
 
       <ActionModal
         open={cancelOpen}
-        title="Huy don hang"
-        description="Ly do huy se duoc gui den he thong de doi ngu xu ly nhanh hon. Vui long mo ta ngan gon va ro rang."
+        title="Hủy đơn hàng"
+        description="Lý do hủy sẽ được gửi đến hệ thống để đội ngũ xử lý nhanh hơn. Vui lòng mô tả ngắn gọn và rõ ràng."
         value={cancelReason}
         onChange={setCancelReason}
         onClose={() => setCancelOpen(false)}
         onConfirm={submitCancel}
-        confirmLabel={busy === "cancel" ? "Dang xu ly..." : "Xac nhan huy don"}
+        confirmLabel={busy === "cancel" ? "Đang xử lý..." : "Xác nhận hủy đơn"}
         disabled={busy === "cancel"}
       />
 
       <ActionModal
         open={refundOpen}
-        title="Gui yeu cau hoan tien"
-        description="Hay cho chung toi biet ly do va tinh trang san pham de doi ngu ho tro phan hoi chinh xac hon."
+        title="Gửi yêu cầu hoàn tiền"
+        description="Hãy cho chúng tôi biết lý do và tình trạng sản phẩm để đội ngũ hỗ trợ phản hồi chính xác hơn."
         value={refundReason}
         onChange={setRefundReason}
         onClose={() => setRefundOpen(false)}
         onConfirm={submitRefund}
-        confirmLabel={busy === "refund" ? "Dang gui..." : "Gui yeu cau"}
+        confirmLabel={busy === "refund" ? "Đang gửi..." : "Gửi yêu cầu"}
         disabled={busy === "refund"}
       />
     </>
@@ -611,11 +611,11 @@ function ActionModal({
       <div className="w-full max-w-xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.32)] lg:p-8">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">Xac nhan thao tac</p>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">Xác nhận thao tác</p>
             <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950">{title}</h3>
             <p className="mt-3 text-sm leading-6 text-slate-500">{description}</p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:border-slate-300 hover:text-slate-900" aria-label="Dong">
+          <button type="button" onClick={onClose} className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:border-slate-300 hover:text-slate-900" aria-label="Đóng">
             <XCircle className="h-4 w-4" />
           </button>
         </div>
@@ -623,13 +623,13 @@ function ActionModal({
         <textarea
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          placeholder="Nhap thong tin bo sung cho doi ngu ho tro..."
+          placeholder="Nhập thông tin bổ sung cho đội ngũ hỗ trợ..."
           className="mt-6 min-h-[140px] w-full rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-700 outline-none transition focus:border-primary"
         />
 
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button type="button" variant="outline" size="lg" onClick={onClose}>
-            Dong
+            Đóng
           </Button>
           <Button type="button" size="lg" onClick={onConfirm} disabled={disabled}>
             {confirmLabel}

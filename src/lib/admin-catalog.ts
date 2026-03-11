@@ -1,11 +1,11 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-﻿export interface AdminCategoryOption {
+export interface AdminCategoryOption {
   value: string;
   label: string;
   description: string;

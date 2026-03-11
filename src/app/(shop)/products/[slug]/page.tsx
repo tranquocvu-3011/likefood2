@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -205,6 +205,8 @@ export default function ProductDetailPage() {
             price: currentPrice,
             image: product.image || undefined,
             quantity,
+            inventory: currentInventory,
+            category: product.category ?? undefined,
         });
 
         setTimeout(() => setIsAddingToCart(false), 500);
@@ -227,6 +229,8 @@ export default function ProductDetailPage() {
             price: currentPrice,
             image: product.image || undefined,
             quantity,
+            inventory: currentInventory,
+            category: product.category ?? undefined,
         });
 
         router.push("/checkout");

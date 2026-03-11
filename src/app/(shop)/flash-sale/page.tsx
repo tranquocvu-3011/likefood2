@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -61,6 +61,7 @@ export default function FlashSalePage() {
         const fetchFlashProducts = async () => {
             try {
                 const res = await fetch('/api/products/flash-sale');
+                if (!res.ok) throw new Error('Failed to fetch flash sale products');
                 const data = await res.json();
 
                 if (data.products) {
@@ -149,11 +150,18 @@ export default function FlashSalePage() {
     }, [countdown]);
 
     const handleAddToCart = (product: FlashProduct) => {
+        if (product.inventory <= 0) {
+            toast.error(language === "vi" ? "Sản phẩm đã hết hàng" : "Product is out of stock");
+            return;
+        }
         addItem({
             productId: product.id,
+            slug: product.slug || undefined,
             name: product.name,
             price: product.salePrice,
             image: product.image || undefined,
+            inventory: product.inventory,
+            category: product.category || undefined,
         });
         toast.success(language === "vi" ? `Đã thêm ${product.name} vào giỏ hàng!` : `Added ${product.name} to cart!`);
     };

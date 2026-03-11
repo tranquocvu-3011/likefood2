@@ -1,7 +1,8 @@
 /**
  * LIKEFOOD - Vietnamese Specialty Marketplace
- * Sitemap Configuration
  * Copyright (c) 2026 LIKEFOOD Team
+ * Licensed under the MIT License
+ * https://github.com/tranquocvu-3011/likefood
  */
 
 import { MetadataRoute } from "next";

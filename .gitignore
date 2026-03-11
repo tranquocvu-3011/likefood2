@@ -40,6 +40,15 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# temp files
+*.tmp
+*.temp
+*.swp
+*.bak
+
+# generated prisma query engine temp files
+src/generated/client/*.tmp*
+
 # test output
 vitest_results.txt
 coverage/

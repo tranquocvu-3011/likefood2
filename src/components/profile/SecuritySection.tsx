@@ -1,13 +1,13 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-"use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,11 @@ export function SecuritySection({ session }: SecuritySectionProps) {
             }
         } catch { /* ignore */ }
     };
+
+    useEffect(() => {
+        fetchTwoFAStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleToggle2FA = async (enable: boolean) => {
         if (enable) {

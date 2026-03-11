@@ -1,15 +1,15 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-"use client";
-
 import { Trash2, CheckSquare, Square } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
+import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import { formatPrice } from "@/lib/currency";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/lib/i18n/context";
@@ -110,17 +110,13 @@ export function CartItemList({
                         href={`/products/${item.slug || item.id}`}
                         className="w-28 h-28 md:w-36 md:h-36 bg-white rounded-3xl overflow-hidden flex-shrink-0 shadow-sm border border-slate-100 flex items-center justify-center group/img relative"
                     >
-                        {item.image ? (
-                            <Image
-                                src={item.image}
-                                alt={item.name}
-                                fill
-                                className="object-cover transition-transform duration-700 group-hover/img:scale-110"
-                                sizes="128px"
-                            />
-                        ) : (
-                            <div className="w-10 h-10 bg-primary/10 rounded-lg" />
-                        )}
+                        <ImageWithFallback
+                            src={item.image}
+                            alt={item.name}
+                            fill
+                            className="object-cover transition-transform duration-700 group-hover/img:scale-110"
+                            sizes="128px"
+                        />
                     </Link>
 
                     {/* Details */}

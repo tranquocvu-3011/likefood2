@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useSession } from "next-auth/react";
 import Image from "next/image";
@@ -122,6 +122,10 @@ export function ProfileHeader({
                                     width={128}
                                     height={128}
                                     className="w-full h-full object-cover"
+                                    unoptimized
+                                    onError={() => {
+                                        onProfileDataChange({ ...profileData, image: "" });
+                                    }}
                                 />
                             ) : (
                                 <User className="w-16 h-16" />

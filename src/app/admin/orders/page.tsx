@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-﻿"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -29,7 +29,8 @@ interface Order {
   itemCount?: number;
 }
 
-const STATUS_FILTERS = ["ALL", "PENDING", "CONFIRMED", "PROCESSING", "SHIPPING", "DELIVERED", "COMPLETED", "CANCELLED"];
+const STATUS_FILTERS = ["TẤT CẢ", "CHỜ XỬ LÝ", "ĐÃ XÁC NHẬN", "ĐANG CHUẨN BỊ", "ĐANG GIAO", "ĐÃ GIAO", "HOÀN THÀNH", "ĐÃ HỦY"];
+const STATUS_VALUES = ["ALL", "PENDING", "CONFIRMED", "PROCESSING", "SHIPPING", "DELIVERED", "COMPLETED", "CANCELLED"];
 const NEXT_ACTIONS: Record<string, string[]> = {
   PENDING: ["CONFIRMED", "CANCELLED"],
   CONFIRMED: ["PROCESSING", "CANCELLED"],
@@ -43,7 +44,7 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [status, setStatus] = useState("ALL");
+  const [status, setStatus] = useState("TẤT CẢ");
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -55,7 +56,7 @@ export default function AdminOrdersPage() {
     setIsLoading(true);
     try {
       const params = new URLSearchParams({ page: page.toString(), limit: PAGE_SIZE.toString() });
-      if (status !== 'ALL') params.set('status', status);
+      if (status !== 'TẤT CẢ') params.set('status', STATUS_VALUES[STATUS_FILTERS.indexOf(status)] || status);
       if (debouncedSearch) params.set('search', debouncedSearch);
       if (dateFrom) params.set('dateFrom', dateFrom);
       if (dateTo) params.set('dateTo', dateTo);
@@ -89,10 +90,10 @@ export default function AdminOrdersPage() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data?.error || 'Unable to update order status.');
-      toast.success(`Order moved to ${nextStatus}.`);
+      toast.success(`Đơn hàng đã chuyển sang ${nextStatus}.`);
       await loadOrders();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to update order status.');
+      toast.error(error instanceof Error ? error.message : 'Không thể cập nhật trạng thái đơn hàng.');
     } finally {
       setUpdatingId(null);
     }
@@ -100,22 +101,22 @@ export default function AdminOrdersPage() {
 
   return (
     <AdminPageContainer
-      title="Order operations"
-      subtitle="Keep fulfillment moving with fast filters, next-step actions, and direct access to each order record."
+      title="Quản lý đơn hàng"
+      subtitle="Theo dõi vận hành đơn hàng với bộ lọc nhanh, thao tác tiếp theo và truy cập trực tiếp vào từng đơn."
       action={
         <>
           <a href="/api/admin/export?type=orders" download>
-            <Button variant="outline" size="lg"><Download className="h-4 w-4" />Export CSV</Button>
+            <Button variant="outline" size="lg"><Download className="h-4 w-4" />Xuất CSV</Button>
           </a>
-          <Button variant="outline" size="lg" onClick={() => void loadOrders()} disabled={isLoading}><RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Refresh</Button>
+          <Button variant="outline" size="lg" onClick={() => void loadOrders()} disabled={isLoading}><RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />Làm mới</Button>
         </>
       }
     >
-      <AdminFilterBar searchQuery={search} setSearchQuery={setSearch} searchPlaceholder="Search by order id or phone">
+      <AdminFilterBar searchQuery={search} setSearchQuery={setSearch} searchPlaceholder="Tìm theo mã đơn hoặc số điện thoại">
         <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600">
           <CalendarDays className="h-4 w-4 text-slate-400" />
           <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} className="bg-transparent outline-none" />
-          <span className="text-slate-300">to</span>
+          <span className="text-slate-300">đến</span>
           <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="bg-transparent outline-none" />
         </div>
       </AdminFilterBar>
@@ -132,7 +133,7 @@ export default function AdminOrdersPage() {
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50/80">
-              {['Order', 'Customer', 'Created', 'Total', 'Status', 'Next actions', 'Detail'].map((header) => <th key={header} className="px-6 py-4 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{header}</th>)}
+              {['Đơn hàng', 'Khách hàng', 'Ngày tạo', 'Tổng tiền', 'Trạng thái', 'Thao tác', 'Chi tiết'].map((header) => <th key={header} className="px-6 py-4 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{header}</th>)}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -140,8 +141,8 @@ export default function AdminOrdersPage() {
               <tr><td colSpan={7} className="px-6 py-20 text-center"><ClipboardList className="mx-auto h-10 w-10 text-slate-200" /><h3 className="mt-4 text-lg font-black text-slate-950">No orders found</h3><p className="mt-2 text-sm text-slate-500">Try another search or status filter.</p></td></tr>
             ) : orders.map((order) => (
               <tr key={order.id} className="transition hover:bg-slate-50/70">
-                <td className="px-6 py-5"><p className="font-black text-slate-950">#{order.id.slice(-8).toUpperCase()}</p><p className="mt-1 text-xs text-slate-400">{order.itemCount || 0} items</p></td>
-                <td className="px-6 py-5"><p className="font-bold text-slate-900">{order.userName || order.userEmail || 'Guest checkout'}</p><p className="mt-1 text-sm text-slate-500">{order.userEmail || 'No email'}</p></td>
+                <td className="px-6 py-5"><p className="font-black text-slate-950">#{order.id.slice(-8).toUpperCase()}</p><p className="mt-1 text-xs text-slate-400">{order.itemCount || 0} sản phẩm</p></td>
+                <td className="px-6 py-5"><p className="font-bold text-slate-900">{order.userName || order.userEmail || 'Khách vãng lai'}</p><p className="mt-1 text-sm text-slate-500">{order.userEmail || 'Không có email'}</p></td>
                 <td className="px-6 py-5 text-sm font-medium text-slate-600">{new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</td>
                 <td className="px-6 py-5 text-sm font-black text-slate-950">{formatPrice(order.total)}</td>
                 <td className="px-6 py-5"><span className="rounded-full bg-slate-100 px-3 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-700">{order.status}</span></td>
@@ -155,12 +156,12 @@ export default function AdminOrdersPage() {
                     ))}
                   </div>
                 </td>
-                <td className="px-6 py-5"><Link href={`/admin/orders/${order.id}`}><Button size="sm" variant="outline"><Eye className="h-4 w-4" />Open</Button></Link></td>
+                <td className="px-6 py-5"><Link href={`/admin/orders/${order.id}`}><Button size="sm" variant="outline"><Eye className="h-4 w-4" />Mở</Button></Link></td>
               </tr>
             ))}
           </tbody>
         </table>
-        <AdminPagination page={page} setPage={setPage} pageSize={PAGE_SIZE} total={total} itemLabel="orders" />
+        <AdminPagination page={page} setPage={setPage} pageSize={PAGE_SIZE} total={total} itemLabel="đơn hàng" />
       </AdminTableContainer>
     </AdminPageContainer>
   );

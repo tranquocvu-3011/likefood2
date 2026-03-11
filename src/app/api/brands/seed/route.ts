@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -50,7 +50,7 @@ export async function POST() {
             }
         ];
 
-        const results = [];
+        const results: { name: string; slug: string; logo: string; status: string }[] = [];
 
         for (const brand of brands) {
             const existing = await prisma.brand.findUnique({

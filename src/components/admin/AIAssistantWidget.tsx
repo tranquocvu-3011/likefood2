@@ -1,11 +1,11 @@
-﻿/**
+﻿"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -29,16 +29,16 @@ interface DashboardSnapshot {
 }
 
 const QUICK_PROMPTS = [
-  "What should the admin team fix first this week?",
-  "Which products are most likely to need restocking next?",
-  "Summarize the biggest revenue risks right now.",
-  "What should we improve in the customer experience next?",
+  "Tuần này nhóm quản trị cần ưu tiên xử lý gì trước?",
+  "Sản phẩm nào có khả năng cần nhập thêm hàng sớm nhất?",
+  "Tóm tắt các rủi ro doanh thu lớn nhất hiện tại.",
+  "Chúng ta nên cải thiện trải nghiệm khách hàng ở điểm nào tiếp theo?",
 ];
 
 const INITIAL_MESSAGE: Message = {
   id: "welcome",
   role: "assistant",
-  content: "I can help you read store signals, prioritize work, and turn admin data into clear next steps.",
+  content: "Tôi có thể giúp bạn phân tích tín hiệu cửa hàng, ưu tiên công việc và chuyển dữ liệu quản trị thành hành động cụ thể.",
   timestamp: new Date(),
 };
 
@@ -88,7 +88,7 @@ export default function AIAssistantWidget() {
   }, [messages, isSending, isOpen, isMinimized]);
 
   const summaryPreview = useMemo(() => {
-    if (!snapshot.summary) return "No AI summary loaded yet.";
+    if (!snapshot.summary) return "Chưa tải được tóm tắt AI.";
     return snapshot.summary;
   }, [snapshot.summary]);
 
@@ -125,7 +125,7 @@ export default function AIAssistantWidget() {
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data?.error || "Unable to reach the admin AI assistant.");
+        throw new Error(data?.error || "Không thể kết nối với trợ lý AI quản trị.");
       }
 
       setMessages((current) => [
@@ -133,7 +133,7 @@ export default function AIAssistantWidget() {
         {
           id: `${Date.now()}-assistant`,
           role: "assistant",
-          content: data.response || "No answer was returned.",
+          content: data.response || "Không nhận được phản hồi.",
           timestamp: new Date(),
         },
       ]);
@@ -143,7 +143,7 @@ export default function AIAssistantWidget() {
         {
           id: `${Date.now()}-fallback`,
           role: "assistant",
-          content: error instanceof Error ? error.message : "The admin AI assistant is temporarily unavailable.",
+          content: error instanceof Error ? error.message : "Trợ lý AI quản trị tạm thời không khả dụng.",
           timestamp: new Date(),
         },
       ]);
@@ -172,10 +172,10 @@ export default function AIAssistantWidget() {
                   <div>
                     <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.22em] text-white/70">
                       <Sparkles className="h-3.5 w-3.5" />
-                      Admin copilot
+                      Trợ lý quản trị
                     </div>
-                    <h3 className="mt-1 text-xl font-black tracking-tight">AI operator panel</h3>
-                    <p className="mt-1 text-sm leading-6 text-white/75">Store-aware guidance for revenue, customers, inventory, and next actions.</p>
+                    <h3 className="mt-1 text-xl font-black tracking-tight">Bảng điều khiển AI</h3>
+                    <p className="mt-1 text-sm leading-6 text-white/75">Hỗ trợ ra quyết định về doanh thu, khách hàng, tồn kho và các bước tiếp theo.</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -183,7 +183,7 @@ export default function AIAssistantWidget() {
                     type="button"
                     onClick={() => setIsMinimized((current) => !current)}
                     className="rounded-full border border-white/15 bg-white/10 p-2 text-white/85 transition hover:bg-white/15"
-                    aria-label={isMinimized ? "Expand panel" : "Minimize panel"}
+                    aria-label={isMinimized ? "Mở rộng bảng" : "Thu nhỏ bảng"}
                   >
                     {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
                   </button>
@@ -191,7 +191,7 @@ export default function AIAssistantWidget() {
                     type="button"
                     onClick={() => setIsOpen(false)}
                     className="rounded-full border border-white/15 bg-white/10 p-2 text-white/85 transition hover:bg-white/15"
-                    aria-label="Close panel"
+                    aria-label="Đóng bảng"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -201,30 +201,30 @@ export default function AIAssistantWidget() {
 
             {isMinimized ? (
               <div className="flex items-center justify-between gap-3 px-5 py-4">
-                <p className="text-sm text-slate-600">The admin copilot is ready when you need the next decision.</p>
-                <Button size="sm" onClick={() => setIsMinimized(false)}>Expand</Button>
+                <p className="text-sm text-slate-600">Trợ lý quản trị sẵn sàng khi bạn cần ra quyết định tiếp theo.</p>
+                <Button size="sm" onClick={() => setIsMinimized(false)}>Mở rộng</Button>
               </div>
             ) : (
               <>
                 <div className="space-y-4 border-b border-slate-200 bg-slate-50 px-5 py-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Live admin context</p>
-                      <p className="mt-1 text-sm text-slate-500">Pulled from dashboard and AI summary endpoints.</p>
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Dữ liệu quản trị trực tiếp</p>
+                      <p className="mt-1 text-sm text-slate-500">Lấy từ các endpoint dashboard và tóm tắt AI.</p>
                     </div>
                     <Button variant="outline" size="icon" onClick={() => void loadSnapshot()} disabled={isLoadingSnapshot}>
                       {isLoadingSnapshot ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                     </Button>
                   </div>
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <Metric label="Revenue" value={formatPrice(snapshot.revenue)} icon={TrendingUp} />
-                    <Metric label="Orders" value={`${snapshot.orders}`} icon={Sparkles} />
-                    <Metric label="Customers" value={`${snapshot.customers}`} icon={Users} />
+                    <Metric label="Doanh thu" value={formatPrice(snapshot.revenue)} icon={TrendingUp} />
+                    <Metric label="Đơn hàng" value={`${snapshot.orders}`} icon={Sparkles} />
+                    <Metric label="Khách hàng" value={`${snapshot.customers}`} icon={Users} />
                   </div>
                   <div className="rounded-[1.4rem] border border-slate-200 bg-white p-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">AI summary</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Tóm tắt AI</p>
                     <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">{summaryPreview}</p>
-                    {snapshot.topProduct ? <p className="mt-3 text-xs font-semibold text-slate-500">Top product right now: {snapshot.topProduct}</p> : null}
+                    {snapshot.topProduct ? <p className="mt-3 text-xs font-semibold text-slate-500">Sản phẩm bán chạy hiện tại: {snapshot.topProduct}</p> : null}
                   </div>
                 </div>
 
@@ -251,7 +251,7 @@ export default function AIAssistantWidget() {
                         <div className={`max-w-[88%] rounded-[1.5rem] px-4 py-3 text-sm leading-6 shadow-sm ${isAssistant ? "border border-slate-200 bg-slate-50 text-slate-700" : "bg-slate-950 text-white"}`}>
                           <p className="whitespace-pre-wrap">{message.content}</p>
                           <p className={`mt-2 text-[11px] font-black uppercase tracking-[0.16em] ${isAssistant ? "text-slate-400" : "text-white/55"}`}>
-                            {isAssistant ? "AI" : "You"} · {message.timestamp.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                            {isAssistant ? "AI" : "Bạn"} · {message.timestamp.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
                           </p>
                         </div>
                       </div>
@@ -261,7 +261,7 @@ export default function AIAssistantWidget() {
                     <div className="flex justify-start">
                       <div className="flex items-center gap-2 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Thinking through the store data...
+                        Đang phân tích dữ liệu cửa hàng...
                       </div>
                     </div>
                   ) : null}
@@ -273,14 +273,14 @@ export default function AIAssistantWidget() {
                       value={input}
                       onChange={(event) => setInput(event.target.value)}
                       rows={4}
-                      placeholder="Ask what to prioritize next, what is blocking growth, or which admin area needs attention."
+                      placeholder="Hỏi nên ưu tiên gì tiếp theo, điều gì đang cản trở tăng trưởng, hoặc khu vực quản trị nào cần chú ý."
                       className="min-h-[110px] w-full resize-none border-0 bg-transparent text-sm leading-6 text-slate-700 outline-none placeholder:text-slate-400"
                     />
                     <div className="mt-3 flex items-center justify-between gap-3">
-                      <p className="text-xs text-slate-400">Grounded in current admin metrics when available.</p>
+                      <p className="text-xs text-slate-400">Dựa trên số liệu quản trị hiện tại khi có sẵn.</p>
                       <Button onClick={() => void sendMessage()} disabled={!input.trim() || isSending} className="rounded-full">
                         {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        Send
+                        Gửi
                       </Button>
                     </div>
                   </div>
@@ -306,9 +306,9 @@ export default function AIAssistantWidget() {
             <Bot className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-white/70">AI operator</p>
-            <p className="mt-1 text-base font-black tracking-tight">Open admin copilot</p>
-            <p className="mt-1 text-sm text-white/72">Revenue, customers, inventory, and action planning in one panel.</p>
+            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-white/70">Trợ lý AI</p>
+            <p className="mt-1 text-base font-black tracking-tight">Mở bảng quản trị AI</p>
+            <p className="mt-1 text-sm text-white/72">Doanh thu, khách hàng, tồn kho và lên kế hoạch hành động trong một bảng.</p>
           </div>
         </div>
       </motion.button>

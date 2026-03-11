@@ -1,16 +1,17 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-"use client";
-
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import Link from "next/link";
 import ProductCard from "@/components/product/ProductCard";
-import { Search, SlidersHorizontal, ChevronDown, Loader2, X, LayoutGrid, List } from "lucide-react";
+import { Search, SlidersHorizontal, ChevronDown, ChevronUp, Loader2, X, LayoutGrid, List, Filter, Star, Package, Truck } from "lucide-react";
+import { formatPrice } from "@/lib/currency";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ProductGridSkeleton } from "@/components/ui/product-skeleton";
@@ -123,6 +124,8 @@ function ProductCatalogContent() {
     const [showSortMenu, setShowSortMenu] = useState(false);
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [showScrollTop, setShowScrollTop] = useState(false);
+    const [showMobileFilters, setShowMobileFilters] = useState(false);
+    const [itemsPerPage, setItemsPerPage] = useState(24);
 
     // Show/hide scroll-to-top button
     useEffect(() => {
@@ -131,8 +134,10 @@ function ProductCatalogContent() {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    // Debounce search query
+    // Debounce search query and price inputs
     const debouncedSearch = useDebounce(searchQuery, 400);
+    const debouncedMinPrice = useDebounce(minPrice, 600);
+    const debouncedMaxPrice = useDebounce(maxPrice, 600);
 
     // Prefetch common routes on mount for better performance
     useEffect(() => {
@@ -181,8 +186,17 @@ function ProductCatalogContent() {
         };
     }, []);
 
+    // Ref to prevent "Sync URL from state" overwriting the URL with stale state
+    // immediately after a URL-driven navigation (race condition fix)
+    const skipNextUrlSync = useRef(false);
+    // Ref to ensure "Load recent filters" only runs once on mount
+    const hasLoadedFiltersRef = useRef(false);
+    // AbortController ref for cancelling stale fetch requests
+    const abortControllerRef = useRef<AbortController | null>(null);
+
     // Sync local state from URL query (deep link + back/forward)
     useEffect(() => {
+        skipNextUrlSync.current = true;
         setSearchQuery(querySearch);
         // Normalize slug / English category name → current-language display name
         const viName = CATEGORY_TO_DB[queryCategory] ?? queryCategory;
@@ -219,12 +233,18 @@ function ProductCatalogContent() {
 
     // Sync URL from state (full filter/sort/page)
     useEffect(() => {
+        // Skip once after URL→state sync to avoid overwriting the URL with stale state
+        if (skipNextUrlSync.current) {
+            skipNextUrlSync.current = false;
+            return;
+        }
+
         const params = new URLSearchParams();
 
         if (debouncedSearch) params.set("search", debouncedSearch);
         if (selectedCategory && selectedCategory !== t("shopPage.allCategories")) params.set("category", selectedCategory);
-        if (minPrice) params.set("minPrice", minPrice);
-        if (maxPrice) params.set("maxPrice", maxPrice);
+        if (debouncedMinPrice) params.set("minPrice", debouncedMinPrice);
+        if (debouncedMaxPrice) params.set("maxPrice", debouncedMaxPrice);
         if (selectedTags.length > 0) params.set("tags", selectedTags.join(","));
         if (minRating) params.set("rating_gte", minRating.toString());
         if (inStockOnly) params.set("in_stock", "true");
@@ -233,17 +253,17 @@ function ProductCatalogContent() {
         if (page > 1) params.set("page", page.toString());
 
         const newQuery = params.toString();
-        const currentQuery = searchParams.toString();
-
-        if (newQuery === currentQuery) return;
+        // Normalize comparison: decode both to avoid %20 vs + encoding mismatch
+        const normalizeQuery = (q: string) => new URLSearchParams(q).toString();
+        if (normalizeQuery(newQuery) === normalizeQuery(searchParams.toString())) return;
 
         router.push(newQuery ? `/products?${newQuery}` : "/products", { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         debouncedSearch,
         selectedCategory,
-        minPrice,
-        maxPrice,
+        debouncedMinPrice,
+        debouncedMaxPrice,
         selectedTags,
         minRating,
         inStockOnly,
@@ -256,6 +276,13 @@ function ProductCatalogContent() {
 
     // Fetch products from API
     const fetchProducts = useCallback(async () => {
+        // Cancel any in-flight request to prevent stale responses overwriting newer ones
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         setIsLoading(true);
         setError(null);
 
@@ -267,48 +294,56 @@ function ProductCatalogContent() {
                 // Always send the Vietnamese DB-canonical name to the API
                 params.append("category", CATEGORY_TO_DB[selectedCategory] ?? selectedCategory);
             }
-            if (minPrice) params.append("minPrice", minPrice);
-            if (maxPrice) params.append("maxPrice", maxPrice);
+            if (debouncedMinPrice) params.append("minPrice", debouncedMinPrice);
+            if (debouncedMaxPrice) params.append("maxPrice", debouncedMaxPrice);
             if (selectedTags.length > 0) params.append("tags", selectedTags.join(","));
             if (minRating) params.append("rating_gte", minRating.toString());
             if (inStockOnly) params.append("in_stock", "true");
             if (freeShippingOnly) params.append("free_shipping", "true");
             params.append("sort", sort);
             params.append("page", page.toString());
-            params.append("limit", "12");
+            params.append("limit", itemsPerPage.toString());
 
-            const res = await fetch(`/api/products?${params.toString()}`);
+            const res = await fetch(`/api/products?${params.toString()}`, { signal: controller.signal });
 
             if (!res.ok) {
                 throw new Error("Failed to fetch products");
             }
 
             const data = await res.json();
-            setProducts(data.products || []);
-            setTotalPages(data.pagination?.totalPages || 1);
-            setTotal(data.pagination?.total || 0);
+            if (!controller.signal.aborted) {
+                setProducts(data.products || []);
+                setTotalPages(data.pagination?.totalPages || 1);
+                setTotal(data.pagination?.total || 0);
+            }
         } catch (err) {
+            if (err instanceof Error && err.name === "AbortError") return;
             logger.error("Products fetch error", err as Error, {
                 context: "products-page",
                 search: debouncedSearch,
                 category: selectedCategory,
                 page
             });
-            setError(t("shopPage.loadError"));
+            if (!controller.signal.aborted) {
+                setError(t("shopPage.loadError"));
+            }
         } finally {
-            setIsLoading(false);
+            if (!controller.signal.aborted) {
+                setIsLoading(false);
+            }
         }
     }, [ // eslint-disable-line react-hooks/exhaustive-deps
         debouncedSearch,
         selectedCategory,
-        minPrice,
-        maxPrice,
+        debouncedMinPrice,
+        debouncedMaxPrice,
         sort,
         page,
         selectedTags,
         minRating,
         inStockOnly,
         freeShippingOnly,
+        itemsPerPage,
     ]);
 
     // Fetch search hints when user types
@@ -376,10 +411,10 @@ function ProductCatalogContent() {
         lastTrackedList.current = key;
     }, [fetchProducts, selectedCategory, debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Reset to page 1 when filters change
+    // Reset to page 1 when filters change (use debounced prices to avoid reset on every keystroke)
     useEffect(() => {
         setPage(1);
-    }, [debouncedSearch, selectedCategory, minPrice, maxPrice, selectedTags, minRating, inStockOnly, freeShippingOnly, sort]);
+    }, [debouncedSearch, selectedCategory, debouncedMinPrice, debouncedMaxPrice, selectedTags, minRating, inStockOnly, freeShippingOnly, sort, itemsPerPage]);
 
     const handleClearFilters = () => {
         setSearchQuery("");
@@ -424,10 +459,14 @@ function ProductCatalogContent() {
         localStorage.setItem("recent_filters", JSON.stringify(filters));
     }, [selectedCategory, minPrice, maxPrice, selectedTags, minRating, inStockOnly, freeShippingOnly, sort, hasActiveFilters]);
 
-    // Load recent filters on mount
+    // Load recent filters on mount ONLY — skip if the URL already carries any params
     useEffect(() => {
+        if (hasLoadedFiltersRef.current) return;
+        hasLoadedFiltersRef.current = true;
+        // Don't restore saved filters when the user navigated here with explicit URL params
+        if (searchParams.toString()) return;
         const saved = localStorage.getItem("recent_filters");
-        if (saved && !hasActiveFilters) {
+        if (saved) {
             try {
                 const filters = JSON.parse(saved);
                 if (filters.category) setSelectedCategory(filters.category);
@@ -441,7 +480,7 @@ function ProductCatalogContent() {
                 logger.warn("Failed to load recent filters", { context: "products-page" });
             }
         }
-    }, [hasActiveFilters]);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Get category gradient based on name  
     const getCategoryGradient = (cat: string) => {
@@ -457,9 +496,11 @@ function ProductCatalogContent() {
     return (
         <>
         <div className="bg-slate-50 min-h-screen">
+            {/* Layout thu gọn: max-width nhỏ lại ~ một nửa so với full width */}
+            <div className="max-w-5xl mx-auto px-4 sm:px-6">
             {/* Header section - Cleaned up to avoid double search bar */}
-            <section className="bg-white pt-12 pb-8 border-b border-slate-100">
-                <div className="page-container-wide">
+            <section className="bg-white pt-10 pb-6 border-b border-slate-100">
+                <div>
                     {/* Breadcrumbs */}
                     <div className="mb-6 flex items-center gap-2 text-sm">
                         <Link href="/" className="text-slate-400 hover:text-primary">
@@ -519,7 +560,7 @@ function ProductCatalogContent() {
                                     )}
                                 </div>
 
-                                {/* Search hints + recent searches dropdown */}
+                                        {/* Search hints + recent searches dropdown */}
                                 {showSearchHints && (searchHints.length > 0 || recentSearches.length > 0) && (
                                     <div className="absolute z-20 mt-2 w-full bg-white rounded-2xl border border-slate-100 shadow-xl max-h-80 overflow-y-auto">
                                         {recentSearches.length > 0 && (
@@ -586,7 +627,7 @@ function ProductCatalogContent() {
                                                             </p>
                                                         </div>
                                                         <span className="text-[11px] font-black text-primary">
-                                                            ${hint.price?.toFixed(2) ?? ""}
+                                                            {hint.price != null ? formatPrice(hint.price) : ""}
                                                         </span>
                                                     </button>
                                                 ))}
@@ -600,11 +641,28 @@ function ProductCatalogContent() {
                 </div>
             </section>
 
-            <div className="page-container-wide py-12">
+            <div className="py-8">
                 <div className="flex flex-col lg:flex-row gap-12">
-                    {/* Filters Sidebar */}
-                    <div className="w-full lg:w-72 shrink-0">
-                        <div className="bg-white/90 backdrop-blur-xl p-6 sm:p-8 rounded-[2rem] border border-slate-100/80 sticky top-24 shadow-[0_8px_40px_rgba(0,0,0,0.04)]">
+                    {/* Mobile: Filter toggle button */}
+                    <div className="lg:hidden flex items-center justify-between mb-2">
+                        <button
+                            onClick={() => setShowMobileFilters(v => !v)}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-2xl font-bold text-sm shadow-sm"
+                        >
+                            <Filter className="w-4 h-4" />
+                            {language === "vi" ? "Bộ lọc" : "Filters"}
+                            {hasActiveFilters && (
+                                <span className="w-5 h-5 rounded-full bg-primary text-white text-[10px] font-black flex items-center justify-center">
+                                    {[selectedCategory !== t("shopPage.allCategories"), debouncedMinPrice || debouncedMaxPrice, selectedTags.length > 0, minRating > 0, inStockOnly, freeShippingOnly, sort !== "newest"].filter(Boolean).length}
+                                </span>
+                            )}
+                        </button>
+                        <span className="text-xs text-slate-500 font-medium">{total} {t("shopPage.productsLabel")}</span>
+                    </div>
+
+                    {/* Filters Sidebar — desktop always visible, mobile conditionally shown */}
+                    <div className={`w-full lg:w-56 shrink-0 ${showMobileFilters ? "block" : "hidden lg:block"}`}>
+                        <div className="bg-white/90 backdrop-blur-xl p-4 sm:p-5 rounded-2xl border border-slate-100/80 sticky top-24 shadow-[0_8px_40px_rgba(0,0,0,0.04)]">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-lg font-black uppercase tracking-wider flex items-center gap-2.5">
                                     <div className="w-8 h-8 rounded-2xl bg-emerald-50 flex items-center justify-center">
@@ -718,7 +776,7 @@ function ProductCatalogContent() {
                                         <input
                                             type="checkbox"
                                             checked={inStockOnly}
-                                            onChange={(e) => setInStockOnly(e.target.checked)}
+                                            onChange={(e) => { setInStockOnly(e.target.checked); setPage(1); }}
                                             className="w-4.5 h-4.5 rounded-md border-slate-300 text-emerald-500 focus:ring-emerald-300 transition-all"
                                         />
                                         <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">
@@ -729,7 +787,7 @@ function ProductCatalogContent() {
                                         <input
                                             type="checkbox"
                                             checked={freeShippingOnly}
-                                            onChange={(e) => setFreeShippingOnly(e.target.checked)}
+                                            onChange={(e) => { setFreeShippingOnly(e.target.checked); setPage(1); }}
                                             className="w-4.5 h-4.5 rounded-md border-slate-300 text-emerald-500 focus:ring-emerald-300 transition-all"
                                         />
                                         <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">
@@ -743,7 +801,7 @@ function ProductCatalogContent() {
 
                     {/* Product Grid */}
                     <div className="flex-1">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
+                        <div className="flex flex-wrap justify-between items-start gap-3 mb-8">
                             <div className="bg-white/80 backdrop-blur-sm border border-slate-200 px-5 py-3 rounded-2xl shadow-sm">
                                 <p className="text-slate-600 font-bold text-sm">
                                     {t("shopPage.showing")} <span className="text-emerald-600 font-black px-1.5 py-0.5 bg-emerald-50 rounded-md">{total}</span> {t("shopPage.productsLabel")}
@@ -754,6 +812,19 @@ function ProductCatalogContent() {
                                         <> {t("shopPage.forSearch")} <span className="text-slate-900 font-black tracking-wide">&quot;{debouncedSearch}&quot;</span></>
                                     )}
                                 </p>
+                            </div>
+
+                            <div className="flex items-center gap-3 flex-wrap">
+                            {/* Items per page */}
+                            <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl px-3 py-2.5 shadow-sm">
+                                <span className="text-xs font-bold text-slate-500">{language === "vi" ? "Hiển thị" : "Show"}:</span>
+                                {[12, 24, 48].map(n => (
+                                    <button
+                                        key={n}
+                                        onClick={() => { setItemsPerPage(n); setPage(1); }}
+                                        className={`w-8 h-7 rounded-xl text-xs font-black transition-all ${itemsPerPage === n ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-100"}`}
+                                    >{n}</button>
+                                ))}
                             </div>
 
                             {/* Sort Dropdown */}
@@ -816,64 +887,82 @@ function ProductCatalogContent() {
                                     <List className="w-4 h-4" />
                                 </button>
                             </div>
+                            </div>{/* end right-side controls */}
                         </div>
 
-                        {/* Applied Filters - Chips */}
-                        {(searchQuery || selectedCategory !== t("shopPage.allCategories") || minPrice || maxPrice) && (
-                            <div className="flex flex-wrap items-center gap-3 mb-8 p-5 sm:p-6 bg-white rounded-3xl border border-slate-100 shadow-sm">
-                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{t("shopPage.filtering")}</span>
+                        {/* Applied Filters - Chips (all active filters) */}
+                        {hasActiveFilters && (
+                            <div className="flex flex-wrap items-center gap-2 mb-8 p-4 sm:p-5 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest shrink-0">{t("shopPage.filtering")}</span>
 
                                 {searchQuery && (
-                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-slate-50 text-slate-700 rounded-2xl border border-slate-200">
-                                        <span className="text-xs sm:text-sm font-bold">{t("shopPage.searchLabel")} &quot;{searchQuery}&quot;</span>
-                                        <button
-                                            onClick={() => {
-                                                setSearchQuery("");
-                                                setPage(1);
-                                            }}
-                                            className="hover:bg-slate-200 rounded-full p-1 transition-colors text-slate-500 hover:text-slate-900"
-                                        >
-                                            <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                        </button>
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-700 rounded-2xl border border-slate-200">
+                                        <Search className="w-3 h-3 text-slate-400" />
+                                        <span className="text-xs font-bold">&quot;{searchQuery}&quot;</span>
+                                        <button onClick={() => { setSearchQuery(""); setPage(1); }} className="hover:bg-slate-200 rounded-full p-0.5 transition-colors text-slate-400 hover:text-slate-900"><X className="w-3 h-3" /></button>
                                     </div>
                                 )}
 
                                 {selectedCategory !== t("shopPage.allCategories") && (
-                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-slate-50 text-slate-700 rounded-2xl border border-slate-200">
-                                        <span className="text-xs sm:text-sm font-bold">{t("shopPage.categoryLabel")} {selectedCategory}</span>
-                                        <button
-                                            onClick={() => {
-                                                setSelectedCategory(t("shopPage.allCategories"));
-                                                setPage(1);
-                                            }}
-                                            className="hover:bg-slate-200 rounded-full p-1 transition-colors text-slate-500 hover:text-slate-900"
-                                        >
-                                            <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                        </button>
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-2xl border border-primary/20">
+                                        <Package className="w-3 h-3" />
+                                        <span className="text-xs font-bold">{selectedCategory}</span>
+                                        <button onClick={() => { setSelectedCategory(t("shopPage.allCategories")); setPage(1); }} className="hover:bg-primary/20 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
                                     </div>
                                 )}
 
                                 {(minPrice || maxPrice) && (
-                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-slate-50 text-slate-700 rounded-2xl border border-slate-200">
-                                        <span className="text-xs sm:text-sm font-bold">
-                                            {t("shopPage.priceLabel")} {minPrice ? `$${minPrice}` : "0"} - {maxPrice ? `$${maxPrice}` : "∞"}
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-700 rounded-2xl border border-slate-200">
+                                        <span className="text-xs font-bold">
+                                            {t("shopPage.priceLabel")} {minPrice ? formatPrice(Number(minPrice)) : "0"} – {maxPrice ? formatPrice(Number(maxPrice)) : "∞"}
                                         </span>
-                                        <button
-                                            onClick={() => {
-                                                setMinPrice("");
-                                                setMaxPrice("");
-                                                setPage(1);
-                                            }}
-                                            className="hover:bg-slate-200 rounded-full p-1 transition-colors text-slate-500 hover:text-slate-900"
-                                        >
-                                            <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                        </button>
+                                        <button onClick={() => { setMinPrice(""); setMaxPrice(""); setPage(1); }} className="hover:bg-slate-200 rounded-full p-0.5 transition-colors text-slate-400 hover:text-slate-900"><X className="w-3 h-3" /></button>
+                                    </div>
+                                )}
+
+                                {selectedTags.map(tag => {
+                                    const tagLabel = TAGS.find(t => t.id === tag)?.label ?? tag;
+                                    return (
+                                        <div key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-200">
+                                            <span className="text-xs font-bold">{tagLabel}</span>
+                                            <button onClick={() => { setSelectedTags(prev => prev.filter(t => t !== tag)); setPage(1); }} className="hover:bg-emerald-200 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
+                                        </div>
+                                    );
+                                })}
+
+                                {minRating > 0 && (
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-2xl border border-amber-200">
+                                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                        <span className="text-xs font-bold">{minRating}+</span>
+                                        <button onClick={() => { setMinRating(0); setPage(1); }} className="hover:bg-amber-200 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
+                                    </div>
+                                )}
+
+                                {inStockOnly && (
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-2xl border border-green-200">
+                                        <span className="text-xs font-bold">{language === "vi" ? "Còn hàng" : "In stock"}</span>
+                                        <button onClick={() => { setInStockOnly(false); setPage(1); }} className="hover:bg-green-200 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
+                                    </div>
+                                )}
+
+                                {freeShippingOnly && (
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-700 rounded-2xl border border-sky-200">
+                                        <Truck className="w-3 h-3" />
+                                        <span className="text-xs font-bold">{language === "vi" ? "Miễn ship" : "Free ship"}</span>
+                                        <button onClick={() => { setFreeShippingOnly(false); setPage(1); }} className="hover:bg-sky-200 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
+                                    </div>
+                                )}
+
+                                {sort !== "newest" && (
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 text-violet-700 rounded-2xl border border-violet-200">
+                                        <span className="text-xs font-bold">{SORT_OPTIONS.find(o => o.value === sort)?.label}</span>
+                                        <button onClick={() => { setSort("newest"); setPage(1); }} className="hover:bg-violet-200 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
                                     </div>
                                 )}
 
                                 <button
                                     onClick={handleClearFilters}
-                                    className="ml-auto px-4 py-2 text-[10px] sm:text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-2xl border border-rose-100 hover:border-rose-200 transition-colors uppercase tracking-widest"
+                                    className="ml-auto px-3 py-1.5 text-[10px] font-bold text-rose-500 hover:bg-rose-50 rounded-2xl border border-rose-100 hover:border-rose-200 transition-colors uppercase tracking-widest"
                                 >
                                     {t("shopPage.clearAll")}
                                 </button>
@@ -955,7 +1044,7 @@ function ProductCatalogContent() {
                                 ) : (
                                     <>
                                         <div className={`transition-all duration-300 ${viewMode === "grid"
-                                            ? "grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6 md:gap-10"
+                                            ? "grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-5"
                                             : "flex flex-col gap-3 sm:gap-4"
                                             }`}>
                                             {products.map((product, index) => (
@@ -1032,6 +1121,7 @@ function ProductCatalogContent() {
                     </div>
                 </div>
             </div>
+            </div>
         </div>
 
         {/* Scroll to Top Button */}
@@ -1046,7 +1136,7 @@ function ProductCatalogContent() {
                     className="fixed bottom-24 lg:bottom-8 right-4 lg:right-8 z-40 w-12 h-12 bg-slate-900 text-white rounded-2xl shadow-xl shadow-slate-900/25 flex items-center justify-center hover:bg-emerald-600 transition-colors"
                     aria-label={language === "vi" ? "Cuộn lên đầu trang" : "Scroll to top"}
                 >
-                    <ChevronDown className="w-5 h-5 rotate-180" />
+                    <ChevronUp className="w-5 h-5" />
                 </motion.button>
             )}
         </AnimatePresence>

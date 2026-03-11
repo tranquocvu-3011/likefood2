@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-﻿"use client";
 
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -44,11 +44,11 @@ export default function NewProductPage() {
 
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-          toast.error(data?.error || "Unable to create product.");
+          toast.error(data?.error || "Không thể tạo sản phẩm.");
           return;
         }
 
-        toast.success("Product created.");
+        toast.success("Đã tạo sản phẩm.");
         router.push(`/admin/products/${data.id}/edit`);
       }}
     />

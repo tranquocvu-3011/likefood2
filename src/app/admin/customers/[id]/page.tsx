@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -78,15 +78,15 @@ interface CustomerDetail {
 type DetailTab = "orders" | "reviews" | "wishlist";
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Pending",
-  CONFIRMED: "Confirmed",
-  PROCESSING: "Processing",
-  SHIPPING: "Shipping",
-  DELIVERED: "Delivered",
-  COMPLETED: "Completed",
-  CANCELLED: "Cancelled",
-  REFUNDED: "Refunded",
-  SHIPPED: "Shipping",
+  PENDING: "Chờ xử lý",
+  CONFIRMED: "Đã xác nhận",
+  PROCESSING: "Đang chuẩn bị",
+  SHIPPING: "Đang giao",
+  DELIVERED: "Đã giao",
+  COMPLETED: "Hoàn thành",
+  CANCELLED: "Đã hủy",
+  REFUNDED: "Đã hoàn tiền",
+  SHIPPED: "Đang giao",
 };
 
 const STATUS_TONES: Record<string, string> = {
@@ -135,18 +135,18 @@ export default function CustomerDetailPage() {
   const metrics = useMemo(() => {
     if (!customer) {
       return [
-        { label: "Lifetime revenue", value: "$0.00" },
-        { label: "Completed orders", value: "0" },
-        { label: "Average order", value: "$0.00" },
-        { label: "Saved items", value: "0" },
+        { label: "Tổng doanh thu", value: "$0.00" },
+        { label: "Đơn hoàn thành", value: "0" },
+        { label: "Giá trị TB", value: "$0.00" },
+        { label: "Sản phẩm yêu thích", value: "0" },
       ];
     }
 
     return [
-      { label: "Lifetime revenue", value: formatPrice(customer.totalSpent) },
-      { label: "Completed orders", value: `${customer.completedOrders}` },
-      { label: "Average order", value: formatPrice(customer.avgOrderValue) },
-      { label: "Saved items", value: `${customer._count.wishlists}` },
+      { label: "Tổng doanh thu", value: formatPrice(customer.totalSpent) },
+      { label: "Đơn hoàn thành", value: `${customer.completedOrders}` },
+      { label: "Giá trị TB", value: formatPrice(customer.avgOrderValue) },
+      { label: "Sản phẩm yêu thích", value: `${customer._count.wishlists}` },
     ];
   }, [customer]);
 
@@ -165,12 +165,12 @@ export default function CustomerDetailPage() {
   return (
     <AdminPageContainer
       title={customer.name || customer.email}
-      subtitle="Inspect customer value, order behavior, reviews, and wishlist activity from one clear admin profile."
+      subtitle="Xem giá trị khách hàng, hành vi đơn hàng, đánh giá và danh sách yêu thích."
       action={
         <Link href="/admin/customers">
           <Button variant="outline" size="lg">
             <ArrowLeft className="h-4 w-4" />
-            Back to customers
+            Quay lại khách hàng
           </Button>
         </Link>
       }
@@ -193,17 +193,17 @@ export default function CustomerDetailPage() {
             >
               {!customer.image ? <UserRound className="h-9 w-9" /> : null}
             </div>
-            <h2 className="mt-5 text-2xl font-black tracking-tight text-slate-950">{customer.name || "No display name"}</h2>
-            <p className="mt-2 text-sm text-slate-500">Primary customer record for retention and support operations.</p>
+            <h2 className="mt-5 text-2xl font-black tracking-tight text-slate-950">{customer.name || "Không có tên"}</h2>
+            <p className="mt-2 text-sm text-slate-500">Hồ sơ khách hàng chính thức dùng cho chăm sóc và hỗ trợ.</p>
           </div>
 
           <div className="mt-8 space-y-3 text-sm text-slate-600">
             <InfoRow icon={Mail} label="Email" value={customer.email} />
-            <InfoRow icon={Phone} label="Phone" value={customer.phone || "No phone on file"} />
+            <InfoRow icon={Phone} label="Điện thoại" value={customer.phone || "Không có số điện thoại"} />
             <InfoRow
               icon={Calendar}
-              label="Joined"
-              value={new Date(customer.createdAt).toLocaleDateString("en-US", {
+              label="Tham gia"
+              value={new Date(customer.createdAt).toLocaleDateString("vi-VN", {
                 year: "numeric",
                 month: "long",
                 day: "numeric",
@@ -212,10 +212,10 @@ export default function CustomerDetailPage() {
           </div>
 
           <div className="mt-8 border-t border-slate-100 pt-8">
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Saved addresses</p>
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Địa chỉ đã lưu</p>
             <div className="mt-4 space-y-3">
               {customer.addresses.length === 0 ? (
-                <EmptyBlock message="No saved addresses for this customer yet." />
+                <EmptyBlock message="Khách hàng này chưa có địa chỉ nào." />
               ) : (
                 customer.addresses.map((address) => (
                   <div key={address.id} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
@@ -241,9 +241,9 @@ export default function CustomerDetailPage() {
           <AdminCard>
             <div className="flex flex-wrap gap-2 rounded-full border border-slate-200 bg-slate-50 p-1">
               {[
-                { key: "orders", label: `Orders (${customer._count.orders})` },
-                { key: "reviews", label: `Reviews (${customer._count.reviews})` },
-                { key: "wishlist", label: `Wishlist (${customer._count.wishlists})` },
+                { key: "orders", label: `Đơn hàng (${customer._count.orders})` },
+                { key: "reviews", label: `Đánh giá (${customer._count.reviews})` },
+                { key: "wishlist", label: `Yêu thích (${customer._count.wishlists})` },
               ].map((item) => (
                 <button
                   key={item.key}
@@ -261,7 +261,7 @@ export default function CustomerDetailPage() {
             <div className="mt-6 space-y-4">
               {tab === "orders" ? (
                 customer.orders.length === 0 ? (
-                  <EmptyBlock message="No orders for this customer yet." />
+                  <EmptyBlock message="Khách hàng này chưa có đơn hàng nào." />
                 ) : (
                   customer.orders.map((order) => {
                     const totalUnits = order.items.reduce((sum, item) => sum + item.quantity, 0);
@@ -275,7 +275,7 @@ export default function CustomerDetailPage() {
                               <p className="font-black text-slate-950">Order #{order.id.slice(-8).toUpperCase()}</p>
                               <p className="mt-2 text-sm leading-6 text-slate-500">{productNames.slice(0, 3).join(", ") || "No items recorded"}</p>
                               <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
-                                {totalUnits} units · {new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}
+                                {totalUnits} sản phẩm · {new Date(order.createdAt).toLocaleDateString("vi-VN", { month: "short", day: "2-digit", year: "numeric" })}
                               </p>
                             </div>
                             <div className="flex flex-col items-start gap-3 lg:items-end">
@@ -294,7 +294,7 @@ export default function CustomerDetailPage() {
 
               {tab === "reviews" ? (
                 customer.reviews.length === 0 ? (
-                  <EmptyBlock message="No review activity from this customer yet." />
+                  <EmptyBlock message="Khách hàng này chưa có đánh giá nào." />
                 ) : (
                   customer.reviews.map((review) => (
                     <div key={review.id} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
@@ -310,7 +310,7 @@ export default function CustomerDetailPage() {
                             ))}
                           </div>
                           <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
-                            {new Date(review.createdAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}
+                            {new Date(review.createdAt).toLocaleDateString("vi-VN", { month: "short", day: "2-digit", year: "numeric" })}
                           </p>
                         </div>
                       </div>
@@ -321,7 +321,7 @@ export default function CustomerDetailPage() {
 
               {tab === "wishlist" ? (
                 customer.wishlists.length === 0 ? (
-                  <EmptyBlock message="Wishlist is empty right now." />
+                  <EmptyBlock message="Danh sách yêu thích đang trống." />
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2">
                     {customer.wishlists.map((entry) => (
@@ -344,14 +344,14 @@ export default function CustomerDetailPage() {
           </AdminCard>
 
           <AdminCard>
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Operator snapshot</p>
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Tóm tắt vận hành</p>
             <div className="mt-4 grid gap-4 md:grid-cols-3">
-              <MiniStat icon={ShoppingBag} label="Orders" value={`${customer._count.orders}`} />
-              <MiniStat icon={Star} label="Reviews" value={`${customer._count.reviews}`} />
-              <MiniStat icon={Heart} label="Wishlist" value={`${customer._count.wishlists}`} />
+              <MiniStat icon={ShoppingBag} label="Đơn hàng" value={`${customer._count.orders}`} />
+              <MiniStat icon={Star} label="Đánh giá" value={`${customer._count.reviews}`} />
+              <MiniStat icon={Heart} label="Yêu thích" value={`${customer._count.wishlists}`} />
             </div>
             <p className="mt-5 text-sm leading-6 text-slate-500">
-              This screen is designed for support, retention, and account quality checks. Recent order history, review quality, and saved-product intent are now visible together instead of being scattered across separate screens.
+              Trang này dùng để hỗ trợ khách hàng, kiểm tra chất lượng tài khoản và giữ chần. Lịch sử đơn hàng, đánh giá và sản phẩm yêu thích được hiển thị cùng một chỗ.
             </p>
           </AdminCard>
         </div>

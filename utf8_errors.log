@@ -1,0 +1,26 @@
+﻿
+> likefood@1.0.0 type-check
+> tsc --noEmit
+
+src/app/(shop)/checkout/page.tsx(319,17): error TS2322: Type 'string' is not assignable to type 'null'.
+src/app/api/brands/seed/route.ts(68,30): error TS2345: Argument of type '{ status: string; name: string; slug: string; logo: string; }' is not assignable to parameter of type 'never'.
+src/app/api/brands/seed/route.ts(73,26): error TS2345: Argument of type '{ status: string; name: string; slug: string; logo: string; }' is not assignable to parameter of type 'never'.
+src/app/api/cart/route.ts(32,13): error TS2322: Type '({ items: ({ product: { id: string; name: string; slug: string | null; price: number; salePrice: number | null; isOnSale: boolean; image: string | null; inventory: number; }; variant: { id: string; ... 4 more ...; sku: string | null; } | null; } & { ...; })[]; } & { ...; }) | null' is not assignable to type 'null'.
+  Type '{ items: ({ product: { id: string; name: string; slug: string | null; price: number; salePrice: number | null; isOnSale: boolean; image: string | null; inventory: number; }; variant: { id: string; ... 4 more ...; sku: string | null; } | null; } & { ...; })[]; } & { ...; }' is not assignable to type 'null'.
+src/app/api/cart/route.ts(66,13): error TS2322: Type '({ items: ({ product: { id: string; name: string; slug: string | null; price: number; salePrice: number | null; isOnSale: boolean; image: string | null; inventory: number; }; variant: { id: string; ... 4 more ...; sku: string | null; } | null; } & { ...; })[]; } & { ...; }) | null' is not assignable to type 'null'.
+  Type '{ items: ({ product: { id: string; name: string; slug: string | null; price: number; salePrice: number | null; isOnSale: boolean; image: string | null; inventory: number; }; variant: { id: string; ... 4 more ...; sku: string | null; } | null; } & { ...; })[]; } & { ...; }' is not assignable to type 'null'.
+src/app/api/cart/route.ts(105,37): error TS2339: Property 'items' does not exist on type 'never'.
+src/app/api/cart/route.ts(273,32): error TS2551: Property 'cartitem' does not exist on type '{ cartItem: any; newGuestToken: string | undefined; }'. Did you mean 'cartItem'?
+src/app/api/cart/route.ts(315,13): error TS2322: Type '{ id: string; userId: string | null; createdAt: Date; updatedAt: Date; guestToken: string | null; } | null' is not assignable to type 'null'.
+  Type '{ id: string; userId: string | null; createdAt: Date; updatedAt: Date; guestToken: string | null; }' is not assignable to type 'null'.
+src/app/api/cart/route.ts(319,13): error TS2322: Type '{ id: string; userId: string | null; createdAt: Date; updatedAt: Date; guestToken: string | null; } | null' is not assignable to type 'null'.
+  Type '{ id: string; userId: string | null; createdAt: Date; updatedAt: Date; guestToken: string | null; }' is not assignable to type 'null'.
+src/app/api/cart/route.ts(326,39): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/api/coupons/seed/route.ts(104,34): error TS2345: Argument of type '{ code: string; status: string; }' is not assignable to parameter of type 'never'.
+src/app/api/coupons/seed/route.ts(109,30): error TS2345: Argument of type '{ code: string; status: string; }' is not assignable to parameter of type 'never'.
+src/app/api/coupons/seed/route.ts(112,30): error TS2345: Argument of type '{ code: string; status: string; error: string; }' is not assignable to parameter of type 'never'.
+src/app/api/upload/route.ts(139,31): error TS2345: Argument of type 'string' is not assignable to parameter of type 'never'.
+src/components/profile/PriceAlertList.tsx(58,36): error TS2551: Property 'productimage' does not exist on type 'PriceAlert'. Did you mean 'productImage'?
+src/components/profile/PriceAlertList.tsx(60,48): error TS2551: Property 'productimage' does not exist on type 'PriceAlert'. Did you mean 'productImage'?
+src/components/shared/LiveSalesPopup.tsx(99,42): error TS2551: Property 'productimage' does not exist on type 'SaleNotification'. Did you mean 'productImage'?
+src/components/shared/LiveSalesPopup.tsx(101,54): error TS2551: Property 'productimage' does not exist on type 'SaleNotification'. Did you mean 'productImage'?

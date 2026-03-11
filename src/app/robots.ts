@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -13,9 +13,9 @@ function getBaseUrl() {
         process.env.NEXT_PUBLIC_SEO_SITE_URL;
 
     try {
-        return envUrl ? new URL(envUrl).origin : "https://weblikefood.com";
+        return envUrl ? new URL(envUrl).origin : "https://likefood.vn";
     } catch {
-        return "https://weblikefood.com";
+        return "https://likefood.vn";
     }
 }
 

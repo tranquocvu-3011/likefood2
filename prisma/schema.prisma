@@ -740,7 +740,8 @@ model emailqueue {
   scheduledAt  DateTime?
   sentAt       DateTime?
   createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt  @@index([userId])
+  updatedAt    DateTime  @updatedAt  
+  @@index([userId])
   @@index([status])
   @@index([scheduledAt])
 }

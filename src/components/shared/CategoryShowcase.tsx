@@ -1,9 +1,16 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
+
+/**
+* LIKEFOOD - Vietnamese Specialty Marketplace
+* Copyright (c) 2026 LIKEFOOD Team
+* Licensed under the MIT License
+* https://github.com/tranquocvu-3011/likefood
+*/
 
 "use client";
 
@@ -17,7 +24,12 @@ import { useLanguage } from "@/lib/i18n/context";
 
 export default function CategoryShowcase() {
     const [dynamicCounts, setDynamicCounts] = useState<Record<string, number>>({});
+    const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
     const { t, language } = useLanguage();
+
+    const handleImageError = (src: string) => {
+        setFailedImages(prev => new Set(prev).add(src));
+    };
 
     const categories = [
         {
@@ -149,20 +161,27 @@ export default function CategoryShowcase() {
                                     </div>
                                     <div className={`px-2.5 py-1 rounded-full text-[10px] md:text-xs font-bold ${category.color} flex items-center gap-1`}>
                                         <span>{dynamicCounts[category.slug] ?? 0}</span>
-                                        <span className="opacity-70 text-[9px] uppercase font-semibold">{language === "vi" ? "Sản Phẩm" : "Items"}</span>
+                                        <span className="opacity-70 text-[9px] uppercase font-semibold">{language === "vi" ? "sản phẩm" : "Items"}</span>
                                     </div>
                                 </div>
 
                                 {/* Central Image */}
                                 <div className="relative w-full aspect-square md:aspect-[4/3] mb-4 md:mb-5 rounded-2xl overflow-hidden flex items-center justify-center">
                                     <div className="relative w-full h-full transform transition-transform duration-500 group-hover:scale-110">
-                                        <Image
-                                            src={category.image}
-                                            alt={category.name}
-                                            fill
-                                            className="object-cover"
-                                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw"
-                                        />
+                                        {failedImages.has(category.image) ? (
+                                            <div className={`w-full h-full ${category.iconBg} flex items-center justify-center`}>
+                                                <ShoppingBag className={`w-12 h-12 ${category.color.split(' ')[1]} opacity-40`} />
+                                            </div>
+                                        ) : (
+                                            <Image
+                                                src={`${category.image}?v=2`}
+                                                alt={category.name}
+                                                fill
+                                                className="object-cover"
+                                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw"
+                                                onError={() => handleImageError(category.image)}
+                                            />
+                                        )}
                                     </div>
                                 </div>
 

@@ -1,14 +1,14 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-"use client";
-
 import Link from "next/link";
-import Image from "next/image";
+import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, X } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
@@ -54,11 +54,7 @@ export function SavedItemsList({ items, onMoveToCart, onRemove }: SavedItemsList
                         href={`/products/${item.slug || item.id}`}
                         className="w-24 h-24 md:w-32 md:h-32 bg-white rounded-2xl overflow-hidden flex-shrink-0 shadow-sm border border-slate-100 relative"
                     >
-                        {item.image ? (
-                            <Image src={item.image} alt={item.name} fill className="object-cover" sizes="96px" />
-                        ) : (
-                            <ShoppingBag className="w-10 h-10 text-primary/10" />
-                        )}
+                        <ImageWithFallback src={item.image} alt={item.name} fill className="object-cover" sizes="96px" />
                     </Link>
                     <div className="flex-1 flex flex-col justify-between py-1">
                         <div>

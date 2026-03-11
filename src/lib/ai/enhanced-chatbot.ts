@@ -1,18 +1,17 @@
-﻿/**
- * LIKEFOOD - Vietnamese Specialty Marketplace
- * Copyright (c) 2026 LIKEFOOD Team
- * Licensed under the MIT License
- * https://github.com/tranquocvu-3011/likefood
- */
-
 "use server";
 
+/**
+ * LIKEFOOD - Vietnamese Specialty Marketplace
+ * Enhanced AI Chatbot - Nâng cấp 50 lần
+ * Copyright (c) 2026 LIKEFOOD Team
+ */
+
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { classifyIntent, type Intent } from "./intent-classifier";
-import { addMessage, getConversationHistory, getContextSummary, isNewSession, updateEntities } from "./context-manager";
-import { getActivePromotions, getCategories, getFlashSaleProducts, getShippingInfo, getTrendingProducts, searchProducts } from "./product-service";
+import { classifyIntent, type Intent, type IntentResult } from "./intent-classifier";
+import { addMessage, getConversationHistory, getContextSummary, isNewSession, updateEntities, getContext, updatePreferences } from "./context-manager";
+import { getActivePromotions, getCategories, getFlashSaleProducts, getShippingInfo, getTrendingProducts, searchProducts, getProduct } from "./product-service";
 import { assessConfidence, getFallbackResponse, getSafeResponse, shouldEscalate, validateResponse } from "./safety-guard";
-import { searchKnowledge } from "./knowledge-base";
+import { searchKnowledge, type KnowledgeItem } from "./knowledge-base";
 
 interface ChatRequest {
   message: string;
@@ -24,10 +23,11 @@ interface SuggestionItem {
   id: string;
   name: string;
   price?: number;
+  slug?: string;
 }
 
 interface SuggestionGroup {
-  type: "product" | "category" | "action";
+  type: "product" | "category" | "action" | "quickreply";
   items: SuggestionItem[];
 }
 
@@ -39,6 +39,12 @@ interface ChatResponse {
   suggestions?: SuggestionGroup[];
   shouldEscalate?: boolean;
   isNewUser?: boolean;
+  productContext?: {
+    id?: string;
+    name?: string;
+    price?: number;
+  }[];
+  quickReplies?: string[];
 }
 
 interface ContextSummary {
@@ -46,6 +52,7 @@ interface ContextSummary {
   lastIntent?: string;
   language?: "vi" | "en";
   categories?: string[];
+  entities?: Record<string, string>;
 }
 
 function getGeminiModel() {
@@ -59,7 +66,7 @@ function getGeminiModel() {
     model: "gemini-2.0-flash",
     generationConfig: {
       temperature: 0.55,
-      maxOutputTokens: 500,
+      maxOutputTokens: 800,
       topP: 0.9,
       topK: 32,
     },
@@ -69,61 +76,202 @@ function getGeminiModel() {
 function detectLanguage(text: string): "vi" | "en" {
   const lower = text.toLowerCase().trim();
   if (!lower) return "vi";
+  
   const hasVietnameseDiacritics = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/u.test(lower);
   if (hasVietnameseDiacritics) return "vi";
+  
   const normalized = ` ${lower.normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/đ/gi, "d")} `;
   const vietnameseMarkers = [
     " ban ", " minh ", " toi ", " muon ", " mua ", " tim ", " cho ", " voi ", " cua ",
     " giao hang", " khuyen mai", " don hang", " san pham", " gia vi", " dat hang",
     " bao nhieu", " the nao", " o dau", " khi nao", " co khong", " duoc khong",
-    " nhe ", " nha ", " a ", " nhi ", " qua ", " rat ", " lam ", " very ",
+    " nhe ", " nha ", " a ", " nhi ", " qua ", " rat ", " lam ",
     " tra ", " che ", " banh ", " mut ", " qua bieu", " an vat", " do uong",
+    " cua hang", " website", " shop", " mua sam", " gio hang", " thanh toan",
+    " loi ich", " tot cho", " tot khong", " nen mua", " goi y cho",
+    " cach", " nhu the nao", " lam the nao", " lam sao", " ra sao",
   ];
   return vietnameseMarkers.some((marker) => normalized.includes(marker)) ? "vi" : "en";
 }
 
 function trimProductQuery(message: string): string {
   return message
-    .replace(/\b(co ban|muon mua|can mua|mua|tim|can tim|san pham|product|buy|have|recommend|goi y|cho toi|cho minh)\b/gi, " ")
+    .replace(/\b(co ban|muon mua|can mua|mua|tim|can tim|san pham|product|buy|have|recommend|goi y|cho toi|cho minh|cua|shop|store)\b/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function buildPrompt(
+function detectSentiment(text: string): "positive" | "negative" | "neutral" {
+  const lower = text.toLowerCase();
+  const positiveWords = ["ngon", "tuyệt", "tốt", " tuyệt vời", "awesome", "great", "good", "love", "perfect", "excellent", "happy", "hài lòng", "thích", "ưng ý", "ok", "okay", "được", "nice", "wonderful", "fantastic"];
+  const negativeWords = ["tệ", "kém", "không", "bad", "poor", "terrible", "hate", "disappointed", "thất vọng", "không hài lòng", "tức", "bực", "mệt", "chán", "điên", "đập", "hét", "mắng", "quát", "mắng", "wrong", "issue", "problem", "lỗi", "sai", "hỏng", "hư", "bay giờ", "never", "waste", "tiếc"];
+  
+  const hasPositive = positiveWords.some(w => lower.includes(w));
+  const hasNegative = negativeWords.some(w => lower.includes(w));
+  
+  if (hasNegative && !hasPositive) return "negative";
+  if (hasPositive && !hasNegative) return "positive";
+  return "neutral";
+}
+
+function buildEnhancedPrompt(
   message: string,
   history: string,
   language: "vi" | "en",
   intent: Intent,
   contextSummary: ContextSummary,
-  knowledge: string[]
+  knowledgeResults: KnowledgeItem[],
+  productContext?: { name: string; price: number; description: string }[]
 ): string {
   const languageInstruction =
     language === "vi"
-      ? "Trả lời bằng tiếng Việt. Luôn dùng đầy đủ dấu câu (dấu thanh, dấu hỏi, phẩy, chấm). Giọng tự nhiên như một người thật: thân thiện, ấm áp, ngắn gọn. Dùng 'mình' thay vì 'tôi', 'bạn' đúng chính tả."
-      : "Respond in English. Use proper punctuation. Sound natural and warm, like a real person.";
+      ? "Trả lời bằng tiếng Việt. Luôn dùng đầy đủ dấu câu (dấu thanh, dấu hỏi, phẩy, chấm). Giọng tự nhiên như một người thật: thân thiện, ấm áp, ngắn gọn nhưng đầy đủ thông tin. Dùng 'mình' thay vì 'tôi', 'bạn' đúng chính tả. Không quá formal."
+      : "Respond in English. Use proper punctuation. Sound natural and warm, like a real person. Keep it conversational but informative.";
 
   const contextLine = contextSummary.messageCount > 0
     ? `Conversation history:\n${history || "New conversation."}`
     : "This is the first message in the session.";
 
-  const knowledgeBlock = knowledge.length > 0
-    ? `Trusted reference notes:\n${knowledge.join("\n\n")}`
+  const knowledgeBlock = knowledgeResults.length > 0
+    ? `📚 Reference knowledge:\n${knowledgeResults.map(k => `Q: ${k.question}\nA: ${k.answer}`).join("\n\n")}`
     : "No reference note matched exactly.";
 
+  const productContextBlock = productContext && productContext.length > 0
+    ? `🛍️ Product context:\n${productContext.map(p => `- ${p.name} ($${p.price.toFixed(2)}): ${p.description.substring(0, 100)}...`).join("\n")}`
+    : "";
+
+  const intentGuidance = getIntentGuidance(intent, language);
+
   return [
-    "You are LIKEFOOD's friendly shopping assistant for Vietnamese specialty food and gifts in the United States.",
+    "You are LIKEFOOD's friendly shopping assistant - like a knowledgeable Vietnamese friend helping you shop for authentic Vietnamese specialty foods in the USA.",
     languageInstruction,
-    "Answer in a helpful, modern way. Cover: product suggestions (tea, coffee, dried seafood, spices, snacks, gifts), shipping and delivery, order tracking, payment methods, returns, account help, and promotions.",
-    "Rules:",
-    "- Use correct punctuation. In Vietnamese always use full diacritics (dấu): á, à, ả, ã, ạ, ă, â, đ, é, è, ế, ề, ệ, í, ì, ỉ, ĩ, ị, ó, ò, ỏ, õ, ọ, ô, ơ, ú, ù, ủ, ũ, ụ, ư, ý, ỳ, ỷ, ỹ, ỵ.",
-    "- Keep replies concise: 1–4 sentences. Sound like a real, warm person.",
-    "- Do not invent prices, stock levels, or delivery dates. If you don't have data, say so and suggest the next step (e.g. check the website, contact support).",
-    "- For product questions: suggest categories (trà, quà biếu, đồ ăn vặt, gia vị...) or how to browse. For order/shipping: direct to Account > Orders or explain general policy.",
-    `Detected intent: ${intent}.`,
+    intentGuidance,
+    "Your role: Help customers find products, answer questions about benefits/usage/storage/nutrition, explain shipping/payment/orders, and provide thoughtful recommendations.",
+    "Communication style:",
+    "- Warm, conversational, but professional",
+    "- Use short paragraphs, emojis sparingly for visual appeal",
+    "- Include specific product names when relevant",
+    "- Ask follow-up questions to better understand customer needs",
+    "- For product questions: include name, price range if known, key benefits",
+    "- For shipping/payment: be specific about policies",
+    "Important rules:",
+    "- Never invent prices or stock levels. Say 'Let me check' if unsure.",
+    "- Always suggest next step: browse, add to cart, contact support, etc.",
+    "- If customer asks about specific product benefits, provide detailed, helpful information",
+    "- Use conversation context to personalize responses",
+    `Detected intent: ${intent}`,
     contextLine,
     knowledgeBlock,
-    `Current message: ${message}`,
-  ].join("\n\n");
+    productContextBlock ? productContextBlock : "",
+    `Current customer message: ${message}`,
+  ].filter(Boolean).join("\n\n");
+}
+
+function getIntentGuidance(intent: Intent, lang: "vi" | "en"): string {
+  const guidance: Record<Intent, { vi: string; en: string }> = {
+    PRODUCT_SEARCH: {
+      vi: "→ Tìm sản phẩm phù hợp, gợi ý danh mục cụ thể, có thể hỏi về ngân sách hoặc sở thích.",
+      en: "→ Find suitable products, suggest specific categories, ask about budget or preferences."
+    },
+    PRODUCT_BENEFITS: {
+      vi: "→ Cung cấp thông tin chi tiết về lợi ích sức khỏe của sản phẩm, giải thích rõ ràng và hữu ích.",
+      en: "→ Provide detailed health benefits, explain clearly and helpfully."
+    },
+    PRODUCT_USAGE: {
+      vi: "→ Hướng dẫn cách sử dụng/chế biến sản phẩm, đưa ra công thức hoặc gợi ý món ăn.",
+      en: "→ Guide how to use/cook the product, provide recipes or dish suggestions."
+    },
+    PRODUCT_STORAGE: {
+      vi: "→ Giải thích cách bảo quản, thời hạn sử dụng, điều kiện bảo quản tốt nhất.",
+      en: "→ Explain storage methods, shelf life, best storage conditions."
+    },
+    PRODUCT_NUTRITION: {
+      vi: "→ Cung cấp thông tin dinh dưỡng, calorie, vitamin, chất có trong sản phẩm.",
+      en: "→ Provide nutritional info, calories, vitamins, nutrients in the product."
+    },
+    PRODUCT_ORIGIN: {
+      vi: "→ Nói rõ nguồn gốc, xuất xứ, vùng sản xuất của sản phẩm.",
+      en: "→ Clearly state origin, source, production region of the product."
+    },
+    PRODUCT_DETAILS: {
+      vi: "→ Cung cấp thông tin chi tiết về sản phẩm: thành phần, giá cả, đặc điểm.",
+      en: "→ Provide detailed product info: ingredients, price, characteristics."
+    },
+    ORDER_STATUS: {
+      vi: "→ Hướng dẫn xem trạng thái đơn hàng, hoặc yêu cầu mã đơn để kiểm tra.",
+      en: "→ Guide to check order status, or ask for order ID to check."
+    },
+    SHIPPING_INQUIRY: {
+      vi: "→ Giải thích rõ về phí giao hàng, thời gian giao, điều kiện freeship.",
+      en: "→ Clearly explain shipping fees, delivery time, free shipping conditions."
+    },
+    PAYMENT_HELP: {
+      vi: "→ Liệt kê các phương thức thanh toán, giải thích cách thanh toán an toàn.",
+      en: "→ List payment methods, explain secure payment process."
+    },
+    RETURN_REFUND: {
+      vi: "→ Giải thích chính sách đổi trả, quy trình hoàn tiền một cách rõ ràng.",
+      en: "→ Explain return policy, refund process clearly."
+    },
+    ACCOUNT_HELP: {
+      vi: "→ Hướng dẫn các vấn đề về tài khoản: đăng nhập, đăng ký, quên mật khẩu.",
+      en: "→ Guide account issues: login, register, forgot password."
+    },
+    PROMOTION_INQUIRY: {
+      vi: "→ Thông báo về các khuyến mãi hiện có, coupon, flash sale đang diễn ra.",
+      en: "→ Inform about current promotions, coupons, flash sales."
+    },
+    COMPLAINT: {
+      vi: "→ Lắng nghe và thông cảm, hỏi chi tiết vấn đề, đề xuất giải pháp cụ thể.",
+      en: "→ Listen empathetically, ask about the issue, propose specific solutions."
+    },
+    GENERAL_QUESTION: {
+      vi: "→ Trả lời thân thiện, có thể hỏi thêm để hiểu rõ nhu cầu.",
+      en: "→ Answer friendly, can ask follow-ups to understand needs better."
+    },
+    RECOMMENDATION_REQUEST: {
+      vi: "→ Đưa ra gợi ý cụ thể dựa trên sở thích, ngân sách, hoặc dịp sử dụng.",
+      en: "→ Give specific suggestions based on preferences, budget, or occasion."
+    },
+    ORDER_PLACING: {
+      vi: "→ Hướng dẫn đặt hàng từng bước, có thể giúp thêm sản phẩm vào giỏ.",
+      en: "→ Guide step-by-step ordering, can help add products to cart."
+    },
+    GREETING: {
+      vi: "→ Chào hỏi ấm áp, tự giới thiệu, hỏi xem có thể giúp gì.",
+      en: "→ Warm greeting, introduce yourself, ask how you can help."
+    },
+    THANKS: {
+      vi: "→ Cảm ơn chân thành, giữ mở cuộc hội thoại, hỏi có cần giúp gì thêm không.",
+      en: "→ Thank sincerely, keep conversation open, ask if need more help."
+    },
+    CHITCHAT: {
+      vi: "→ Trả lời thân thiện, có thể chia sẻ đôi chút về bản thân (AI assistant của LIKEFOOD).",
+      en: "→ Reply friendly, can share a bit about yourself (LIKEFOOD's AI assistant)."
+    },
+    COMPARISON: {
+      vi: "→ So sánh khách quan, chỉ ra ưu nhược điểm của từng lựa chọn.",
+      en: "→ Compare objectively, point out pros and cons of each option."
+    },
+    DIET_SPECIFIC: {
+      vi: "→ Cung cấp thông tin về sản phẩm phù hợp với chế độ ăn đặc biệt (chay, gluten-free, organic, giảm cân...).",
+      en: "→ Provide info on products suitable for special diets (vegetarian, gluten-free, organic, weight loss...)."
+    },
+    GIFT_IDEA: {
+      vi: "→ Gợi ý quà tặng phù hợp với đối tượng, ngân sách, và dịp.",
+      en: "→ Suggest gift ideas suitable for recipient, budget, and occasion."
+    },
+    COOKING_HELP: {
+      vi: "→ Hướng dẫn công thức nấu ăn, gợi ý món ăn từ nguyên liệu có sẵn.",
+      en: "→ Guide cooking recipes, suggest dishes from available ingredients."
+    },
+    UNKNOWN: {
+      vi: "→ Hỏi lại để hiểu rõ hơn, hoặc gợi ý các chủ đề phổ biến.",
+      en: "→ Ask clarifying question or suggest popular topics."
+    },
+  };
+
+  return guidance[intent]?.[lang] || guidance.UNKNOWN[lang];
 }
 
 async function generateResponse(prompt: string): Promise<string | null> {
@@ -141,47 +289,172 @@ async function generateResponse(prompt: string): Promise<string | null> {
   }
 }
 
-async function handleIntent(
-  intent: Intent,
-  message: string,
-  language: "vi" | "en"
-): Promise<{ response: string; suggestions?: SuggestionGroup[] }> {
-  try {
-    return await handleIntentInternal(intent, message, language);
-  } catch (error) {
-    console.error("handleIntent error:", error);
-    return { response: "" };
-  }
+function formatProductSuggestions(products: { id: string; name: string; price: number; slug?: string }[], language: "vi" | "en"): SuggestionGroup {
+  return {
+    type: "product",
+    items: products.slice(0, 6).map(p => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      slug: p.slug
+    }))
+  };
 }
 
-async function handleIntentInternal(
+function getQuickReplies(intent: Intent, language: "vi" | "en"): string[] {
+  const quickReplies: Partial<Record<Intent, { vi: string[]; en: string[] }>> = {
+    GREETING: {
+      vi: ["Tôi muốn tìm sản phẩm", "Cho tôi xem khuyến mãi", "Tìm hiểu về giao hàng"],
+      en: ["I want to find products", "Show me promotions", "Learn about shipping"]
+    },
+    PRODUCT_SEARCH: {
+      vi: ["Xem sản phẩm nổi bật", "Tìm theo danh mục", "Sản phẩm giảm giá"],
+      en: ["Featured products", "Browse by category", "On sale items"]
+    },
+    PRODUCT_BENEFITS: {
+      vi: ["Cách sử dụng", "Cách bảo quản", "Giá và mua hàng"],
+      en: ["How to use", "How to store", "Price and purchase"]
+    },
+    SHIPPING_INQUIRY: {
+      vi: ["Phí giao hàng", "Thời gian giao", "Miễn phí vận chuyển"],
+      en: ["Shipping cost", "Delivery time", "Free shipping"]
+    },
+    PAYMENT_HELP: {
+      vi: ["Thanh toán online", "Thanh toán khi nhận hàng", "Các phương thức thanh toán"],
+      en: ["Online payment", "Cash on delivery", "Payment methods"]
+    },
+    ORDER_STATUS: {
+      vi: ["Xem đơn hàng của tôi", "Hủy đơn hàng", "Đổi/trả sản phẩm"],
+      en: ["View my order", "Cancel order", "Return product"]
+    },
+    RECOMMENDATION_REQUEST: {
+      vi: ["Quà biếu Tết", "Đồ ăn vặt", "Trà & Cà phê"],
+      en: ["Tet gift ideas", "Snacks", "Tea & Coffee"]
+    },
+    UNKNOWN: {
+      vi: ["Xem sản phẩm", "Liên hệ hỗ trợ", "Khuyến mãi hiện có"],
+      en: ["View products", "Contact support", "Current promotions"]
+    }
+  };
+
+  return quickReplies[intent]?.[language] ?? (language === "vi"
+    ? ["Xem sản phẩm", "Liên hệ hỗ trợ", "Khuyến mãi hiện có"]
+    : ["View products", "Contact support", "Current promotions"]);
+}
+
+async function handleEnhancedIntent(
   intent: Intent,
   message: string,
-  language: "vi" | "en"
-): Promise<{ response: string; suggestions?: SuggestionGroup[] }> {
+  language: "vi" | "en",
+  contextSummary: ContextSummary
+): Promise<{ response: string; suggestions?: SuggestionGroup[]; quickReplies?: string[] }> {
   const lowerMessage = message.toLowerCase();
 
+  // PRODUCT_BENEFITS - Lợi ích sản phẩm
+  if (intent === "PRODUCT_BENEFITS") {
+    const keywords = trimProductQuery(message);
+    const products = keywords ? await searchProducts(keywords, 5) : await getTrendingProducts(5);
+    
+    if (products.length > 0) {
+      const productDetails = products.slice(0, 3).map(p => ({
+        name: p.name,
+        price: p.price,
+        description: p.description.substring(0, 150)
+      }));
+      
+      // Search knowledge base for specific product benefits
+      const knowledgeResults = await searchKnowledge(keywords, language, 3);
+      
+      if (knowledgeResults.length > 0) {
+        const answer = knowledgeResults[0].answer;
+        return {
+          response: answer,
+          suggestions: [formatProductSuggestions(products, language)],
+          quickReplies: getQuickReplies(intent, language)
+        };
+      }
+      
+      return {
+        response: language === "vi"
+          ? `Về lợi ích của ${keywords || "sản phẩm này"}: Đây là sản phẩm chất lượng cao với nhiều tác dụng tốt cho sức khỏe. Bạn có thể xem chi tiết từng sản phẩm để biết thêm thông tin cụ thể.`
+          : `Regarding benefits of ${keywords || "this product"}: This is a high-quality product with many health benefits. You can view each product for more specific information.`,
+        suggestions: [formatProductSuggestions(products, language)],
+        quickReplies: getQuickReplies(intent, language)
+      };
+    }
+  }
+
+  // PRODUCT_USAGE - Cách sử dụng
+  if (intent === "PRODUCT_USAGE") {
+    const keywords = trimProductQuery(message);
+    const knowledgeResults = await searchKnowledge(keywords, language, 3);
+    
+    if (knowledgeResults.length > 0) {
+      return {
+        response: knowledgeResults[0].answer,
+        quickReplies: getQuickReplies(intent, language)
+      };
+    }
+    
+    return {
+      response: language === "vi"
+        ? `Cách sử dụng sẽ tùy thuộc vào từng sản phẩm cụ thể. Bạn có thể cho mình biết sản phẩm cụ thể nào bạn quan tâm không?`
+        : `Usage depends on the specific product. Can you tell me which specific product you're interested in?`,
+      quickReplies: getQuickReplies(intent, language)
+    };
+  }
+
+  // PRODUCT_STORAGE - Bảo quản
+  if (intent === "PRODUCT_STORAGE") {
+    const keywords = trimProductQuery(message);
+    const knowledgeResults = await searchKnowledge(keywords, language, 3);
+    
+    if (knowledgeResults.length > 0) {
+      return {
+        response: knowledgeResults[0].answer,
+        quickReplies: getQuickReplies(intent, language)
+      };
+    }
+  }
+
+  // PRODUCT_NUTRITION - Dinh dưỡng
+  if (intent === "PRODUCT_NUTRITION") {
+    const keywords = trimProductQuery(message);
+    const knowledgeResults = await searchKnowledge(keywords, language, 3);
+    
+    if (knowledgeResults.length > 0) {
+      return {
+        response: knowledgeResults[0].answer,
+        quickReplies: getQuickReplies(intent, language)
+      };
+    }
+  }
+
+  // PRODUCT_ORIGIN - Nguồn gốc
+  if (intent === "PRODUCT_ORIGIN") {
+    const keywords = trimProductQuery(message);
+    const knowledgeResults = await searchKnowledge(keywords, language, 3);
+    
+    if (knowledgeResults.length > 0) {
+      return {
+        response: knowledgeResults[0].answer,
+        quickReplies: getQuickReplies(intent, language)
+      };
+    }
+  }
+
+  // PRODUCT_SEARCH & RECOMMENDATION_REQUEST
   if (intent === "PRODUCT_SEARCH" || intent === "RECOMMENDATION_REQUEST") {
     const keywords = trimProductQuery(message);
     const products = keywords ? await searchProducts(keywords, 8) : await getTrendingProducts(8);
 
     if (products.length > 0) {
-      const preview = products
-        .slice(0, 4)
-        .map((product) => `${product.name} (${product.price.toFixed(2)} USD)`)
-        .join(", ");
-
       return {
-        response:
-          language === "vi"
-            ? `Mình tìm thấy vài lựa chọn phù hợp: ${preview}. Bạn có thể xem thêm trên trang hoặc nói rõ hơn (ngân sách, dịp tặng quà, độ cay/mặn) để mình gợi ý sát hơn.`
-            : `Here are some matches: ${preview}. You can browse more on the site or tell me your budget or occasion so I can narrow it down.`,
-        suggestions: [
-          {
-            type: "product",
-            items: products.map((product) => ({ id: product.id, name: product.name, price: product.price })),
-          },
-        ],
+        response: language === "vi"
+          ? `Mình tìm thấy ${products.length} sản phẩm phù hợp với "${keywords || "nhu cầu của bạn"}". Bạn có thể xem chi tiết hoặc nói rõ hơn để mình gợi ý sát hơn nhé!`
+          : `I found ${products.length} products matching "${keywords || "your needs"}". You can view details or tell me more so I can give better recommendations!`,
+        suggestions: [formatProductSuggestions(products, language)],
+        quickReplies: getQuickReplies(intent, language)
       };
     }
 
@@ -191,49 +464,46 @@ async function handleIntentInternal(
       : language === "vi"
         ? "trà, cà phê, cá khô, tôm khô, gia vị, bánh kẹo, quà biếu, đồ ăn vặt"
         : "tea, coffee, dried seafood, spices, snacks, gifts";
-    const searchHint = keywords
-      ? (language === "vi"
-          ? `Bạn vừa tìm "${keywords}". Hiện mình chưa có sản phẩm khớp đúng; bạn thử xem các nhóm như ${categoryList} hoặc gõ tên món cụ thể (ví dụ: trà sen, cá khô, nước mắm).`
-          : `You searched for "${keywords}". We don't have an exact match right now; try browsing ${categoryList} or type a specific item (e.g. tea, dried fish, fish sauce).`)
-      : (language === "vi"
-          ? `Bạn có thể nói rõ hơn bạn muốn mua gì (ví dụ: trà, cá khô, quà biếu, đồ ăn vặt) hoặc xem nhanh các nhóm: ${categoryList}.`
-          : `Tell me what you're looking for (e.g. tea, dried fish, gifts, snacks) or browse: ${categoryList}.`);
+
     return {
-      response: searchHint,
-      suggestions:
-        categories.length > 0
-          ? [{ type: "category" as const, items: categories.slice(0, 6).map((c) => ({ id: c.id, name: c.name })) }]
-          : undefined,
+      response: keywords
+        ? (language === "vi"
+            ? `Bạn tìm "${keywords}" nhưng mình chưa tìm thấy sản phẩm khớp chính xác. Bạn thử xem các nhóm: ${categoryList} hoặc gõ tên món cụ thể hơn nhé!`
+            : `You searched for "${keywords}" but I didn't find exact matches. Try browsing: ${categoryList} or type a more specific item name!`)
+        : (language === "vi"
+            ? `Bạn muốn tìm gì? Mình có thể gợi ý theo danh mục như: ${categoryList}. Bạn thử nói rõ hơn nhé!`
+            : `What are you looking for? I can suggest categories like: ${categoryList}. Try being more specific!`),
+      suggestions: categories.length > 0
+        ? [{ type: "category", items: categories.slice(0, 6).map((c) => ({ id: c.id, name: c.name })) }]
+        : undefined,
+      quickReplies: getQuickReplies(intent, language)
     };
   }
 
+  // PROMOTION_INQUIRY
   if (intent === "PROMOTION_INQUIRY") {
     const [promotions, flashSale] = await Promise.all([getActivePromotions(), getFlashSaleProducts(3)]);
     const couponCodes = (promotions?.coupons ?? []).map((coupon: { code?: string }) => coupon.code).filter((code): code is string => !!code).slice(0, 3);
 
     if (!flashSale && couponCodes.length === 0) {
       return {
-        response:
-          language === "vi"
-            ? "Hiện tại mình chưa thấy chương trình nổi bật nào cần xác nhận ngay. Bạn có thể mở trang deals hoặc cho mình biết ngân sách để mình gợi ý cách mua tối ưu."
-            : "I do not see a standout promotion to confirm right now. You can open the deals page, or tell me your budget so I can suggest a smarter basket.",
+        response: language === "vi"
+          ? "Hiện tại mình chưa thấy chương trình khuyến mãi nổi bật. Bạn có thể xem trang deals hoặc cho mình biết ngân sách để mình gợi ý cách mua tối ưu nhé!"
+          : "I don't see any standout promotions right now. You can check the deals page or tell me your budget so I can suggest the best way to shop.",
+        quickReplies: getQuickReplies(intent, language)
       };
     }
 
     const parts: string[] = [];
     if (flashSale) {
-      parts.push(
-        language === "vi"
-          ? `Flash sale ${flashSale.name} đang chạy cho một số mặt hàng.`
-          : `The ${flashSale.name} flash sale is active on selected items.`
-      );
+      parts.push(language === "vi"
+        ? `🔥 Flash sale "${flashSale.name}" đang diễn ra!`
+        : `🔥 ${flashSale.name} flash sale is active!`);
     }
     if (couponCodes.length > 0) {
-      parts.push(
-        language === "vi"
-          ? `Coupon đang thấy: ${couponCodes.join(", ")}.`
-          : `Visible coupon codes: ${couponCodes.join(", ")}.`
-      );
+      parts.push(language === "vi"
+        ? `📦 Coupon hiện có: ${couponCodes.join(", ")}`
+        : `📦 Available coupons: ${couponCodes.join(", ")}`);
     }
 
     return {
@@ -241,75 +511,172 @@ async function handleIntentInternal(
       suggestions: couponCodes.length > 0
         ? [{ type: "action", items: couponCodes.map((code) => ({ id: code, name: `Coupon ${code}` })) }]
         : undefined,
+      quickReplies: getQuickReplies(intent, language)
     };
   }
 
+  // SHIPPING_INQUIRY
   if (intent === "SHIPPING_INQUIRY") {
     const shipping = await getShippingInfo();
     return {
-      response:
-        language === "vi"
-          ? `Giao chuẩn ${shipping.standardFee.toFixed(2)} USD trong ${shipping.standardDays} ngày, giao nhanh ${shipping.expressFee.toFixed(2)} USD trong ${shipping.expressDays} ngày. Đơn từ ${shipping.freeShippingThreshold.toFixed(2)} USD được freeship chuẩn.`
-          : `Standard shipping is ${shipping.standardFee.toFixed(2)} USD in about ${shipping.standardDays} days, and express is ${shipping.expressFee.toFixed(2)} USD in about ${shipping.expressDays} days. Orders above ${shipping.freeShippingThreshold.toFixed(2)} USD get free standard shipping.`,
+      response: language === "vi"
+        ? `📦 Giao hàng Standard: $${shipping.standardFee.toFixed(2)} trong ${shipping.standardDays} ngày. Giao Express: $${shipping.expressFee.toFixed(2)} trong ${shipping.expressDays} ngày. Đơn từ $${shipping.freeShippingThreshold.toFixed(2)} được freeship Standard nhé!`
+        : `📦 Standard shipping: $${shipping.standardFee.toFixed(2)} in ${shipping.standardDays} days. Express: $${shipping.expressFee.toFixed(2)} in ${shipping.expressDays} days. Orders $${shipping.freeShippingThreshold.toFixed(2)}+ get free standard shipping!`,
+      quickReplies: getQuickReplies(intent, language)
     };
   }
 
+  // ORDER_STATUS
   if (intent === "ORDER_STATUS") {
     return {
-      response:
-        language === "vi"
-          ? "Nếu bạn đang muốn xem đơn, hãy vào Tài khoản > Đơn hàng hoặc gửi cho mình mã đơn hàng. Mình sẽ hướng dẫn bước tiếp theo tương ứng."
-          : "If you want to check an order, open Account > Orders or send me the order number. I will guide you from there.",
+      response: language === "vi"
+        ? "Để xem đơn hàng, bạn đăng nhập vào Tài khoản > Đơn hàng nhé. Ở đó bạn sẽ thấy trạng thái, mã vận đơn và chi tiết đơn hàng. Bạn có mã đơn cần mình kiểm tra không?"
+        : "To check your order, sign in to Account > Orders. You'll see status, tracking code and order details. Do you have an order number you'd like me to check?",
+      quickReplies: getQuickReplies(intent, language)
     };
   }
 
-  if (lowerMessage.includes("category") || lowerMessage.includes("danh muc") || lowerMessage.includes("co ban gi")) {
-    const categories = await getCategories();
+  // GREETING
+  if (intent === "GREETING") {
+    const isReturning = contextSummary.messageCount > 2;
+    
     return {
-      response:
-        language === "vi"
-          ? `Shop hiện có các nhóm chính như ${categories.slice(0, 6).map((category) => category.name).join(", ")}. Bạn muốn mình gợi ý nhóm nào trước?`
-          : `The store currently highlights categories like ${categories.slice(0, 6).map((category) => category.name).join(", ")}. Which one should I narrow down first?`,
+      response: language === "vi"
+        ? isReturning
+          ? "Chào bạn! Rất vui được tiếp tục hỗ trợ bạn. Bạn đang tìm gì hôm nay?"
+          : "Xin chào! Mình là trợ lý mua hàng của LIKEFOOD. Bạn đang tìm đặc sản Việt, quà biếu, hay cần tư vấn gì về sản phẩm nào đó?"
+        : isReturning
+          ? "Hello! Nice to continue helping you. What are you looking for today?"
+          : "Hello! I'm LIKEFOOD's shopping assistant. Are you looking for Vietnamese specialties, gift ideas, or need advice on any products?",
       suggestions: [
         {
           type: "category",
-          items: categories.slice(0, 6).map((category) => ({ id: category.id, name: category.name })),
-        },
+          items: language === "vi"
+            ? [
+                { id: "tra", name: "Trà & Cà phê" },
+                { id: "hai_san_kho", name: "Hải sản khô" },
+                { id: "gia_vi", name: "Gia vị" },
+                { id: "trai_cay_say", name: "Trái cây sấy" },
+              ]
+            : [
+                { id: "tea_coffee", name: "Tea & Coffee" },
+                { id: "dried_seafood", name: "Dried Seafood" },
+                { id: "spices", name: "Spices" },
+                { id: "dried_fruit", name: "Dried Fruit" },
+              ]
+        }
       ],
+      quickReplies: getQuickReplies(intent, language)
     };
   }
 
-  if (intent === "GREETING") {
+  // THANKS
+  if (intent === "THANKS") {
     return {
-      response:
-        language === "vi"
-          ? "Xin chào! Mình là trợ lý mua hàng của LIKEFOOD. Bạn đang tìm món ăn vặt, gia vị, quà biếu hay cần giải thích về giao hàng?"
-          : "Hello, I am LIKEFOOD's shopping concierge. Are you looking for snacks, pantry staples, gift ideas, or shipping guidance today?",
-      suggestions: [
-        {
-          type: "action",
-          items: language === "vi"
-            ? [
-                { id: "gift", name: "Goi y qua bieu" },
-                { id: "shipping", name: "Phi giao hang" },
-                { id: "snacks", name: "An vat de mang di" },
-              ]
-            : [
-                { id: "gift", name: "Gift ideas" },
-                { id: "shipping", name: "Shipping cost" },
-                { id: "snacks", name: "Portable snacks" },
-              ],
-        },
-      ],
+      response: language === "vi"
+        ? "Không có chi! Rất vui được giúp bạn. Nếu cần gì thêm, cứ nhắn mình nhé! 😊"
+        : "You're welcome! Happy to help. Feel free to message me if you need anything else! 😊",
+      quickReplies: getQuickReplies("UNKNOWN", language)
     };
+  }
+
+  // COMPLAINT
+  if (intent === "COMPLAINT") {
+    return {
+      response: language === "vi"
+        ? "Mình rất xin lỗi vì trải nghiệm không tốt của bạn. Bạn có thể cho mình biết chi tiết vấn đề không? Mình sẽ cố gắng hỗ trợ và đưa ra giải pháp tốt nhất."
+        : "I'm very sorry about your bad experience. Can you tell me the details of the issue? I'll try my best to help and find the best solution.",
+      quickReplies: ["Liên hệ hỗ trợ", "Xem chính sách đổi trả", "Theo dõi đơn hàng"]
+    };
+  }
+
+  // GIFT_IDEA
+  if (intent === "GIFT_IDEA") {
+    return {
+      response: language === "vi"
+        ? "Quà biếu ý nghĩa thì LIKEFOOD có nhiều lựa chọn tuyệt vời: Set trà + bánh, Hải sản khô cao cấp, Hộp quà Tết sang trọng. Bạn tặng cho ai và ngân sách khoảng bao nhiêu?"
+        : "LIKEFOOD has wonderful gift options: Tea + cake sets, Premium dried seafood, Luxury Tet gift boxes. Who is it for and what's your budget?",
+      quickReplies: getQuickReplies(intent, language)
+    };
+  }
+
+  // COMPARISON
+  if (intent === "COMPARISON") {
+    const keywords = trimProductQuery(message);
+    const knowledgeResults = await searchKnowledge(keywords, language, 3);
+    
+    if (knowledgeResults.length > 0) {
+      return {
+        response: knowledgeResults[0].answer,
+        quickReplies: getQuickReplies(intent, language)
+      };
+    }
+    
+    return {
+      response: language === "vi"
+        ? "Mỗi sản phẩm đều có ưu điểm riêng. Bạn đang so sánh những sản phẩm nào? Mình sẽ giúp bạn hiểu rõ hơn!"
+        : "Each product has its own advantages. Which products are you comparing? I'll help you understand better!",
+      quickReplies: getQuickReplies(intent, language)
+    };
+  }
+
+  // DIET_SPECIFIC
+  if (intent === "DIET_SPECIFIC") {
+    const knowledgeResults = await searchKnowledge("chay gluten organic", language, 5);
+    
+    if (knowledgeResults.length > 0) {
+      return {
+        response: knowledgeResults[0].answer,
+        quickReplies: getQuickReplies(intent, language)
+      };
+    }
+    
+    return {
+      response: language === "vi"
+        ? "LIKEFOOD có nhiều sản phẩm phù hợp với chế độ ăn đặc biệt: trà, cà phê, gia vị, hoa quả sấy, hạt (không chất bảo quản). Bạn đang quan tâm chế độ ăn nào cụ thể?"
+        : "LIKEFOOD has many products suitable for special diets: tea, coffee, spices, dried fruits, nuts (no preservatives). Which diet are you interested in?",
+      quickReplies: getQuickReplies(intent, language)
+    };
+  }
+
+  // COOKING_HELP
+  if (intent === "COOKING_HELP") {
+    const knowledgeResults = await searchKnowledge("nấu canh chua công thức", language, 3);
+    
+    if (knowledgeResults.length > 0) {
+      return {
+        response: knowledgeResults[0].answer,
+        quickReplies: getQuickReplies(intent, language)
+      };
+    }
+    
+    return {
+      response: language === "vi"
+        ? "Mình có thể hướng dẫn bạn chế biến nhiều món từ đặc sản Việt. Bạn muốn nấu món gì hoặc cần nguyên liệu nào?"
+        : "I can guide you to cook many dishes from Vietnamese specialties. What dish do you want to make or what ingredients do you need?",
+      quickReplies: getQuickReplies(intent, language)
+    };
+  }
+
+  // CHITCHAT
+  if (intent === "CHITCHAT") {
+    if (lowerMessage.includes("ai") || lowerMessage.includes("robot") || lowerMessage.includes("bot") || lowerMessage.includes("người")) {
+      return {
+        response: language === "vi"
+          ? "Mình là trợ lý AI của LIKEFOOD, được thiết kế để hỗ trợ bạn tìm sản phẩm, giải đáp thắc mắc và tư vấn mua hàng. Mình có thể giúp gì cho bạn?"
+          : "I'm LIKEFOOD's AI assistant, designed to help you find products, answer questions and provide shopping advice. How can I help you?",
+        quickReplies: getQuickReplies("GREETING", language)
+      };
+    }
   }
 
   return { response: "" };
 }
 
-export async function chat(request: ChatRequest): Promise<ChatResponse> {
-  const { message, sessionId } = request;
+export async function enhancedChat(request: ChatRequest): Promise<ChatResponse> {
+  const { message, sessionId, userId } = request;
   const language = detectLanguage(message);
+  const sentiment = detectSentiment(message);
 
   const safeFallback = (): ChatResponse => ({
     message: getSafeResponse("general_error", language),
@@ -320,22 +687,38 @@ export async function chat(request: ChatRequest): Promise<ChatResponse> {
   });
 
   try {
-    const intentResult = classifyIntent(message);
+    // Phân loại intent
+    const intentResult: IntentResult = classifyIntent(message);
     const { intent, confidence, entities } = intentResult;
 
+    // Kiểm tra session
     const isNew = await isNewSession(sessionId);
+    
+    // Lưu tin nhắn người dùng
     await addMessage(sessionId, "user", message, intent);
 
+    // Cập nhật entities
     if (Object.keys(entities).length > 0) {
       await updateEntities(sessionId, entities);
     }
 
-    const history = await getConversationHistory(sessionId, 6);
+    // Lấy context
+    const history = await getConversationHistory(sessionId, 8);
     const contextSummary = await getContextSummary(sessionId);
-    const knowledgeResults = await searchKnowledge(message, language, 3);
-    const knowledgeAnswers = knowledgeResults.map((item) => item.answer);
+    const fullContext = await getContext(sessionId);
 
-    const intentResponse = await handleIntent(intent, message, language);
+    // Tìm kiếm knowledge base
+    const knowledgeResults = await searchKnowledge(message, language, 5);
+    const knowledgeAnswers = knowledgeResults.map(item => item.answer);
+
+    // Xử lý intent đặc biệt
+    const intentResponse = await handleEnhancedIntent(intent, message, language, {
+      messageCount: contextSummary.messageCount,
+      lastIntent: contextSummary.lastIntent,
+      language: contextSummary.language,
+      entities
+    });
+
     if (intentResponse.response) {
       await addMessage(sessionId, "assistant", intentResponse.response, intent);
 
@@ -346,10 +729,19 @@ export async function chat(request: ChatRequest): Promise<ChatResponse> {
         language,
         suggestions: intentResponse.suggestions,
         isNewUser: isNew,
+        quickReplies: intentResponse.quickReplies
       };
     }
 
-    const confidenceLevel = assessConfidence(intent, confidence, Object.keys(entities).length > 0, contextSummary.messageCount > 0);
+    // Đánh giá confidence
+    const confidenceLevel = assessConfidence(
+      intent,
+      confidence,
+      Object.keys(entities).length > 0,
+      contextSummary.messageCount > 0
+    );
+
+    // Confidence thấp - dùng fallback
     if (confidenceLevel === "very_low" || confidenceLevel === "low") {
       const fallbackResponse = getFallbackResponse(intent, language);
       await addMessage(sessionId, "assistant", fallbackResponse, intent);
@@ -360,13 +752,40 @@ export async function chat(request: ChatRequest): Promise<ChatResponse> {
         confidence,
         language,
         isNewUser: isNew,
+        quickReplies: getQuickReplies(intent, language)
       };
     }
 
-    const prompt = buildPrompt(message, history, language, intent, contextSummary, knowledgeAnswers);
+    // Tìm sản phẩm liên quan cho context
+    let productContext: { name: string; price: number; description: string }[] = [];
+    if (intent === "PRODUCT_SEARCH" || intent === "RECOMMENDATION_REQUEST" || intent === "PRODUCT_BENEFITS") {
+      const keywords = trimProductQuery(message);
+      if (keywords) {
+        const products = await searchProducts(keywords, 3);
+        productContext = products.map(p => ({
+          name: p.name,
+          price: p.price,
+          description: p.description
+        }));
+      }
+    }
+
+    // Tạo prompt cho AI
+    const prompt = buildEnhancedPrompt(
+      message,
+      history,
+      language,
+      intent,
+      { ...contextSummary, entities },
+      knowledgeResults,
+      productContext.length > 0 ? productContext : undefined
+    );
+
+    // Gọi AI
     const aiResponse = await generateResponse(prompt);
 
     if (aiResponse) {
+      // Validate response
       const validation = validateResponse(aiResponse);
       if (!validation.isValid) {
         const safeResponse = getSafeResponse("general_error", language);
@@ -381,7 +800,8 @@ export async function chat(request: ChatRequest): Promise<ChatResponse> {
         };
       }
 
-      const escalation = shouldEscalate(intent, confidenceLevel, 0);
+      // Kiểm tra escalation
+      const escalation = shouldEscalate(intent, confidenceLevel, sentiment === "negative" ? 1 : 0);
       await addMessage(sessionId, "assistant", aiResponse, intent);
 
       return {
@@ -391,9 +811,11 @@ export async function chat(request: ChatRequest): Promise<ChatResponse> {
         language,
         shouldEscalate: escalation.shouldEscalate,
         isNewUser: isNew,
+        quickReplies: getQuickReplies(intent, language)
       };
     }
 
+    // Fallback cuối cùng
     const safeResponse = getSafeResponse("general_error", language);
     await addMessage(sessionId, "assistant", safeResponse, "UNKNOWN");
 
@@ -403,9 +825,15 @@ export async function chat(request: ChatRequest): Promise<ChatResponse> {
       confidence: 0,
       language,
       isNewUser: isNew,
+      quickReplies: getQuickReplies("UNKNOWN", language)
     };
   } catch (error) {
-    console.error("AI chat error:", error);
+    console.error("Enhanced AI chat error:", error);
     return safeFallback();
   }
 }
+
+// Export the main function - named export for compatibility
+export { enhancedChat as chat };
+// Also keep default export
+export default enhancedChat;

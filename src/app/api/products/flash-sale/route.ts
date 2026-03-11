@@ -56,7 +56,7 @@ export async function GET() {
 
         // Get the earliest end time for countdown
         const nextEndTime = flashProducts.length > 0
-            ? Math.min(...flashProducts.filter(p => p.saleEndAt).map(p => p.saleEndAt!.getTime()))
+            ? flashProducts.filter(p => p.saleEndAt).length > 0 ? Math.min(...flashProducts.filter(p => p.saleEndAt).map(p => p.saleEndAt!.getTime())) : null
             : null;
 
         return NextResponse.json({
@@ -122,3 +122,4 @@ export async function POST(request: NextRequest) {
         );
     }
 }
+

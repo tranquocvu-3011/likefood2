@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 export function useWishlist() {
     const { data: session } = useSession();
@@ -46,6 +47,7 @@ export function useWishlist() {
     // Toggle wishlist item
     const toggleWishlist = useCallback(async (productId: string) => {
         if (!session?.user) {
+            toast.error("Vui lòng đăng nhập để sử dụng tính năng yêu thích");
             return false;
         }
 

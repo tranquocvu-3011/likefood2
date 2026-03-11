@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
@@ -42,12 +42,12 @@ interface Product {
 
 const PAGE_SIZE = 12;
 const SORT_OPTIONS = [
-  { value: "newest", label: "Newest" },
-  { value: "name", label: "Name A-Z" },
-  { value: "price-asc", label: "Price low-high" },
-  { value: "price-desc", label: "Price high-low" },
-  { value: "best-selling", label: "Best selling" },
-  { value: "top-rated", label: "Top rated" },
+  { value: "newest", label: "Mới nhất" },
+  { value: "name", label: "Tên A-Z" },
+  { value: "price-asc", label: "Giá thấp-cao" },
+  { value: "price-desc", label: "Giá cao-thấp" },
+  { value: "best-selling", label: "Bán chạy" },
+  { value: "top-rated", label: "Đánh giá cao" },
 ];
 
 export default function AdminProductsPage() {
@@ -105,7 +105,7 @@ export default function AdminProductsPage() {
   }, [products]);
 
   const handleDelete = async (productId: string) => {
-    if (!window.confirm("Delete this product?")) {
+    if (!window.confirm("Đã xóa sản phẩm này?")) {
       return;
     }
 
@@ -128,18 +128,18 @@ export default function AdminProductsPage() {
 
   return (
     <AdminPageContainer
-      title="Product operations"
-      subtitle="Run catalog merchandising, pricing, stock health, and product upkeep from one operator-friendly table."
+      title="Quản lý sản phẩm"
+      subtitle="Quản lý danh mục, giá cả, tồn kho và sản phẩm từ một bảng vận hành thân thiện."
       action={
         <>
           <Button variant="outline" size="lg" onClick={() => void fetchProducts()} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-            Refresh
+            Làm mới
           </Button>
           <Link href="/admin/products/new">
             <Button size="lg">
               <Plus className="h-4 w-4" />
-              Create product
+              Tạo sản phẩm
             </Button>
           </Link>
         </>
@@ -147,30 +147,30 @@ export default function AdminProductsPage() {
     >
       <div className="grid gap-4 lg:grid-cols-4">
         <AdminCard className="p-5">
-          <Stat label="Catalog total" value={`${total}`} tone="text-slate-950" />
+          <Stat label="Tổng sản phẩm" value={`${total}`} tone="text-slate-950" />
         </AdminCard>
         <AdminCard className="p-5">
-          <Stat label="Low stock in view" value={`${stats.lowStock}`} tone="text-amber-600" />
+          <Stat label="Sắp hết hàng" value={`${stats.lowStock}`} tone="text-amber-600" />
         </AdminCard>
         <AdminCard className="p-5">
-          <Stat label="Out of stock" value={`${stats.outOfStock}`} tone="text-rose-600" />
+          <Stat label="Hết hàng" value={`${stats.outOfStock}`} tone="text-rose-600" />
         </AdminCard>
         <AdminCard className="p-5">
-          <Stat label="Featured in view" value={`${stats.featured}`} tone="text-emerald-600" />
+          <Stat label="Nổi bật" value={`${stats.featured}`} tone="text-emerald-600" />
         </AdminCard>
       </div>
 
       <AdminFilterBar
         searchQuery={search}
         setSearchQuery={setSearch}
-        searchPlaceholder="Search by product name, slug, or merchandising text"
+        searchPlaceholder="Tìm theo tên, slug sản phẩm"
       >
         <select
           value={category}
           onChange={(event) => setCategory(event.target.value)}
           className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 outline-none"
         >
-          <option value="">All categories</option>
+          <option value="">Tất cả danh mục</option>
           {ADMIN_CATEGORY_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -194,7 +194,7 @@ export default function AdminProductsPage() {
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50/80">
-              {["Product", "Category", "Price", "Pack", "Inventory", "Rating", "Actions"].map((header) => (
+              {["Sản phẩm", "Danh mục", "Giá", "Khối lượng", "Tồn kho", "Đánh giá", "Thao tác"].map((header) => (
                 <th
                   key={header}
                   className="px-6 py-4 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400"
@@ -217,8 +217,8 @@ export default function AdminProductsPage() {
               <tr>
                 <td colSpan={7} className="px-6 py-20 text-center">
                   <Package className="mx-auto h-10 w-10 text-slate-200" />
-                  <h3 className="mt-4 text-lg font-black text-slate-950">No products matched</h3>
-                  <p className="mt-2 text-sm text-slate-500">Adjust filters or create a new product to keep the catalog moving.</p>
+                  <h3 className="mt-4 text-lg font-black text-slate-950">Không tìm thấy sản phẩm</h3>
+                  <p className="mt-2 text-sm text-slate-500">Điều chỉnh bộ lọc hoặc tạo sản phẩm mới.</p>
                 </td>
               </tr>
             ) : (
@@ -230,15 +230,26 @@ export default function AdminProductsPage() {
                     : product.inventory < 10
                       ? "bg-amber-100 text-amber-600"
                       : "bg-emerald-100 text-emerald-600";
-                const healthLabel = product.inventory <= 0 ? "Out" : product.inventory < 10 ? "Low" : "Healthy";
+                const healthLabel = product.inventory <= 0 ? "Hết" : product.inventory < 10 ? "Thấp" : "Đủ";
 
                 return (
                   <tr key={product.id} className="transition hover:bg-slate-50/70">
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-4">
-                        <div className="relative h-14 w-14 overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200">
+                                        <div className="relative h-14 w-14 overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200">
                           {product.image ? (
-                            <Image src={product.image} alt={product.name} fill sizes="56px" className="object-cover" />
+                            <Image
+                              src={product.image}
+                              alt={product.name}
+                              fill
+                              sizes="56px"
+                              className="object-cover"
+                              unoptimized
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
+                            />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center text-slate-300">
                               <Package className="h-5 w-5" />
@@ -274,20 +285,20 @@ export default function AdminProductsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-5 text-sm font-medium text-slate-600">
-                      {product.ratingAvg ? `${product.ratingAvg.toFixed(1)} (${product.ratingCount || 0})` : "No reviews"}
+                      {product.ratingAvg ? `${product.ratingAvg.toFixed(1)} (${product.ratingCount || 0})` : "Chưa có đánh giá"}
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex flex-wrap items-center gap-2">
                         <Link href={`/products/${product.slug || product.id}`} target="_blank">
                           <Button variant="outline" size="sm">
                             <Eye className="h-4 w-4" />
-                            View
+                            Xem
                           </Button>
                         </Link>
                         <Link href={`/admin/products/${product.id}/edit`}>
                           <Button variant="outline" size="sm">
                             <Edit className="h-4 w-4" />
-                            Edit
+                            Sửa
                           </Button>
                         </Link>
                         <Button
@@ -297,7 +308,7 @@ export default function AdminProductsPage() {
                           disabled={deleting}
                         >
                           {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                          Remove
+                          Xóa
                         </Button>
                       </div>
                     </td>
@@ -307,7 +318,7 @@ export default function AdminProductsPage() {
             )}
           </tbody>
         </table>
-        <AdminPagination page={page} setPage={setPage} pageSize={PAGE_SIZE} total={total} itemLabel="products" />
+        <AdminPagination page={page} setPage={setPage} pageSize={PAGE_SIZE} total={total} itemLabel="sản phẩm" />
       </AdminTableContainer>
 
       <div className="grid gap-4 lg:grid-cols-2">

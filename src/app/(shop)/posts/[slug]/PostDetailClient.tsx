@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -186,7 +186,7 @@ export default function PostDetailClient({ slug }: { slug: string }) {
 
                             {/* Discover More Box */}
                             <div className="bg-gradient-to-b from-emerald-600 to-teal-800 rounded-3xl p-8 text-center text-white shadow-2xl shadow-emerald-900/30 relative overflow-hidden group">
-                                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/food.png')] opacity-10 mix-blend-overlay"></div>
+                                <div className="absolute inset-0 bg-[url('/patterns/food.svg')] opacity-10 mix-blend-overlay"></div>
                                 <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
 
                                 <div className="relative z-10 space-y-6">

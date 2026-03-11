@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
@@ -28,6 +28,12 @@ export default function CartPage() {
     const [couponDiscount, setCouponDiscount] = useState(0);
     const [appliedCouponCode, setAppliedCouponCode] = useState("");
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(items.map(i => i.id)));
+
+    // Keep selectedIds in sync when items change (e.g. item removed externally)
+    useEffect(() => {
+        setSelectedIds(prev => new Set([...prev].filter(id => items.some(i => i.id === id))));
+    }, [items]);
+
     const [savedForLater, setSavedForLater] = useState<typeof items>(() => {
         if (typeof window === "undefined") return [];
         const saved = localStorage.getItem('savedForLater');
@@ -106,20 +112,49 @@ export default function CartPage() {
     const canCheckout = selectedIds.size > 0 && !hasOutOfStockItems;
 
     if (items.length === 0) {
+        const quickLinks = [
+            { label: language === "vi" ? "Cá khô" : "Dried Fish", href: "/products?category=C%C3%A1+kh%C3%B4" },
+            { label: language === "vi" ? "Hải sản" : "Seafood", href: "/products?category=H%E1%BA%A3i+s%E1%BA%A3n" },
+            { label: language === "vi" ? "Gia vị" : "Spices", href: "/products?category=Gia+v%E1%BB%8B" },
+            { label: language === "vi" ? "Quà tặng" : "Gift Sets", href: "/products?tag=gift" },
+        ];
         return (
-            <div className="page-container-wide py-32 text-center">
-                <div className="bg-muted w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner shadow-black/5">
-                    <ShoppingBag className="w-12 h-12 text-muted-foreground" />
+            <div className="page-container-wide py-24 text-center">
+                {/* Illustration */}
+                <div className="relative w-40 h-40 mx-auto mb-10">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-emerald-100 rounded-[3rem] rotate-6" />
+                    <div className="absolute inset-0 bg-white rounded-[3rem] flex items-center justify-center shadow-xl shadow-primary/10">
+                        <ShoppingBag className="w-16 h-16 text-primary/60" />
+                    </div>
+                    {/* Floating dots for decoration */}
+                    <div className="absolute -top-2 -right-2 w-5 h-5 bg-primary rounded-full opacity-40" />
+                    <div className="absolute -bottom-3 -left-2 w-8 h-8 bg-emerald-200 rounded-full opacity-60" />
                 </div>
+
                 <h1 className="text-4xl font-black uppercase tracking-tighter mb-4">{t("cart.emptyCart")}</h1>
-                <p className="text-xl text-muted-foreground mb-12 max-w-lg mx-auto leading-relaxed">
+                <p className="text-xl text-muted-foreground mb-10 max-w-lg mx-auto leading-relaxed">
                     {t("cart.emptyCartDesc")}
                 </p>
+
                 <Link href="/products" prefetch={true}>
-                    <button className="bg-primary text-white px-10 py-5 rounded-full font-black uppercase tracking-widest shadow-2xl shadow-primary/30 hover:bg-primary/90 transition-all transform hover:scale-105 active:scale-95">
+                    <button className="bg-primary text-white px-10 py-5 rounded-full font-black uppercase tracking-widest shadow-2xl shadow-primary/30 hover:bg-primary/90 transition-all transform hover:scale-105 active:scale-95 mb-12">
                         {t("cart.shopNow")}
                     </button>
                 </Link>
+
+                {/* Category quick-links */}
+                <div className="mt-2 flex flex-wrap justify-center gap-3">
+                    {quickLinks.map((link) => (
+                        <Link
+                            key={link.href}
+                            href={link.href}
+                            prefetch={true}
+                            className="px-5 py-2.5 rounded-full border-2 border-slate-200 text-sm font-bold text-slate-600 hover:border-primary hover:text-primary transition-colors"
+                        >
+                            {link.label}
+                        </Link>
+                    ))}
+                </div>
             </div>
         );
     }

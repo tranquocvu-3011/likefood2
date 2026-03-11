@@ -1,16 +1,16 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-"use client";
-
 import { useCart } from "@/contexts/CartContext";
 import { formatPrice } from "@/lib/currency";
 import { X, ShoppingBag, Trash2, ArrowRight } from "lucide-react";
-import Image from "next/image";
+import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
@@ -99,13 +99,7 @@ export default function MiniCart({ isOpen, onClose }: MiniCartProps) {
                                         >
                                             {/* Image */}
                                             <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-white shrink-0 border border-slate-100">
-                                                {item.image ? (
-                                                    <Image src={item.image} alt={item.name} fill className="object-cover" sizes="80px" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-slate-300">
-                                                        <ShoppingBag className="w-5 h-5" />
-                                                    </div>
-                                                )}
+                                                <ImageWithFallback src={item.image} alt={item.name} fill className="object-cover" sizes="80px" />
                                             </div>
 
                                             {/* Details */}

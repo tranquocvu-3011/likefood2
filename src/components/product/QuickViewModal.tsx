@@ -1,15 +1,16 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-"use client";
-
 import { useState } from "react";
 import { X, ShoppingBag, Star, Heart, Share2 } from "lucide-react";
 import Image from "next/image";
+import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/contexts/CartContext";
@@ -107,19 +108,13 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                             {/* Left: Image */}
                             <div className="aspect-square bg-slate-50 relative group p-4 sm:p-8">
                                 <div className="relative w-full h-full rounded-2xl sm:rounded-[2rem] overflow-hidden bg-white shadow-sm border border-slate-100">
-                                    {image ? (
-                                        <Image
-                                            src={image}
-                                            alt={name}
-                                            fill
-                                            className="object-cover group-hover:scale-105 transition-transform duration-700"
-                                            sizes="(max-width: 768px) 90vw, 45vw"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-primary/10">
-                                            <ShoppingBag className="w-24 h-24 sm:w-32 sm:h-32" />
-                                        </div>
-                                    )}
+                                    <ImageWithFallback
+                                        src={image}
+                                        alt={name}
+                                        fill
+                                        className="object-cover group-hover:scale-105 transition-transform duration-700"
+                                        sizes="(max-width: 768px) 90vw, 45vw"
+                                    />
                                 </div>
 
                                 <div className="absolute bottom-8 sm:bottom-12 left-1/2 -translate-x-1/2 flex gap-3 sm:gap-4 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">

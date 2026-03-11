@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -13,12 +13,13 @@ import { logger } from "@/lib/logger";
 
 // GET /api/cart - Get user's cart
 export async function GET(request: NextRequest) {
-    const session = await getServerSession(authOptions);
     try {
+        const session = await getServerSession(authOptions);
         // Check for guest token in cookies
         const guestToken = request.cookies.get('guest_cart_token')?.value;
 
-        let cart = null;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let cart: any = null;
 
         if (session?.user?.id) {
             // Logged in user
@@ -123,7 +124,7 @@ export async function GET(request: NextRequest) {
         });
 
     } catch (error) {
-        logger.error("Get cart error", error as Error, { context: "cart-api-get", userId: session?.user?.id });
+        logger.error("Get cart error", error as Error, { context: "cart-api-get" });
         return NextResponse.json(
             { error: "Có lỗi xảy ra khi lấy giỏ hàng" },
             { status: 500 }
@@ -302,7 +303,7 @@ export async function DELETE(request: NextRequest) {
     try {
         const guestToken = request.cookies.get('guest_cart_token')?.value;
 
-        let cart = null;
+        let cart: any = null;
 
         if (session?.user?.id) {
             cart = await prisma.cart.findUnique({

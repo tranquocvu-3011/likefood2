@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -25,6 +25,11 @@ interface Banner {
     ctaLink?: string | null;
 }
 
+// Module-level cache: persists across navigations within a page session
+let cachedBanners: Banner[] | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 export default function HeroCarousel() {
     const [banners, setBanners] = useState<Banner[]>([]);
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -32,10 +37,18 @@ export default function HeroCarousel() {
 
     useEffect(() => {
         async function fetchBanners() {
+            // Return cached data if still fresh
+            if (cachedBanners && Date.now() - cacheTimestamp < CACHE_TTL_MS) {
+                setBanners(cachedBanners);
+                setIsLoading(false);
+                return;
+            }
             try {
                 const res = await fetch("/api/banners?placement=home");
                 if (res.ok) {
                     const data = await res.json();
+                    cachedBanners = data;
+                    cacheTimestamp = Date.now();
                     setBanners(data);
                 }
             } catch (error) {

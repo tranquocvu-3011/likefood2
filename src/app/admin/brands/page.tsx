@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
@@ -82,7 +82,7 @@ export default function AdminBrandsPage() {
 
             if (!res.ok) {
                 const data = await res.json();
-                throw new Error(data.error || "Failed to save brand");
+                throw new Error(data.error || "Không thể lưu thương hiệu");
             }
 
             toast.success(editingBrand ? "Cập nhật thương hiệu thành công" : "Tạo thương hiệu thành công");
@@ -110,7 +110,7 @@ export default function AdminBrandsPage() {
             const data = await res.json();
 
             if (!res.ok) {
-                throw new Error(data.error || "Failed to delete brand");
+                throw new Error(data.error || "Không thể xóa thương hiệu");
             }
 
             toast.success(data.deactivated ? "Đã vô hiệu hóa thương hiệu" : "Xóa thương hiệu thành công");
@@ -179,12 +179,23 @@ export default function AdminBrandsPage() {
                                     <div className="flex items-center gap-4">
                                         <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden relative flex-shrink-0">
                                             {brand.logo ? (
-                                                <Image src={brand.logo} alt={brand.name} fill className="object-cover" sizes="48px" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-slate-400 font-black">
-                                                    {brand.name[0]}
-                                                </div>
-                                            )}
+                                                <Image
+                                                    src={brand.logo}
+                                                    alt={brand.name}
+                                                    fill
+                                                    className="object-cover"
+                                                    sizes="48px"
+                                                    unoptimized
+                                                    onError={(e) => {
+                                                        const target = e.target as HTMLImageElement;
+                                                        target.style.display = 'none';
+                                                        target.nextElementSibling?.classList.remove('hidden');
+                                                    }}
+                                                />
+                                            ) : null}
+                                            <div className={`w-full h-full flex items-center justify-center text-slate-400 font-black ${brand.logo ? 'hidden' : ''}`}>
+                                                {brand.name[0]}
+                                            </div>
                                         </div>
                                         <div>
                                             <p className="font-black text-slate-900">{brand.name}</p>

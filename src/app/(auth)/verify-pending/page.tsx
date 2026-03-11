@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -163,6 +163,14 @@ function VerifyPendingContent() {
                             <><RefreshCw className="w-4 h-4" /> {t("auth.resendIn")} {countdown}s</>
                         )}
                     </button>
+
+                    {/* OTP entry shortcut */}
+                    <Link
+                        href={`/resend-verify?email=${encodeURIComponent(email)}&step=otp`}
+                        className="mt-4 w-full py-3 rounded-2xl border-2 border-emerald-200 text-emerald-700 font-bold text-sm hover:bg-emerald-50 transition-all flex items-center justify-center gap-2"
+                    >
+                        <CheckCircle2 className="w-4 h-4" /> Đã có mã OTP? Nhập mã tại đây
+                    </Link>
 
                     <p className="mt-6 text-xs text-slate-400 font-medium">
                         {t("auth.wrongEmail")}{" "}

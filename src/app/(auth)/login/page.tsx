@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useState, Suspense } from "react";
 import { signIn, signOut } from "next-auth/react";
@@ -40,7 +40,9 @@ function LoginContent() {
 
     const router = useRouter();
     const searchParams = useSearchParams();
-    const callbackUrl = searchParams.get("callbackUrl") || "/";
+    const raw = searchParams.get("callbackUrl") || "/";
+    // Security: prevent open redirect — only allow relative same-origin paths
+    const callbackUrl = (raw.startsWith("/") && !raw.startsWith("//") && !raw.startsWith("/\\")) ? raw : "/";
     const message = searchParams.get("message");
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -197,8 +199,8 @@ function LoginContent() {
                         <div className="mt-16 grid grid-cols-2 gap-8">
                             {[
                                 { icon: ShieldCheck, title: "Nguồn gốc rõ ràng", desc: "Nghệ nhân truyền thống." },
-                                { icon: Zap, title: "Hỏa tốc 2H", desc: "Giao hàng tận tay." },
-                                { icon: Star, title: "Chuẩn 5 Sao", desc: "Đánh giá chân thực." },
+                                { icon: Zap, title: "Giao hàng 2-3 ngày", desc: "Giao hàng tận tay." },
+                                { icon: Star, title: "Chuẩn 5 sao", desc: "Đánh giá chân thực." },
                                 { icon: ChefHat, title: "Quà tặng tinh tế", desc: "Đóng gói sang trọng." }
                             ].map((item, index) => (
                                 <motion.div key={index} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + index * 0.1 }} className="space-y-3">
@@ -316,7 +318,7 @@ function LoginContent() {
 
                                         {unverifiedEmail && (
                                             <button
-                                                type="button" onClick={() => router.push("/resend-verify")}
+                                                type="button" onClick={() => router.push(`/resend-verify?email=${encodeURIComponent(email)}`)}
                                                 className="w-full py-4 bg-slate-900 text-white text-[11px] font-bold uppercase tracking-widest rounded-2xl hover:bg-emerald-600 transition-all shadow-lg shadow-slate-200"
                                             >
                                                 Gửi lại email xác thực
@@ -358,7 +360,7 @@ function LoginContent() {
                                                     onChange={(e) => setRememberMe(e.target.checked)}
                                                     className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer"
                                                 />
-                                                <label htmlFor="remember" className="text-xs text-slate-500 font-medium group-hover:text-slate-900 cursor-pointer">Ghi nhớ tôi</label>
+                                                <label htmlFor="remember" className="text-xs text-slate-500 font-medium group-hover:text-slate-900 cursor-pointer">Ghi nhớ đăng nhập</label>
                                             </div>
                                             <Link href="/forgot-password" title="Khôi phục mật khẩu" className="text-xs font-bold text-emerald-600 hover:underline">Quên mật khẩu?</Link>
                                         </div>

@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
@@ -38,6 +38,7 @@ export default function UserDropdown({ isOpen, onClose, user }: UserDropdownProp
     const [stats, setStats] = useState<UserStats | null>(null);
     const [isLoadingStats, setIsLoadingStats] = useState(false);
     const [isCheckInOpen, setIsCheckInOpen] = useState(false);
+    const [avatarError, setAvatarError] = useState(false);
 
     // Fetch real user stats when dropdown opens
     const fetchStats = useCallback(async () => {
@@ -62,6 +63,10 @@ export default function UserDropdown({ isOpen, onClose, user }: UserDropdownProp
             fetchStats();
         }
     }, [fetchStats, isOpen, stats]);
+
+    useEffect(() => {
+        setAvatarError(false);
+    }, [user.image]);
 
     const menuItems = [
         { icon: Package, label: "Đơn hàng của tôi", href: "/profile/orders", badge: null },
@@ -100,10 +105,18 @@ export default function UserDropdown({ isOpen, onClose, user }: UserDropdownProp
                         <div className="p-5 bg-gradient-to-r from-emerald-50 to-cyan-50 border-b border-slate-100">
                             <div className="flex items-center gap-4">
                                 <div className="w-14 h-14 rounded-2xl bg-white border-2 border-white shadow-lg overflow-hidden flex items-center justify-center relative">
-                                    {user.image ? (
-                                        <Image src={user.image} alt="Avatar" fill className="object-cover" sizes="56px" />
+                                    {user.image && !avatarError ? (
+                                        <Image
+                                            src={user.image}
+                                            alt="Avatar"
+                                            fill
+                                            className="object-cover"
+                                            sizes="56px"
+                                            unoptimized
+                                            onError={() => setAvatarError(true)}
+                                        />
                                     ) : (
-                                        <Image src="/images/default-avatar.png" alt="Avatar" fill className="object-cover" sizes="56px" />
+                                        <Image src="/images/default-avatar.png" alt="Avatar" fill className="object-cover" sizes="56px" unoptimized />
                                     )}
                                 </div>
                                 <div className="flex-1 min-w-0">

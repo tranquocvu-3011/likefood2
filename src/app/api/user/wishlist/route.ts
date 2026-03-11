@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -14,9 +14,10 @@ import { applyRateLimit, apiRateLimit, getRateLimitIdentifier } from "@/lib/rate
 
 // GET user's wishlist
 export async function GET(req: NextRequest) {
-    const rl = await applyRateLimit(getRateLimitIdentifier(req), apiRateLimit, { windowMs: 60000, maxRequests: 30 });
-    if (!rl.success) return rl.error!;
     const session = await getServerSession(authOptions);
+    const rateLimitId = session?.user?.id ? `user:${session.user.id}` : getRateLimitIdentifier(req);
+    const rl = await applyRateLimit(rateLimitId, apiRateLimit, { windowMs: 60000, maxRequests: 30 });
+    if (!rl.success) return rl.error!;
 
     if (!session || !session.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

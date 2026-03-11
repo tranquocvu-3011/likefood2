@@ -1,11 +1,11 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { BarChart3, Loader2, Package, Target, TrendingDown, TrendingUp, Users } from "lucide-react";
@@ -56,10 +56,10 @@ export default function AnalyticsPage() {
   }
 
   const statusRows = [
-    { label: 'Pending', value: data.orders.pending, tone: 'bg-amber-500' },
-    { label: 'Shipping', value: data.orders.shipping, tone: 'bg-sky-500' },
-    { label: 'Completed', value: data.orders.completed, tone: 'bg-emerald-500' },
-    { label: 'Cancelled', value: data.orders.cancelled || 0, tone: 'bg-rose-500' },
+    { label: 'Chờ xử lý', value: data.orders.pending, tone: 'bg-amber-500' },
+    { label: 'Đang giao', value: data.orders.shipping, tone: 'bg-sky-500' },
+    { label: 'Hoàn thành', value: data.orders.completed, tone: 'bg-emerald-500' },
+    { label: 'Đã hủy', value: data.orders.cancelled || 0, tone: 'bg-rose-500' },
   ];
   const maxStatus = Math.max(...statusRows.map((row) => row.value), 1);
 
@@ -69,14 +69,14 @@ export default function AnalyticsPage() {
         <div className="bg-[linear-gradient(135deg,#ffffff_0%,#eff6ff_50%,#f0fdf4_100%)] px-6 py-8 lg:px-8 lg:py-9">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Analytics</p>
-              <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950">Performance reporting</h1>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500">Track revenue movement, order composition, customer efficiency, and top-selling products without leaving admin.</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Phân tích</p>
+              <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950">Báo cáo hiệu suất</h1>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500">Theo dõi doanh thu, cơ cấu đơn hàng, hiệu quả khách hàng và sản phẩm bán chạy mà không cần rời khỏi trang quản trị.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2 rounded-full border border-slate-200 bg-white p-1 shadow-sm">
               {RANGES.map((range) => (
                 <button key={range} type="button" onClick={() => setDays(range)} className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] transition ${days === range ? 'bg-slate-950 text-white' : 'text-slate-500 hover:text-slate-900'}`}>
-                  {range} days
+                  {range} ngày
                 </button>
               ))}
             </div>
@@ -85,17 +85,17 @@ export default function AnalyticsPage() {
       </section>
 
       <div className="grid gap-4 lg:grid-cols-5">
-        <Metric label="Revenue" value={formatPrice(data.revenue.total)} change={data.revenue.change} icon={TrendingUp} />
-        <Metric label="Orders" value={`${data.orders.total}`} change={data.orders.change} icon={BarChart3} />
-        <Metric label="Customers" value={`${data.customers.total}`} change={data.customers.change} icon={Users} />
-        <Metric label="AOV" value={formatPrice(averageOrderValue)} icon={Target} />
-        <Metric label="Order/customer" value={`${conversionProxy.toFixed(1)}%`} icon={Package} />
+        <Metric label="Doanh thu" value={formatPrice(data.revenue.total)} change={data.revenue.change} icon={TrendingUp} />
+        <Metric label="Đơn hàng" value={`${data.orders.total}`} change={data.orders.change} icon={BarChart3} />
+        <Metric label="Khách hàng" value={`${data.customers.total}`} change={data.customers.change} icon={Users} />
+        <Metric label="Giá trị TB" value={formatPrice(averageOrderValue)} icon={Target} />
+        <Metric label="Đơn/khách" value={`${conversionProxy.toFixed(1)}%`} icon={Package} />
       </div>
 
       <div className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
         <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm">
           <CardContent className="p-6 lg:p-8">
-            <h2 className="text-2xl font-black tracking-tight text-slate-950">Revenue by day</h2>
+            <h2 className="text-2xl font-black tracking-tight text-slate-950">Doanh thu theo ngày</h2>
             <div className="mt-8 flex h-72 items-end gap-3">
               {data.revenueByDay.slice(-10).map((entry) => (
                 <div key={entry.date} className="flex flex-1 flex-col items-center gap-3">
@@ -113,7 +113,7 @@ export default function AnalyticsPage() {
         <div className="space-y-8">
           <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm">
             <CardContent className="p-6 lg:p-8">
-              <h2 className="text-2xl font-black tracking-tight text-slate-950">Order status mix</h2>
+              <h2 className="text-2xl font-black tracking-tight text-slate-950">Phân bố trạng thái đơn</h2>
               <div className="mt-6 space-y-4">
                 {statusRows.map((row) => (
                   <div key={row.label}>
@@ -132,13 +132,13 @@ export default function AnalyticsPage() {
 
           <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm">
             <CardContent className="p-6 lg:p-8">
-              <h2 className="text-2xl font-black tracking-tight text-slate-950">Top products</h2>
+              <h2 className="text-2xl font-black tracking-tight text-slate-950">Sản phẩm bán chạy</h2>
               <div className="mt-6 space-y-3">
-                {data.topProducts.length === 0 ? <p className="text-sm text-slate-500">No sales data yet.</p> : data.topProducts.map((product) => (
+                {data.topProducts.length === 0 ? <p className="text-sm text-slate-500">Chưa có dữ liệu bán hàng.</p> : data.topProducts.map((product) => (
                   <div key={product.id} className="flex items-center justify-between gap-3 rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
                     <div>
                       <p className="font-black text-slate-950">{product.name}</p>
-                      <p className="mt-1 text-sm text-slate-500">Sold {product.quantitySold} units</p>
+                      <p className="mt-1 text-sm text-slate-500">Đã bán {product.quantitySold} đơn vị</p>
                     </div>
                     <Package className="h-5 w-5 text-slate-400" />
                   </div>

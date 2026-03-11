@@ -1,11 +1,11 @@
-﻿/**
+﻿"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
-
-"use client";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -32,9 +32,8 @@ export default function Footer() {
     useEffect(() => {
         const loadSettings = async () => {
             try {
-                const res = await fetch("/api/public/settings");
-                if (!res.ok) return;
-                const data = await res.json();
+                const { getPublicSettings } = await import("@/lib/public-settings");
+                const data = await getPublicSettings();
                 setSupportPhone(data.SITE_SUPPORT_PHONE || null);
                 setAddress(data.SITE_ADDRESS || null);
                 setSupportEmail(data.SITE_SUPPORT_EMAIL || null);
@@ -125,11 +124,12 @@ export default function Footer() {
                                     transition={{ duration: 0.2 }}
                                 >
                                     <Image
-                                        src="/logo.png"
+                                        src="/logo.png?v=2"
                                         alt="LIKEFOOD"
                                         width={180}
                                         height={48}
-                                        className="h-12 w-auto object-contain"
+                                        className="max-h-12 w-auto object-contain"
+                                        style={{ width: "auto", height: "auto" }}
                                         priority
                                     />
                                 </motion.div>
@@ -337,3 +337,4 @@ export default function Footer() {
         </footer>
     );
 }
+

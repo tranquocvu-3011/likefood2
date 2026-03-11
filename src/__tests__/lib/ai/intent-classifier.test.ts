@@ -1,7 +1,8 @@
 /**
  * LIKEFOOD - Vietnamese Specialty Marketplace
- * Tests for Intent Classifier
  * Copyright (c) 2026 LIKEFOOD Team
+ * Licensed under the MIT License
+ * https://github.com/tranquocvu-3011/likefood
  */
 
 import { describe, it, expect } from "vitest";
@@ -46,7 +47,7 @@ describe("intent-classifier", () => {
     });
 
     it("should classify PROMOTION_INQUIRY intent", () => {
-      const result = classifyIntent("Có khuyến mãi gì hôm nay?");
+      const result = classifyIntent("Có mã giảm giá nào đang khuyến mãi không?");
       expect(result.intent).toBe("PROMOTION_INQUIRY");
       expect(result.confidence).toBeGreaterThan(0);
     });

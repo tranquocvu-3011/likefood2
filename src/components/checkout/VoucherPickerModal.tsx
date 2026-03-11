@@ -1,17 +1,19 @@
-﻿/**
+"use client";
+
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
  * https://github.com/tranquocvu-3011/likefood
  */
 
-"use client";
-
 import { useState, useEffect, useCallback } from "react";
 import { X, Ticket, Check, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
+import { useLanguage } from "@/lib/i18n/context";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface Voucher {
     id: string;
@@ -48,6 +50,8 @@ export default function VoucherPickerModal({
 }: VoucherPickerModalProps) {
     const [vouchers, setVouchers] = useState<Voucher[]>([]);
     const [loading, setLoading] = useState(true);
+    const { t } = useLanguage();
+    const trapRef = useFocusTrap(isOpen);
 
     const fetchVouchers = useCallback(async () => {
         try {
@@ -59,7 +63,7 @@ export default function VoucherPickerModal({
             }
         } catch (error) {
             logger.error("Failed to fetch vouchers", error as Error, { context: 'voucher-picker-modal' });
-            toast.error("Không thể tải voucher");
+            toast.error(t("voucherModal.fetchError"));
         } finally {
             setLoading(false);
         }
@@ -77,13 +81,13 @@ export default function VoucherPickerModal({
             return;
         }
         onSelectVoucher(voucher);
-        toast.success(`Đã áp dụng voucher ${voucher.code}`);
+        toast.success(`${t("voucherModal.applied")} ${voucher.code}`);
         onClose();
     };
 
     const handleRemove = () => {
         onSelectVoucher(null);
-        toast.success("Đã xóa voucher");
+        toast.success(t("voucherModal.removed"));
         onClose();
     };
 
@@ -103,21 +107,26 @@ export default function VoucherPickerModal({
         }
     };
 
-    if (!isOpen) return null;
-
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            {isOpen && <div
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="voucher-modal-title"
+            >
                 <motion.div
+                    ref={trapRef}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="bg-white rounded-[3rem] p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
                 >
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-black uppercase tracking-tighter">Chọn Voucher</h2>
+                        <h2 id="voucher-modal-title" className="text-2xl font-black uppercase tracking-tighter">{t("voucherModal.title")}</h2>
                         <button
                             onClick={onClose}
+                            aria-label={t("voucherModal.closeLabel")}
                             className="p-2 hover:bg-slate-100 rounded-full transition-colors"
                         >
                             <X className="w-5 h-5" />
@@ -129,18 +138,18 @@ export default function VoucherPickerModal({
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm font-black uppercase tracking-widest text-green-600 mb-1">
-                                        Voucher đang áp dụng
+                                        {t("voucherModal.activeVoucher")}
                                     </p>
                                     <p className="text-lg font-black text-green-900">{selectedVoucher.code}</p>
                                     <p className="text-sm text-green-700">
-                                        Giảm {formatDiscount(selectedVoucher)} - Tiết kiệm ${selectedVoucher.discountAmount?.toFixed(2) ?? selectedVoucher.discountValue.toFixed(2)}
+                                        {t("voucherModal.discount")} {formatDiscount(selectedVoucher)} - {t("voucherModal.save")} ${selectedVoucher.discountAmount?.toFixed(2) ?? selectedVoucher.discountValue.toFixed(2)}
                                     </p>
                                 </div>
                                 <button
                                     onClick={handleRemove}
                                     className="px-4 py-2 bg-red-500 text-white rounded-full text-sm font-bold hover:bg-red-600 transition-colors"
                                 >
-                                    Xóa
+                                    {t("voucherModal.remove")}
                                 </button>
                             </div>
                         </div>
@@ -149,13 +158,13 @@ export default function VoucherPickerModal({
                     {loading ? (
                         <div className="text-center py-12">
                             <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4" />
-                            <p className="text-slate-500">Đang tải voucher...</p>
+                            <p className="text-slate-500">{t("voucherModal.loading")}</p>
                         </div>
                     ) : vouchers.length === 0 ? (
                         <div className="text-center py-12">
                             <Ticket className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                            <p className="text-slate-500 font-medium">Bạn chưa có voucher nào</p>
-                            <p className="text-sm text-slate-400 mt-2">Hãy lưu voucher tại trang Vouchers để sử dụng</p>
+                            <p className="text-slate-500 font-medium">{t("voucherModal.noVouchers")}</p>
+                            <p className="text-sm text-slate-400 mt-2">{t("voucherModal.noVouchersDesc")}</p>
                         </div>
                     ) : (
                         <div className="space-y-3">
@@ -180,9 +189,9 @@ export default function VoucherPickerModal({
                                                 <div>
                                                     <p className="font-black text-lg text-slate-900">{voucher.code}</p>
                                                     <p className="text-xs text-slate-500">
-                                                        {voucher.category === "shipping" ? "Free Ship" :
-                                                            voucher.category === "flash" ? "Flash Sale" :
-                                                                voucher.category === "new" ? "Khách mới" : "Tất cả"}
+                                                        {voucher.category === "shipping" ? t("voucherModal.categoryShipping") :
+                                                            voucher.category === "flash" ? t("voucherModal.categoryFlash") :
+                                                                voucher.category === "new" ? t("voucherModal.categoryNew") : t("voucherModal.categoryAll")}
                                                     </p>
                                                 </div>
                                             </div>
@@ -192,13 +201,13 @@ export default function VoucherPickerModal({
                                                 </span>
                                                 {voucher.maxDiscount && (
                                                     <span className="text-xs text-slate-400">
-                                                        (Tối đa ${voucher.maxDiscount.toFixed(2)})
+                                                        ({t("voucherModal.maxDiscount")} ${voucher.maxDiscount.toFixed(2)})
                                                     </span>
                                                 )}
                                             </div>
                                             {voucher.minOrderValue && (
                                                 <p className="text-xs text-slate-500">
-                                                    Đơn tối thiểu: ${voucher.minOrderValue.toFixed(2)}
+                                                    {t("voucherModal.minOrder")} ${voucher.minOrderValue.toFixed(2)}
                                                 </p>
                                             )}
                                             {!voucher.canUse && voucher.reason && (
@@ -224,11 +233,11 @@ export default function VoucherPickerModal({
                             href="/vouchers"
                             className="block text-center text-sm font-bold text-primary hover:underline"
                         >
-                            Xem thêm voucher tại Voucher Center →
+                            {t("voucherModal.viewMore")}
                         </a>
                     </div>
                 </motion.div>
-            </div>
+            </div>}
         </AnimatePresence>
     );
 }
