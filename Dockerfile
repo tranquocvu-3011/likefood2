@@ -38,8 +38,9 @@ ENV SKIP_ENV_VALIDATION=true
 # Limit Node.js memory to avoid OOM on low-memory VPS
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 
-# Build Next.js with webpack (less memory than Turbopack)
-RUN npx next build --no-turbopack
+# Build Next.js (standalone output for minimal image)
+# Use webpack instead of turbopack by setting environment variable
+RUN TURBOPACK=0 npm run build
 # ─────────────────────────────────────────────────────────
 # Stage 3: runner — minimal production image
 # ─────────────────────────────────────────────────────────
@@ -69,6 +70,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.bin/prisma /usr/local/bin/prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
+# Add node_modules/.bin to PATH so 'prisma' command works
+ENV PATH="/app/node_modules/.bin:${PATH}"
 
 USER nextjs
 
