@@ -10,7 +10,8 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, Calendar, User, Facebook, Twitter, Link as LinkIcon, Loader2, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ChevronLeft, Calendar, User, Facebook, Twitter, Loader2, Sparkles, Copy, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -28,8 +29,32 @@ interface Post {
 }
 
 export default function PostDetailClient({ slug }: { slug: string }) {
+    const router = useRouter();
     const [post, setPost] = useState<Post | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [copied, setCopied] = useState(false);
+
+    // Share functions
+    const shareToFacebook = () => {
+        const url = encodeURIComponent(window.location.href);
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank", "width=600,height=400");
+    };
+
+    const shareToTwitter = () => {
+        const text = encodeURIComponent(post?.title || "");
+        const url = encodeURIComponent(window.location.href);
+        window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank", "width=600,height=400");
+    };
+
+    const copyLink = async () => {
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error("Failed to copy:", err);
+        }
+    };
 
     useEffect(() => {
         const fetchPost = async () => {
@@ -158,14 +183,26 @@ export default function PostDetailClient({ slug }: { slug: string }) {
                                 <p className="text-slate-600 font-medium">Chia sẻ bài viết này để mọi người cùng biết đến đặc sản Việt Nam.</p>
                             </div>
                             <div className="flex items-center gap-4">
-                                <button className="w-14 h-14 rounded-2xl bg-white shadow-md text-[#1877F2] hover:-translate-y-1 transition-transform flex items-center justify-center border border-slate-100">
+                                <button 
+                                    onClick={shareToFacebook}
+                                    className="w-14 h-14 rounded-2xl bg-white shadow-md text-[#1877F2] hover:-translate-y-1 transition-transform flex items-center justify-center border border-slate-100"
+                                    aria-label="Chia sẻ lên Facebook"
+                                >
                                     <Facebook className="w-6 h-6" />
                                 </button>
-                                <button className="w-14 h-14 rounded-2xl bg-white shadow-md text-[#1DA1F2] hover:-translate-y-1 transition-transform flex items-center justify-center border border-slate-100">
+                                <button 
+                                    onClick={shareToTwitter}
+                                    className="w-14 h-14 rounded-2xl bg-white shadow-md text-[#1DA1F2] hover:-translate-y-1 transition-transform flex items-center justify-center border border-slate-100"
+                                    aria-label="Chia sẻ lên Twitter"
+                                >
                                     <Twitter className="w-6 h-6" />
                                 </button>
-                                <button className="w-14 h-14 rounded-2xl bg-white shadow-md text-emerald-600 hover:-translate-y-1 transition-transform flex items-center justify-center border border-slate-100" title="Sao chép liên kết">
-                                    <LinkIcon className="w-6 h-6" />
+                                <button 
+                                    onClick={copyLink}
+                                    className={`w-14 h-14 rounded-2xl shadow-md hover:-translate-y-1 transition-transform flex items-center justify-center border border-slate-100 ${copied ? "bg-emerald-50 text-emerald-600" : "bg-white text-emerald-600"}`}
+                                    aria-label="Sao chép liên kết"
+                                >
+                                    {copied ? <Check className="w-6 h-6" /> : <Copy className="w-6 h-6" />}
                                 </button>
                             </div>
                         </div>

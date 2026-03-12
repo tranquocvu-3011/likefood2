@@ -10,6 +10,7 @@ import { applyRateLimit, apiRateLimit, getRateLimitIdentifier } from "@/lib/rate
 import { logger } from "@/lib/logger";
 import { newsletterSchema } from "@/lib/validations/contact";
 import prisma from "@/lib/prisma";
+import { sendNewsletterWelcomeEmail } from "@/lib/mail";
 
 export async function POST(req: Request) {
     try {
@@ -45,6 +46,11 @@ export async function POST(req: Request) {
         });
 
         logger.info("[NEWSLETTER] New subscriber", { email: normalized });
+
+        // Send welcome email (non-blocking — don't fail the response if mail fails)
+        sendNewsletterWelcomeEmail(normalized).catch((err) =>
+            logger.error("[NEWSLETTER] Welcome email failed", err as Error, { email: normalized })
+        );
 
         return NextResponse.json({ ok: true, message: "Đăng ký thành công." });
     } catch (error) {

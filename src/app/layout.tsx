@@ -25,9 +25,9 @@ export const metadata: Metadata = {
     default: "LIKEFOOD | Đặc sản Việt Nam tại Mỹ",
     template: "%s | LIKEFOOD"
   },
-  description: "Nền tảng thương mại điện tử chuyên cung cấp đặc sản Việt Nam chất lượng cao tại Hoa Kỳ. Giao hàng nhanh, đảm bảo vệ sinh ATTP, tích hợp trợ lý AI thông minh.",
+  description: "Nền tảng thương mại điện tử chuyên cung cấp đặc sản Việt Nam chất lượng cao tại Hoa Kỳ. Giao hàng nhanh, đảm bảo vệ sinh ATTP, hỗ trợ tư vấn 24/7.",
   keywords: ["đặc sản Việt Nam", "vận chuyển Mỹ", "LIKEFOOD", "cá khô miền tây", "tôm khô cà mau", "thực phẩm Việt tại Mỹ"],
-  authors: [{ name: "Trần Quốc Vũ", url: "https://facebook.com/vudev05" }],
+  authors: [{ name: "Trần Quốc Vũ", url: "https://www.facebook.com/profile.php?id=100076170558548" }],
   creator: "Trần Quốc Vũ",
   publisher: "LIKEFOOD",
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://likefood.vn"),
@@ -111,7 +111,7 @@ export default async function RootLayout({
   const shouldRegisterSw = process.env.NODE_ENV === "production";
 
   return (
-    <html lang="vi" data-scroll-behavior="smooth">
+    <html lang="vi" data-scroll-behavior="smooth" suppressHydrationWarning>
       {gaId && (
         <head>
           {/* GA4 base script */}
@@ -183,7 +183,7 @@ export default async function RootLayout({
                   navigator.serviceWorker.register('/sw.js').then(function(registration) {
                     registration.update?.();
                   }).catch(function(err) {
-                    console.log('ServiceWorker registration failed: ', err);
+                    // SW registration failed silently
                   });
                 });
               }

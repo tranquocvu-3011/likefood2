@@ -14,11 +14,7 @@ export function getStripe(): Stripe {
         if (!process.env.STRIPE_SECRET_KEY) {
             throw new Error("STRIPE_SECRET_KEY is not set");
         }
-        _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-            // Dùng phiên bản API hợp lệ — Stripe yêu cầu chuỗi ngày ISO cụ thể
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            apiVersion: "2024-11-20" as any,
-        });
+        _stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     }
     return _stripe;
 }

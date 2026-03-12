@@ -68,7 +68,7 @@ export function QuickViewModal({ isOpen, onClose, productId }: QuickViewModalPro
     const handleAddToCart = () => {
         if (!product) return;
 
-        addItem({
+        const added = addItem({
             productId: product.id,
             name: product.name,
             price: product.salePrice || product.price,
@@ -78,8 +78,8 @@ export function QuickViewModal({ isOpen, onClose, productId }: QuickViewModalPro
             inventory: product.inventory || 0,
         });
 
-        toast.success("Đã thêm vào giỏ hàng");
-        onClose();
+        // Only close modal if item was successfully added (auth passed)
+        if (added) onClose();
     };
 
     const handleWishlistToggle = async () => {

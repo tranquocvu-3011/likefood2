@@ -13,6 +13,7 @@ import bcrypt from "bcryptjs";
 import type { user as PrismaUser } from "../generated/client";
 import { headers } from "next/headers";
 import { sendSuspiciousLoginEmail } from "@/lib/mail";
+import { verifyTurnstileTokenFromHeaders } from "@/lib/captcha";
 
 type AuthUser = {
     id?: string;
@@ -48,6 +49,7 @@ export const authOptions: NextAuthOptions = {
                 isMagicLink: { label: "Magic Link", type: "text" },
                 token: { label: "Token", type: "text" },
                 otp: { label: "OTP", type: "text" },
+                captchaToken: { label: "Captcha Token", type: "text" },
             },
             async authorize(credentials) {
                 if (!credentials?.email) {
@@ -89,6 +91,17 @@ export const authOptions: NextAuthOptions = {
                     // Delete the token so it can't be reused
                     await prisma.verificationtoken.delete({ where: { id: verificationToken.id } });
                 } else {
+                    // CAPTCHA (Turnstile) for password login (anti-abuse + brute force)
+                    const headersList = await headers();
+                    const captcha = await verifyTurnstileTokenFromHeaders({
+                        headers: headersList,
+                        token: credentials.captchaToken,
+                        action: "auth_login",
+                    });
+                    if (!captcha.ok) {
+                        throw new Error(captcha.message);
+                    }
+
                     // Normal Password Flow
                     if (!credentials.password) {
                         throw new Error("Vui lòng nhập mật khẩu.");

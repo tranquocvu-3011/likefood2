@@ -13,23 +13,66 @@ import { generateSlug } from "@/lib/utils/slug";
 import { logger } from "@/lib/logger";
 import { Prisma } from "../../../generated/client";
 
-// Normalize category slugs / English names -> Vietnamese DB-canonical names
-const CATEGORY_SLUG_MAP: Record<string, string> = {
-    // URL slugs
-    "ca-kho": "Cá khô",
-    "muc-kho": "Tôm & Mực khô",
-    "trai-cay-say": "Trái cây sấy",
-    "banh-mut": "Trà & Bánh mứt",
-    "gia-vi": "Gia vị Việt",
-    // Footer compatibility aliases
-    "spice": "Gia vị Việt",
-    // English display names
-    "Dried Fish": "Cá khô",
-    "Dried Shrimp & Squid": "Tôm & Mực khô",
-    "Dried Fruits": "Trái cây sấy",
-    "Tea & Sweets": "Trà & Bánh mứt",
-    "Vietnamese Spices": "Gia vị Việt",
-};
+type CategoryFilter =
+    | { mode: "tagsContains"; value: string }
+    | { mode: "categoryNameIn"; value: string[] }
+    | { mode: "categoryId"; value: string }
+    | { mode: "categoryName"; value: string };
+
+async function resolveCategoryFilter(categoryParam: string) {
+    const raw = categoryParam.trim();
+    if (!raw) return null;
+
+    // Special legacy aliases supported in UI
+    if (raw === "gifts") return { mode: "tagsContains", value: "gift" } satisfies CategoryFilter;
+    if (raw === "seafood") return { mode: "categoryNameIn", value: ["Cá khô", "Tôm & Mực khô"] } satisfies CategoryFilter;
+
+    const cat = await prisma.category.findFirst({
+        where: {
+            OR: [
+                { id: raw },
+                { slug: raw },
+                { name: raw },
+            ],
+            isActive: true,
+            isVisible: true,
+        },
+        select: { id: true, name: true, slug: true },
+    });
+
+    if (cat) return { mode: "categoryId", value: cat.id } satisfies CategoryFilter;
+
+    // Fallback for legacy category string
+    return { mode: "categoryName", value: raw } satisfies CategoryFilter;
+}
+
+async function resolveTagSlugsOrNames(tagsParam: string) {
+    const list = tagsParam
+        .split(",")
+        .map(t => t.trim())
+        .filter(Boolean)
+        .slice(0, 20);
+
+    if (list.length === 0) return [];
+
+    const tags = await prisma.tag.findMany({
+        where: {
+            isActive: true,
+            OR: list.flatMap((q) => [{ slug: q }, { name: q }]),
+        },
+        select: { id: true, slug: true, name: true },
+        take: 50,
+    });
+
+    // Keep original query order if possible
+    const byKey = new Map<string, { id: string }>();
+    for (const t of tags) {
+        byKey.set(t.slug, { id: t.id });
+        byKey.set(t.name, { id: t.id });
+    }
+
+    return list.map((q) => byKey.get(q)?.id).filter(Boolean) as string[];
+}
 
 // GET all products with search, filter, pagination
 export async function GET(req: Request) {
@@ -70,31 +113,74 @@ export async function GET(req: Request) {
         const where: Prisma.productWhereInput = {};
         const andConditions: Prisma.productWhereInput[] = [];
 
+        // Storefront visibility constraints
+        where.isDeleted = false;
+        where.isVisible = true;
+
         if (search) {
-            where.OR = [
-                { name: { contains: search } },
-                { description: { contains: search } },
-                { category: { contains: search } },
-            ];
+            // Dual search strategy:
+            // 1. Exact accent-sensitive match first (COLLATE utf8mb4_bin)
+            // 2. Fuzzy fallback: accent-insensitive (COLLATE utf8mb4_general_ci) for Vietnamese typo tolerance
+            const like = `%${search}%`;
+            const matched = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+                SELECT id FROM product
+                WHERE (
+                    name        COLLATE utf8mb4_bin LIKE ${like}
+                    OR \`description\` COLLATE utf8mb4_bin LIKE ${like}
+                    OR category COLLATE utf8mb4_bin LIKE ${like}
+                )
+                AND isDeleted = 0 AND isVisible = 1
+            `);
+
+            if (matched.length === 0) {
+                // Fuzzy fallback: accent-insensitive search (handles 'ca kho' → 'Cá khô')
+                const fuzzyMatched = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+                    SELECT id FROM product
+                    WHERE (
+                        name        COLLATE utf8mb4_general_ci LIKE ${like}
+                        OR \`description\` COLLATE utf8mb4_general_ci LIKE ${like}
+                        OR category COLLATE utf8mb4_general_ci LIKE ${like}
+                        OR slug LIKE ${like}
+                    )
+                    AND isDeleted = 0 AND isVisible = 1
+                    LIMIT 50
+                `);
+
+                if (fuzzyMatched.length === 0) {
+                    return NextResponse.json({ products: [], total: 0, page, limit, totalPages: 0 });
+                }
+                andConditions.push({ id: { in: fuzzyMatched.map(r => r.id) } });
+            } else {
+                andConditions.push({ id: { in: matched.map(r => r.id) } });
+            }
         }
 
         if (category && category !== "Tất cả" && category !== "All Categories") {
-            const normalizedCategory = category.trim();
-
-            if (normalizedCategory === "gifts") {
-                andConditions.push({
-                    OR: [
-                        { tags: { contains: "gift" } },
-                        { badgeText: { contains: "gift" } },
-                    ],
-                });
-            } else if (normalizedCategory === "seafood") {
-                andConditions.push({
-                    category: { in: ["Cá khô", "Tôm & Mực khô"] },
-                });
-            } else {
-                const dbCategory = CATEGORY_SLUG_MAP[normalizedCategory] ?? normalizedCategory;
-                andConditions.push({ category: dbCategory });
+            const resolved = await resolveCategoryFilter(category);
+            if (resolved) {
+                if (resolved.mode === "tagsContains") {
+                    andConditions.push({
+                        OR: [
+                            { tags: { contains: resolved.value } },
+                            { badgeText: { contains: resolved.value } },
+                            { productTags: { some: { tag: { slug: resolved.value } } } },
+                        ],
+                    });
+                }
+                if (resolved.mode === "categoryNameIn") {
+                    andConditions.push({
+                        OR: [
+                            { category: { in: resolved.value } },
+                            { categoryRel: { is: { name: { in: resolved.value } } } },
+                        ],
+                    });
+                }
+                if (resolved.mode === "categoryId") {
+                    andConditions.push({ categoryId: resolved.value });
+                }
+                if (resolved.mode === "categoryName") {
+                    andConditions.push({ category: resolved.value });
+                }
             }
         }
 
@@ -117,11 +203,19 @@ export async function GET(req: Request) {
         }
 
         if (tags) {
-            const tagList = tags.split(",").map(t => t.trim()).filter(Boolean);
-            if (tagList.length > 0) {
-                andConditions.push(...tagList.map(tag => ({
-                    tags: { contains: tag }
-                })));
+            const tagIds = await resolveTagSlugsOrNames(tags);
+            if (tagIds.length > 0) {
+                andConditions.push({
+                    productTags: { some: { tagId: { in: tagIds } } },
+                });
+            } else {
+                // Fallback to legacy CSV contains if Tag table not seeded for some reason
+                const tagList = tags.split(",").map(t => t.trim()).filter(Boolean);
+                if (tagList.length > 0) {
+                    andConditions.push(...tagList.map(tag => ({
+                        tags: { contains: tag }
+                    })));
+                }
             }
         }
 
@@ -173,10 +267,12 @@ export async function GET(req: Request) {
                     badgeText: true,
                     image: true,
                     category: true,
+                    categoryId: true,
                     weight: true,
                     inventory: true,
                     featured: true,
                     tags: true,
+                    isVisible: true,
                     ratingAvg: true,
                     ratingCount: true,
                     soldCount: true,
@@ -249,8 +345,8 @@ export async function GET(req: Request) {
             },
         });
 
-        // Set cache headers
-        response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+        // Realtime storefront: do not cache list responses (Admin changes must reflect immediately)
+        response.headers.set('Cache-Control', 'no-store');
 
         return response;
     } catch (error) {
@@ -278,11 +374,14 @@ export async function POST(req: Request) {
             isOnSale,
             badgeText,
             tags,
+            tagSlugs,
             category,
+            categoryId,
             inventory,
             weight,
             image,
             featured,
+            isVisible,
             images: galleryImages,
         } = body;
 
@@ -322,6 +421,41 @@ export async function POST(req: Request) {
 
         const slug = generateSlug(name);
 
+        // Resolve category (prefer id, then name)
+        let finalCategoryId: string | null = null;
+        let finalCategoryName: string = category;
+        if (typeof categoryId === "string" && categoryId.trim()) {
+            const existing = await prisma.category.findFirst({
+                where: { id: categoryId.trim(), isActive: true },
+                select: { id: true, name: true },
+            });
+            if (existing) {
+                finalCategoryId = existing.id;
+                finalCategoryName = existing.name;
+            }
+        }
+        if (!finalCategoryId && typeof category === "string" && category.trim()) {
+            const catSlug = category.trim()
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/(^-|-$)/g, "");
+            const cat = await prisma.category.upsert({
+                where: { slug: catSlug || `cat-${slug}` },
+                update: { name: category.trim() },
+                create: { name: category.trim(), slug: catSlug || `cat-${slug}`, isActive: true, isVisible: true },
+                select: { id: true, name: true },
+            });
+            finalCategoryId = cat.id;
+            finalCategoryName = cat.name;
+        }
+
+        // Resolve tags into Tag table (best-effort)
+        const tagInputs: string[] = Array.isArray(tagSlugs)
+            ? tagSlugs.map((t: unknown) => String(t)).map(t => t.trim()).filter(Boolean)
+            : (typeof tags === "string" ? tags.split(",").map(t => t.trim()).filter(Boolean) : []);
+
         const product = await prisma.product.create({
             data: {
                 name,
@@ -332,12 +466,14 @@ export async function POST(req: Request) {
                 salePrice: salePriceNumber,
                 isOnSale: !!isOnSale && !!salePriceNumber,
                 badgeText: badgeText ?? null,
-                tags: tags ?? null,
-                category,
+                tags: typeof tags === "string" ? tags : (tagInputs.length ? tagInputs.join(",") : null),
+                category: finalCategoryName,
+                categoryId: finalCategoryId,
                 weight: weight || null,
                 inventory: inventoryNumber,
                 image: image || null,
                 featured: featured || false,
+                isVisible: typeof isVisible === "boolean" ? isVisible : true,
                 // Add gallery images if provided
                 ...(galleryImages && Array.isArray(galleryImages) && galleryImages.length > 0 && {
                     productImages: {
@@ -353,6 +489,28 @@ export async function POST(req: Request) {
                 productImages: true
             }
         });
+
+        if (tagInputs.length > 0) {
+            const createdTags = await Promise.all(tagInputs.slice(0, 20).map(async (t) => {
+                const slug = t
+                    .toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/(^-|-$)/g, "");
+                const tag = await prisma.tag.upsert({
+                    where: { slug: slug || `tag-${product.id.slice(-6)}-${Math.random().toString(16).slice(2, 6)}` },
+                    update: { name: t },
+                    create: { name: t, slug: slug || `tag-${product.id.slice(-6)}-${Math.random().toString(16).slice(2, 6)}` },
+                    select: { id: true },
+                });
+                return tag.id;
+            }));
+            await prisma.producttag.createMany({
+                data: createdTags.map((tagId) => ({ productId: product.id, tagId })),
+                skipDuplicates: true,
+            });
+        }
 
         return NextResponse.json({
             ...product,

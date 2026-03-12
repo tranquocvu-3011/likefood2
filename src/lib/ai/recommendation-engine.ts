@@ -42,7 +42,7 @@ export interface ProductRecommendation {
   slug: string;
   price: number;
   originalPrice?: number;
-  image: string;
+  image: string | null;
   category: string;
   brand?: string;
   rating?: number;
@@ -77,7 +77,7 @@ function toRecommendation(productRecord: ProductWithRelations, score: number, re
     slug: productRecord.slug ?? productRecord.id,
     price: getProductPrice(productRecord),
     originalPrice: productRecord.originalPrice ?? undefined,
-    image: productRecord.image || "/images/placeholder.jpg",
+    image: productRecord.image ?? null,
     category: productRecord.category,
     brand: productRecord.brand?.name ?? undefined,
     rating: productRecord.ratingAvg || undefined,

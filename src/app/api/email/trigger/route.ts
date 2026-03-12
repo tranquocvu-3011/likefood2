@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
         email: recipientEmail,
         subject: template.subject[language],
         templateKey: template.templateKey,
-        data: data !== undefined ? (data as Prisma.InputJsonValue) : undefined,
+        data: data !== undefined ? JSON.stringify(data) : undefined,
         status: "PENDING",
         priority: type === "abandoned_cart" || type === "win_back" ? "HIGH" : "NORMAL",
         scheduledAt: new Date(),

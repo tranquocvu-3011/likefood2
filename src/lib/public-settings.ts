@@ -7,33 +7,43 @@
 
 /**
  * Module-level cache for /api/public/settings to avoid duplicate fetches
- * across components on the same page. Cache expires after 5 minutes.
+ * across components on the same page. Cache expires after 30 seconds so
+ * admin changes (e.g. Turnstile keys) show up quickly on login/register.
  */
 
 type PublicSettings = Record<string, string>;
 
 let cachedPromise: Promise<PublicSettings> | null = null;
 let cacheTimestamp = 0;
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL_MS = 30 * 1000; // 30 seconds
 
-export async function getPublicSettings(): Promise<PublicSettings> {
+export type GetPublicSettingsOptions = { bypassCache?: boolean };
+
+export async function getPublicSettings(
+  options?: GetPublicSettingsOptions
+): Promise<PublicSettings> {
   const now = Date.now();
+  const useCache = !options?.bypassCache && cachedPromise && now - cacheTimestamp < CACHE_TTL_MS;
 
-  if (cachedPromise && now - cacheTimestamp < CACHE_TTL_MS) {
+  if (useCache && cachedPromise) {
     return cachedPromise;
   }
 
-  cacheTimestamp = now;
-  cachedPromise = fetch("/api/public/settings")
-    .then((res) => {
-      if (!res.ok) throw new Error("Failed to fetch settings");
-      return res.json() as Promise<PublicSettings>;
-    })
-    .catch(() => {
-      // Reset cache on failure so the next call retries
-      cachedPromise = null;
-      return {} as PublicSettings;
-    });
+  const doFetch = () =>
+    fetch("/api/public/settings", options?.bypassCache ? { cache: "no-store" } : undefined)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch settings");
+        return res.json() as Promise<PublicSettings>;
+      })
+      .catch(() => {
+        cachedPromise = null;
+        return {} as PublicSettings;
+      });
 
-  return cachedPromise;
+  if (!options?.bypassCache) {
+    cacheTimestamp = now;
+    cachedPromise = doFetch();
+    return cachedPromise;
+  }
+  return doFetch();
 }

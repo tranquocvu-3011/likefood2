@@ -21,13 +21,15 @@ export const emailSchema = z
     .toLowerCase()
     .trim();
 
-// Vietnamese phone number validation
-// Supports formats: 0xxx xxx xxx, +84 xxx xxx xxx, 84xxxxxxxxx
+// Phone number validation
+// Supports Vietnamese (0xxx, +84xxx, 84xxx) and international formats (+1xxx, etc.)
 export const phoneSchema = z
     .string()
+    .min(7, 'Số điện thoại phải có ít nhất 7 ký tự')
+    .max(20, 'Số điện thoại không được quá 20 ký tự')
     .regex(
-        /^(\+84|84|0)(3|5|7|8|9)\d{8}$/,
-        'Số điện thoại không hợp lệ (VD: 0912345678)'
+        /^\+?[\d\s\-().]{7,20}$/,
+        'Số điện thoại không hợp lệ (VD: 0912345678 hoặc +84912345678)'
     )
     .trim();
 

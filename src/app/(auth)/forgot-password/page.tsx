@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { isValidEmailFormat } from "@/lib/validation";
 import { useLanguage } from "@/lib/i18n/context";
-import MathCaptcha from "@/components/auth/MathCaptcha";
+import { CaptchaField } from "@/components/auth/CaptchaField";
 
 export default function ForgotPasswordPage() {
     const { t } = useLanguage();
@@ -27,6 +27,7 @@ export default function ForgotPasswordPage() {
     const [error, setError] = useState("");
     const [countdown, setCountdown] = useState(0);
     const [isCaptchaValid, setIsCaptchaValid] = useState(false);
+    const [turnstileToken, setTurnstileToken] = useState("");
     const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
     useEffect(() => {
@@ -58,7 +59,7 @@ export default function ForgotPasswordPage() {
             const res = await fetch("/api/auth/forgot-password", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify({ email, turnstileToken }),
             });
 
             if (res.ok) {
@@ -200,7 +201,7 @@ export default function ForgotPasswordPage() {
                                     </div>
 
                                     <div className="py-2">
-                                        <MathCaptcha onValidate={setIsCaptchaValid} />
+                                        <CaptchaField onToken={setTurnstileToken} onValidChange={setIsCaptchaValid} />
                                     </div>
 
                                     <Button disabled={isLoading || !isCaptchaValid} type="submit" className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-emerald-600 text-white font-bold uppercase tracking-widest shadow-xl shadow-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">

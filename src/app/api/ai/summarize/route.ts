@@ -7,11 +7,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { logger } from "@/lib/logger";
 import { applyRateLimit, apiRateLimit, getRateLimitIdentifier } from "@/lib/ratelimit";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+import { getGeminiApiKey, getGeminiModel } from "@/lib/ai/gemini-runtime";
 
 export async function GET(req: NextRequest) {
     // Rate limit: 10 per minute per IP to protect Gemini API cost
@@ -75,8 +73,9 @@ Yêu cầu:
 4. Không bịa đặt thông tin không có trong dữ liệu.
 `;
 
-        // Check for API key
-        if (!process.env.GEMINI_API_KEY) {
+        // Check for API key (DB first, then env)
+        const apiKey = await getGeminiApiKey();
+        if (!apiKey) {
             // Local simple summarization fallback
             const avgRating = reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length;
             return NextResponse.json({
@@ -84,7 +83,13 @@ Yêu cầu:
             });
         }
 
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = await getGeminiModel({ model: "gemini-2.0-flash", temperature: 0.6, maxOutputTokens: 800, topP: 0.9, topK: 32 });
+        if (!model) {
+            const avgRating = reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length;
+            return NextResponse.json({
+                summary: `Tóm tắt (Hệ thống AI đang bảo trì): Khách hàng đánh giá trung bình ${avgRating.toFixed(1)}/5 sao. Đa số khách hàng hài lòng với chất lượng sản phẩm.`
+            });
+        }
         const prompt = `${systemPrompt}\n\nDưới đây là danh sách các đánh giá:\n${reviewsText}`;
 
         const result = await model.generateContent(prompt);

@@ -22,11 +22,13 @@ const POPULAR_SEARCHES = [
     "Gia vị Việt"
 ];
 
+type SearchHint = { id: string; name: string; slug?: string; category?: string; price?: number; image?: string | null };
+
 export default function HomeSearchBar() {
     const router = useRouter();
     const [query, setQuery] = useState("");
     const [isFocused, setIsFocused] = useState(false);
-    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [suggestions, setSuggestions] = useState<SearchHint[]>([]);
     const debouncedQuery = useDebounce(query, 300);
 
     const fetchSuggestions = useCallback(async (searchQuery: string) => {
@@ -69,7 +71,7 @@ export default function HomeSearchBar() {
     };
 
     return (
-        <div className="relative max-w-4xl mx-auto mt-0 z-20 px-4 py-6 md:py-8">
+        <div className="relative max-w-3xl mx-auto mt-0 z-20 px-4 py-4 md:py-5">
             <motion.div
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
@@ -81,7 +83,7 @@ export default function HomeSearchBar() {
                         ? 'border-emerald-400 ring-4 ring-emerald-500/20 shadow-[0_15px_60px_-15px_rgba(16,185,129,0.4)]'
                         : 'border-white shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] hover:shadow-[0_20px_50px_-15px_rgba(16,185,129,0.2)] hover:border-emerald-100'
                         }`}>
-                        <Search className={`absolute left-6 md:left-8 top-1/2 -translate-y-1/2 w-6 h-6 md:w-7 md:h-7 transition-colors duration-300 ${isFocused ? 'text-emerald-600' : 'text-slate-400'}`} />
+                        <Search className={`absolute left-5 md:left-6 top-1/2 -translate-y-1/2 w-5 h-5 md:w-5.5 md:h-5.5 transition-colors duration-300 ${isFocused ? 'text-emerald-600' : 'text-slate-400'}`} />
 
                         <input
                             type="text"
@@ -90,7 +92,7 @@ export default function HomeSearchBar() {
                             onFocus={() => setIsFocused(true)}
                             onBlur={() => setTimeout(() => setIsFocused(false), 200)}
                             placeholder="Tìm cá khô, tôm khô, đặc sản Việt Nam..."
-                            className="w-full pl-16 md:pl-20 pr-28 md:pr-40 py-5 md:py-6 rounded-full text-lg md:text-xl font-semibold outline-none placeholder:text-slate-400 bg-transparent text-slate-800"
+                            className="w-full pl-12 md:pl-14 pr-24 md:pr-36 py-3.5 md:py-4 rounded-full text-sm md:text-base font-semibold outline-none placeholder:text-slate-400 bg-transparent text-slate-800"
                         />
 
                         {query && (
@@ -107,7 +109,7 @@ export default function HomeSearchBar() {
                             type="submit"
                             whileHover={{ scale: 1.02, boxShadow: "0 15px 30px -5px rgba(16, 185, 129, 0.5)" }}
                             whileTap={{ scale: 0.95 }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-6 md:px-10 py-3 md:py-4 rounded-full font-black text-base md:text-xl transition-all shadow-lg flex items-center gap-2"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-5 md:px-8 py-2.5 md:py-3 rounded-full font-bold text-sm md:text-base transition-all shadow-lg flex items-center gap-1.5"
                         >
                             <span className="hidden leading-none sm:inline">Khám Phá</span>
                             <span className="sm:hidden leading-none">Tìm</span>
@@ -124,15 +126,20 @@ export default function HomeSearchBar() {
                                 exit={{ opacity: 0, y: -10 }}
                                 className="absolute top-full mt-2 w-full bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden"
                             >
-                                {suggestions.map((suggestion, index) => (
+                                {suggestions.map((suggestion) => (
                                     <button
-                                        key={index}
+                                        key={suggestion.id}
                                         type="button"
-                                        onClick={() => handleSearch(suggestion)}
+                                        onClick={() => handleSearch(suggestion.name)}
                                         className="w-full px-6 py-4 text-left hover:bg-emerald-50 transition-colors flex items-center gap-4 border-b border-slate-50 last:border-0 group"
                                     >
                                         <Search className="w-5 h-5 text-slate-400 group-hover:text-emerald-500 transition-colors" />
-                                        <span className="font-semibold text-lg text-slate-700 group-hover:text-emerald-700">{suggestion}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <span className="font-semibold text-lg text-slate-700 group-hover:text-emerald-700 block truncate">{suggestion.name}</span>
+                                            {suggestion.category && (
+                                                <span className="text-xs text-slate-400">{suggestion.category}</span>
+                                            )}
+                                        </div>
                                     </button>
                                 ))}
                             </motion.div>

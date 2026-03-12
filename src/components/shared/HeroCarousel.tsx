@@ -111,7 +111,7 @@ export default function HeroCarousel() {
     }
 
     return (
-        <section className="relative overflow-hidden lg:min-h-[70vh] flex items-center bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50" style={{ padding: 'clamp(1rem, 2vw, 2rem) clamp(0.75rem, 2vw, 2rem)' }}>
+        <section className="relative overflow-hidden lg:min-h-[55vh] flex items-center bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50" style={{ padding: 'clamp(0.75rem, 1.5vw, 1.5rem) clamp(0.75rem, 2vw, 2rem)' }}>
             <div className="w-full mx-auto relative z-10" style={{ maxWidth: '100%' }}>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-[clamp(1.5rem,3vw,2.5rem)] items-center">
                     <AnimatePresence mode="wait">

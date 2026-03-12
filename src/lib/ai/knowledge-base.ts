@@ -7,7 +7,7 @@
  * https://github.com/tranquocvu-3011/likefood
  */
 
-import type { aiKnowledge } from "@/generated/client";
+import type { AiKnowledge } from "@/generated/client";
 import prisma from "@/lib/prisma";
 
 export type KnowledgeCategory =
@@ -222,7 +222,7 @@ const DEFAULT_KNOWLEDGE: Array<Omit<KnowledgeItem, "id" | "isActive">> = [
   // ============================================
   { category: "support", question: "Làm sao liên hệ support?", answer: "Gọi điện: 1-800-LIKEFOOD (1-800-545-3366). Email: support@likefood.com. Chat trực tiếp trên website. Fanpage Facebook.", keywords: ["lien he", "contact", "support", "hotline"], language: "vi", priority: 10 },
   { category: "support", question: "Giờ làm việc của support?", answer: "Support hoạt động 24/7 cho đơn hàng khẩn. Tư vấn thường: 8AM-10PM EST, Thứ 2 - Chủ Nhật.", keywords: ["gio lam viec", "working hours"], language: "vi", priority: 9 },
-  { category: "support", question: "Có chat trực tiếp không?", answer: "Có, bạn có thể chat với tư vấn viên bằng cách nhấn nút chat góc phải màn hình. AI hỗ trợ 24/7.", keywords: ["chat", "live chat"], language: "vi", priority: 9 },
+  { category: "support", question: "Có chat trực tiếp không?", answer: "Có, bạn có thể chat với tư vấn viên bằng cách nhấn nút chat góc phải màn hình. Hỗ trợ 24/7.", keywords: ["chat", "live chat"], language: "vi", priority: 9 },
   { category: "support", question: "Phản hồi khiếu nại ở đâu?", answer: "Gửi email support@likefood.com với mã đơn và mô tả vấn đề. Chúng tôi phản hồi trong 24 giờ.", keywords: ["phai ho", "khieu nai", "complaint"], language: "vi", priority: 9 },
   { category: "support", question: "Có hỗ trợ tiếng Việt không?", answer: "Có, support có thể nói tiếng Việt và tiếng Anh. Chọn ngôn ngữ ưa thích khi liên hệ.", keywords: ["tieng Viet", "Vietnamese support"], language: "vi", priority: 9 },
 
@@ -291,7 +291,7 @@ const DEFAULT_KNOWLEDGE: Array<Omit<KnowledgeItem, "id" | "isActive">> = [
   { category: "usage", question: "How to use Vietnamese fish sauce?", answer: "Use as a condiment for dipping, cooking soups, braising meats. Mix with sugar, lime, and chili for a great dipping sauce.", keywords: ["fish sauce usage", "nuoc mam"], language: "en", priority: 8 },
   { category: "support", question: "How can I contact support?", answer: "Call: 1-800-LIKEFOOD. Email: support@likefood.com. Live chat on website. Facebook fanpage.", keywords: ["contact", "support", "help", "customer service"], language: "en", priority: 10 },
   { category: "support", question: "What are your support hours?", answer: "Support for urgent orders: 24/7. General inquiry: 8AM-10PM EST, Monday-Sunday.", keywords: ["support hours", "customer service hours"], language: "en", priority: 9 },
-  { category: "support", question: "Do you have live chat?", answer: "Yes! Click the chat button on the bottom right. AI assistant is available 24/7 for quick help.", keywords: ["live chat", "chat support"], language: "en", priority: 9 },
+  { category: "support", question: "Do you have live chat?", answer: "Yes! Click the chat button on the bottom right. Support is available 24/7 for quick help.", keywords: ["live chat", "chat support"], language: "en", priority: 9 },
   { category: "support", question: "How to file a complaint?", answer: "Email support@likefood.com with order ID and description. We respond within 24 hours.", keywords: ["complaint", "feedback", "report issue"], language: "en", priority: 9 },
   { category: "support", question: "Do you offer Vietnamese support?", answer: "Yes, support is available in both Vietnamese and English. Choose your preferred language when contacting.", keywords: ["vietnamese support", "tieng viet"], language: "en", priority: 9 },
   { category: "general", question: "What is LIKEFOOD?", answer: "LIKEFOOD is an online store specializing in Vietnamese specialty products in the USA. We bring tea, coffee, dried seafood, spices, snacks, and gifts.", keywords: ["about", "likefood", "who we are"], language: "en", priority: 10 },
@@ -409,6 +409,7 @@ export async function seedKnowledgeBase(): Promise<void> {
     for (const item of DEFAULT_KNOWLEDGE) {
       await prisma.aiKnowledge.create({
         data: {
+          id: crypto.randomUUID(),
           category: item.category,
           question: item.question,
           answer: item.answer,
@@ -416,6 +417,7 @@ export async function seedKnowledgeBase(): Promise<void> {
           language: item.language,
           priority: item.priority,
           isActive: true,
+          updatedAt: new Date(),
         },
       });
     }
@@ -425,7 +427,7 @@ export async function seedKnowledgeBase(): Promise<void> {
   }
 }
 
-function formatKnowledge(item: aiKnowledge): KnowledgeItem {
+function formatKnowledge(item: AiKnowledge): KnowledgeItem {
   return {
     id: item.id,
     category: item.category as KnowledgeCategory,

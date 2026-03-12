@@ -33,8 +33,8 @@ export default function AdminError({
                 <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5">
                     <AlertTriangle className="w-8 h-8 text-red-500" />
                 </div>
-                <h2 className="text-2xl font-bold mb-2 text-slate-900">Đã xảy ra lỗi</h2>
-                <p className="text-slate-500 mb-6 text-sm">
+                <h2 className="text-2xl font-bold mb-2 text-zinc-100">Đã xảy ra lỗi</h2>
+                <p className="text-zinc-500 mb-6 text-sm">
                     {error.message || "Có vấn đề xảy ra khi tải trang admin. Vui lòng thử lại."}
                     {error.digest && (
                         <span className="block mt-1 text-xs text-slate-400">

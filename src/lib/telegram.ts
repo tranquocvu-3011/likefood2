@@ -5,6 +5,8 @@
  * Licensed under the MIT License
  */
 
+import { getSystemSettingTrimmed } from "@/lib/system-settings";
+
 interface TelegramConfig {
     botToken: string;
     chatId: string;
@@ -33,14 +35,11 @@ interface OrderNotificationData {
 /**
  * Get Telegram configuration from environment or settings
  */
-export function getTelegramConfig(): TelegramConfig | null {
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    const chatId = process.env.TELEGRAM_CHAT_ID;
+export async function getTelegramConfig(): Promise<TelegramConfig | null> {
+    const botToken = (await getSystemSettingTrimmed("telegram_bot_token")) || process.env.TELEGRAM_BOT_TOKEN || "";
+    const chatId = (await getSystemSettingTrimmed("telegram_chat_id")) || process.env.TELEGRAM_CHAT_ID || "";
 
-    if (!botToken || !chatId) {
-        return null;
-    }
-
+    if (!botToken || !chatId) return null;
     return { botToken, chatId };
 }
 
@@ -48,7 +47,7 @@ export function getTelegramConfig(): TelegramConfig | null {
  * Send a message to Telegram
  */
 export async function sendTelegramMessage(message: TelegramMessage): Promise<boolean> {
-    const config = getTelegramConfig();
+    const config = await getTelegramConfig();
     if (!config) {
         console.log("[TELEGRAM] Bot not configured, skipping notification");
         return false;
@@ -131,7 +130,7 @@ export async function sendOrderNotification(data: OrderNotificationData): Promis
  * Test Telegram connection
  */
 export async function testTelegramConnection(): Promise<{ success: boolean; message: string }> {
-    const config = getTelegramConfig();
+    const config = await getTelegramConfig();
     if (!config) {
         return {
             success: false,

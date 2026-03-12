@@ -11,6 +11,7 @@ import { sendVerificationEmail } from "@/lib/mail";
 import { isValidEmailFormat } from "@/lib/validation";
 import { loginRateLimit, getRateLimitIdentifier, applyRateLimit } from "@/lib/ratelimit";
 import { logger } from "@/lib/logger";
+import { verifyTurnstileToken } from "@/lib/captcha";
 
 export async function POST(req: Request) {
     try {
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
             return rateResult.error;
         }
 
-        const { email } = await req.json();
+        const { email, turnstileToken } = await req.json();
 
         if (!email) {
             return NextResponse.json(
@@ -34,6 +35,11 @@ export async function POST(req: Request) {
                 { error: "Định dạng email không hợp lệ." },
                 { status: 400 }
             );
+        }
+
+        const captcha = await verifyTurnstileToken({ req, token: turnstileToken, action: "auth_forgot_password" });
+        if (!captcha.ok) {
+            return NextResponse.json({ error: captcha.message }, { status: 400 });
         }
 
         const user = await prisma.user.findUnique({
@@ -76,11 +82,11 @@ export async function POST(req: Request) {
         const emailResult = await sendVerificationEmail(email, otp, "PASSWORD_RESET");
 
         if (!emailResult.success) {
-            logger.error("[MAIL] Failed to send password reset email", {
-                context: "forgot-password",
-                email,
-                error: emailResult.error,
-            });
+            logger.error(
+                "[MAIL] Failed to send password reset email",
+                new Error(emailResult.error || "Unknown mail error"),
+                { context: "forgot-password", email }
+            );
             return NextResponse.json(
                 { error: "Không thể gửi email. Vui lòng kiểm tra cấu hình SMTP." },
                 { status: 500 }

@@ -58,10 +58,14 @@ export default async function FeaturedProductsSection() {
         }
     } catch (error) {
         console.error("FeaturedProductsSection fetch error:", error);
-        return null;
+        // Return empty array instead of null to allow parent to handle gracefully
+        return <FeaturedStickyShowcase products={[]} />;
     }
 
-    if (rawProducts.length === 0) return null;
+    if (rawProducts.length === 0) {
+        // Return empty showcase instead of silent null
+        return <FeaturedStickyShowcase products={[]} />;
+    }
 
     const products = rawProducts.map(p => ({
         id: p.id,

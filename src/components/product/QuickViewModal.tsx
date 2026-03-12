@@ -14,6 +14,7 @@ import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/contexts/CartContext";
+import { formatPrice } from "@/lib/currency";
 
 interface QuickViewModalProps {
     product: {
@@ -56,7 +57,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
         if (value == null) return "$0";
         const rounded = Math.round((value + Number.EPSILON) * 100) / 100;
         return `$${rounded.toLocaleString("en-US", {
-            minimumFractionDigits: Number.isInteger(rounded) ? 0 : 2,
+            minimumFractionDigits: 0,
             maximumFractionDigits: 2,
         })}`;
     };

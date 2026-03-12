@@ -27,6 +27,7 @@ import {
   Store,
   Truck,
   UserRound,
+  Database,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -61,24 +62,42 @@ const ALLOWED_SETTINGS = [
   "meta_keywords",
   "announcement_bar",
   "announcement_text",
-  // Payment settings
-  "payment_cod_enabled",
-  "payment_bank_enabled",
-  "payment_momo_enabled",
-  "payment_paypal_enabled",
+  // Payment settings — Stripe only
   "payment_stripe_enabled",
-  "bank_name",
-  "bank_account_name",
-  "bank_account_number",
-  "bank_qr_image_url",
-  "momo_qr_image_url",
-  "paypal_client_id",
-  "zalo_pay_enabled",
-  "zalo_pay_qr_url",
+  "stripe_secret_key", "stripe_webhook_secret", "stripe_publishable_key",
+  // Security
+  "security_captcha_enabled",
+  "turnstile_site_key",
+  "turnstile_secret_key",
+  // ===== CONNECTIONS / INTEGRATIONS =====
+  // Database (Docker)
+  "db_host", "db_port", "db_name", "db_user", "db_password",
+  // Redis
+  "redis_url", "redis_password",
+  // Rate Limiting (Upstash)
+  "upstash_redis_rest_url", "upstash_redis_rest_token",
+  // AI / Gemini
+  "gemini_api_key",
+  // Telegram
+  "telegram_bot_token", "telegram_chat_id",
+  // Stripe
+  "stripe_secret_key", "stripe_webhook_secret", "stripe_publishable_key",
+  // Sentry
+  "sentry_org", "sentry_project", "sentry_auth_token", "sentry_dsn",
+  // Cloudflare
+  "cloudflare_api_token", "cloudflare_zone_id",
+  // Google OAuth
+  "google_client_id", "google_client_secret",
+  // AWS S3
+  "aws_s3_bucket", "aws_access_key_id", "aws_secret_access_key", "aws_region",
+  // Analytics
+  "ga_tracking_id", "fb_pixel_id", "gtm_id",
+  // Health check
+  "health_secret",
 ] as const;
 
 type SettingKey = (typeof ALLOWED_SETTINGS)[number];
-type TabKey = "store" | "commerce" | "channels" | "operations" | "profile" | "payment";
+type TabKey = "store" | "commerce" | "channels" | "operations" | "profile" | "payment" | "security" | "connections";
 type SettingsState = Partial<Record<SettingKey, string>>;
 
 type ProfileState = {
@@ -119,6 +138,8 @@ const TABS: Array<{ id: TabKey; label: string; icon: typeof Store; description: 
   { id: "channels", label: "Kênh liên lạc", icon: Link2, description: "Liên hệ & tích hợp" },
   { id: "payment", label: "Thanh toán", icon: CreditCard, description: "Phương thức & mã QR" },
   { id: "operations", label: "Vận hành", icon: Settings2, description: "Thông báo & bảo trì" },
+  { id: "security", label: "Bảo mật", icon: ShieldCheck, description: "CAPTCHA & lớp phòng vệ" },
+  { id: "connections", label: "Kết nối", icon: Database, description: "API keys & dịch vụ bên thứ 3" },
   { id: "profile", label: "Hồ sơ", icon: UserRound, description: "Cài đặt tài khoản admin" },
 ];
 
@@ -289,7 +310,7 @@ export default function AdminSettingsPage() {
     >
       <div className="grid gap-4 lg:grid-cols-4">
         <AdminCard className="p-5">
-          <Stat label="Chế độ bảo trì" value={summary.maintenance} tone="text-slate-950" />
+          <Stat label="Chế độ bảo trì" value={summary.maintenance} tone="text-zinc-100" />
         </AdminCard>
         <AdminCard className="p-5">
           <Stat label="Miễn phí vận chuyển từ" value={`$${summary.shipping}`} tone="text-emerald-600" />
@@ -313,19 +334,19 @@ export default function AdminSettingsPage() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`w-full rounded-[1.5rem] border px-4 py-4 text-left transition ${
+                  className={`w-full rounded-lg border px-4 py-3 text-left transition ${
                     active
-                      ? "border-slate-900 bg-slate-950 text-white shadow-lg"
-                      : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white"
+                      ? "border-teal-600 bg-teal-600/10 text-teal-400"
+                      : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:bg-zinc-800"
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`flex h-11 w-11 items-center justify-center rounded-[1rem] ${active ? "bg-white/10" : "bg-white"}`}>
-                      <Icon className="h-5 w-5" />
+                    <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? "bg-teal-600/20" : "bg-zinc-800"}`}>
+                      <Icon className="h-4 w-4" />
                     </div>
                     <div>
-                      <p className="text-sm font-black uppercase tracking-[0.16em]">{tab.label}</p>
-                      <p className={`mt-1 text-xs leading-5 ${active ? "text-white/70" : "text-slate-500"}`}>{tab.description}</p>
+                      <p className="text-xs font-semibold uppercase">{tab.label}</p>
+                      <p className={`mt-0.5 text-xs ${active ? "text-teal-400/70" : "text-zinc-500"}`}>{tab.description}</p>
                     </div>
                   </div>
                 </button>
@@ -444,11 +465,11 @@ export default function AdminSettingsPage() {
               <AdminCard>
                 <SectionHeader icon={MessageCircle} eyebrow="Telegram Bot" title="Thông báo Telegram" description="Nhận thông báo đơn hàng và cảnh báo cửa hàng qua Telegram bot." />
                 <div className="mt-6 space-y-4">
-                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-                    <p className="text-sm text-amber-800 font-medium">
+                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4">
+                    <p className="text-sm text-amber-400 font-medium">
                       📌 Để kích hoạt Telegram Bot, thêm các biến môi trường sau vào file .env:
                     </p>
-                    <ul className="mt-2 text-xs text-amber-700 space-y-1">
+                    <ul className="mt-2 text-xs text-amber-500 space-y-1">
                       <li>• TELEGRAM_BOT_TOKEN: Token từ @BotFather</li>
                       <li>• TELEGRAM_CHAT_ID: Chat ID của bạn (dùng @userinfobot để lấy)</li>
                     </ul>
@@ -486,76 +507,37 @@ export default function AdminSettingsPage() {
           {activeTab === "payment" ? (
             <div className="grid gap-8">
               <AdminCard>
-                <SectionHeader icon={CreditCard} eyebrow="Phương thức thanh toán" title="Cấu hình thanh toán" description="Bật hoặc tắt các phương thức thanh toán khả dụng cho khách hàng khi thanh toán." />
-                <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-                  <ToggleField
-                    label="Thanh toán khi nhận hàng (COD)"
-                    value={settings.payment_cod_enabled || "OFF"}
-                    onChange={(value) => updateSetting("payment_cod_enabled", value)}
-                  />
-                  <ToggleField
-                    label="Chuyển khoản ngân hàng"
-                    value={settings.payment_bank_enabled || "OFF"}
-                    onChange={(value) => updateSetting("payment_bank_enabled", value)}
-                  />
-                  <ToggleField
-                    label="Ví MoMo"
-                    value={settings.payment_momo_enabled || "OFF"}
-                    onChange={(value) => updateSetting("payment_momo_enabled", value)}
-                  />
-                  <ToggleField
-                    label="PayPal"
-                    value={settings.payment_paypal_enabled || "OFF"}
-                    onChange={(value) => updateSetting("payment_paypal_enabled", value)}
-                  />
-                  <ToggleField
-                    label="Thẻ Stripe"
-                    value={settings.payment_stripe_enabled || "OFF"}
-                    onChange={(value) => updateSetting("payment_stripe_enabled", value)}
-                  />
-                  <ToggleField
-                    label="ZaloPay"
-                    value={settings.zalo_pay_enabled || "OFF"}
-                    onChange={(value) => updateSetting("zalo_pay_enabled", value)}
-                  />
-                </div>
-              </AdminCard>
-
-              <AdminCard>
-                <SectionHeader icon={CreditCard} eyebrow="Chuyển khoản ngân hàng" title="Thông tin tài khoản ngân hàng" description="Thông tin tài khoản ngân hàng hiển thị cho khách hàng khi chuyển khoản." />
-                <div className="mt-6 grid gap-5 md:grid-cols-2">
-                  <Field label="Tên ngân hàng">
-                    <input value={settings.bank_name || ""} onChange={(event) => updateSetting("bank_name", event.target.value)} className="admin-input" placeholder="Chase Bank" />
+                <SectionHeader icon={CreditCard} eyebrow="Stripe" title="Thanh toán qua Stripe" description="Website chỉ sử dụng Stripe làm cổng thanh toán duy nhất. Nhập API keys từ Stripe Dashboard." />
+                <div className="mt-6 space-y-4">
+                  <Field label="Stripe Publishable Key (pk_live_ hoặc pk_test_)">
+                    <input
+                      type="text"
+                      value={settings.stripe_publishable_key ?? ""}
+                      onChange={(e) => updateSetting("stripe_publishable_key", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="pk_test_..."
+                    />
                   </Field>
-                  <Field label="Tên tài khoản">
-                    <input value={settings.bank_account_name || ""} onChange={(event) => updateSetting("bank_account_name", event.target.value)} className="admin-input" placeholder="LIKEFOOD LLC" />
+                  <Field label="Stripe Secret Key (sk_live_ hoặc sk_test_)">
+                    <input
+                      type="password"
+                      value={settings.stripe_secret_key ?? ""}
+                      onChange={(e) => updateSetting("stripe_secret_key", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="sk_test_..."
+                      autoComplete="off"
+                    />
                   </Field>
-                  <Field label="Số tài khoản">
-                    <input value={settings.bank_account_number || ""} onChange={(event) => updateSetting("bank_account_number", event.target.value)} className="admin-input" placeholder="1234567890" />
-                  </Field>
-                  <Field label="URL ảnh QR ngân hàng">
-                    <input value={settings.bank_qr_image_url || ""} onChange={(event) => updateSetting("bank_qr_image_url", event.target.value)} className="admin-input" placeholder="https://example.com/bank-qr.png" />
-                  </Field>
-                </div>
-              </AdminCard>
-
-              <AdminCard>
-                <SectionHeader icon={CreditCard} eyebrow="Ví điện tử" title="Cấu hình mã QR" description="Ảnh mã QR cho thanh toán qua ví điện tử (MoMo, ZaloPay)." />
-                <div className="mt-6 grid gap-5 md:grid-cols-2">
-                  <Field label="URL ảnh QR MoMo">
-                    <input value={settings.momo_qr_image_url || ""} onChange={(event) => updateSetting("momo_qr_image_url", event.target.value)} className="admin-input" placeholder="https://example.com/momo-qr.png" />
-                  </Field>
-                  <Field label="URL ảnh QR ZaloPay">
-                    <input value={settings.zalo_pay_qr_url || ""} onChange={(event) => updateSetting("zalo_pay_qr_url", event.target.value)} className="admin-input" placeholder="https://example.com/zalopay-qr.png" />
-                  </Field>
-                </div>
-              </AdminCard>
-
-              <AdminCard>
-                <SectionHeader icon={CreditCard} eyebrow="PayPal" title="Cấu hình PayPal" description="PayPal Client ID để nhận thanh toán quốc tế." />
-                <div className="mt-6 grid gap-5">
-                  <Field label="PayPal Client ID">
-                    <input value={settings.paypal_client_id || ""} onChange={(event) => updateSetting("paypal_client_id", event.target.value)} className="admin-input" placeholder="Your PayPal Client ID" />
+                  <Field label="Stripe Webhook Secret (whsec_)">
+                    <input
+                      type="password"
+                      value={settings.stripe_webhook_secret ?? ""}
+                      onChange={(e) => updateSetting("stripe_webhook_secret", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="whsec_..."
+                      autoComplete="off"
+                    />
+                    <p className="mt-1 text-[11px] text-zinc-500">Lấy từ Stripe Dashboard → Developers → Webhooks. Endpoint: /api/webhooks/stripe</p>
                   </Field>
                 </div>
               </AdminCard>
@@ -613,11 +595,399 @@ export default function AdminSettingsPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="mt-6 rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 p-6 text-sm leading-6 text-slate-500">
+                  <div className="mt-6 rounded-lg border border-dashed border-zinc-700 bg-zinc-900 p-6 text-sm text-zinc-500">
                     Chức năng này chỉ dành cho quản trị viên cấp cao.
                   </div>
                 )}
               </AdminCard>
+            </div>
+          ) : null}
+
+          {activeTab === "security" ? (
+            <div className="grid gap-8">
+              <AdminCard>
+                <SectionHeader
+                  icon={ShieldCheck}
+                  eyebrow="Phòng vệ hệ thống"
+                  title="CAPTCHA & chống lạm dụng"
+                  description="Bật/tắt CAPTCHA Cloudflare Turnstile cho các form public (đăng ký, đăng nhập, quên mật khẩu, liên hệ, magic link). Có thể cấu hình key ngay tại đây hoặc dùng biến môi trường."
+                />
+                <div className="mt-6 grid gap-5">
+                  <ToggleField
+                    label="CAPTCHA (Cloudflare Turnstile)"
+                    value={settings.security_captcha_enabled || "ON"}
+                    onChange={(value) => updateSetting("security_captcha_enabled", value)}
+                  />
+                  <Field label="Turnstile Site Key (hiển thị phía client)">
+                    <input
+                      type="text"
+                      value={settings.turnstile_site_key ?? ""}
+                      onChange={(e) => updateSetting("turnstile_site_key", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="0x4AAAAAAA..."
+                    />
+                    <p className="mt-1 text-[11px] text-zinc-500">Lấy tại Cloudflare Dashboard → Turnstile. Ưu tiên giá trị ở đây, không cần set NEXT_PUBLIC_TURNSTILE_SITE_KEY nếu đã nhập.</p>
+                  </Field>
+                  <Field label="Turnstile Secret Key (chỉ dùng phía server)">
+                    <input
+                      type="password"
+                      value={settings.turnstile_secret_key ?? ""}
+                      onChange={(e) => updateSetting("turnstile_secret_key", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="0x4AAAAAAA..."
+                      autoComplete="off"
+                    />
+                    <p className="mt-1 text-[11px] text-zinc-500">Bảo mật, không gửi ra trình duyệt. Có thể dùng TURNSTILE_SECRET_KEY trong .env thay thế.</p>
+                  </Field>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-5">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Ghi chú triển khai</p>
+                    <ul className="mt-3 space-y-2 text-sm text-zinc-400">
+                      <li>
+                        - Ưu tiên key lưu tại đây; nếu để trống, hệ thống dùng biến môi trường <code className="bg-zinc-800 px-1 rounded">NEXT_PUBLIC_TURNSTILE_SITE_KEY</code> / <code className="bg-zinc-800 px-1 rounded">TURNSTILE_SECRET_KEY</code>.
+                      </li>
+                      <li>- Nếu bật CAPTCHA nhưng thiếu cả key tại đây và trong env, hệ thống sẽ log cảnh báo và không chặn người dùng (fail-safe).</li>
+                      <li>- Lấy key miễn phí tại: https://dash.cloudflare.com/?to=/:account/turnstile</li>
+                    </ul>
+                  </div>
+                </div>
+              </AdminCard>
+            </div>
+          ) : null}
+
+          {activeTab === "connections" ? (
+            <div className="grid gap-6">
+              {/* AI & Gemini */}
+              <AdminCard>
+                <SectionHeader
+                  icon={Sparkles}
+                  eyebrow="AI Integration"
+                  title="Google Gemini API"
+                  description="Cấu hình AI để tạo mô tả sản phẩm tự động, phân tích đánh giá và các tính năng thông minh."
+                />
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  <Field label="Gemini API Key">
+                    <input
+                      type="password"
+                      value={settings.gemini_api_key ?? ""}
+                      onChange={(e) => updateSetting("gemini_api_key", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="AIza..."
+                      autoComplete="off"
+                    />
+                    <p className="mt-1 text-[11px] text-zinc-500">Lấy tại: https://aistudio.google.com/app/apikey</p>
+                  </Field>
+                </div>
+              </AdminCard>
+
+              {/* Rate Limiting - Upstash Redis */}
+              <AdminCard>
+                <SectionHeader
+                  icon={ShieldCheck}
+                  eyebrow="Rate Limiting"
+                  title="Upstash Redis"
+                  description="Bảo vệ API khỏi bị tấn công brute-force và giới hạn tốc độ request."
+                />
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  <Field label="Upstash Redis REST URL">
+                    <input
+                      type="url"
+                      value={settings.upstash_redis_rest_url ?? ""}
+                      onChange={(e) => updateSetting("upstash_redis_rest_url", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="https://..."
+                    />
+                  </Field>
+                  <Field label="Upstash Redis REST Token">
+                    <input
+                      type="password"
+                      value={settings.upstash_redis_rest_token ?? ""}
+                      onChange={(e) => updateSetting("upstash_redis_rest_token", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="..."
+                      autoComplete="off"
+                    />
+                    <p className="mt-1 text-[11px] text-zinc-500">Lấy tại: https://console.upstash.com</p>
+                  </Field>
+                </div>
+              </AdminCard>
+
+              {/* Telegram Bot */}
+              <AdminCard>
+                <SectionHeader
+                  icon={MessageCircle}
+                  eyebrow="Notifications"
+                  title="Telegram Bot"
+                  description="Nhận thông báo đơn hàng mới qua Telegram."
+                />
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  <Field label="Telegram Bot Token">
+                    <input
+                      type="password"
+                      value={settings.telegram_bot_token ?? ""}
+                      onChange={(e) => updateSetting("telegram_bot_token", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="123456:ABC-DEF..."
+                      autoComplete="off"
+                    />
+                    <p className="mt-1 text-[11px] text-zinc-500">Lấy từ @BotFather trên Telegram</p>
+                  </Field>
+                  <Field label="Telegram Chat ID">
+                    <input
+                      type="text"
+                      value={settings.telegram_chat_id ?? ""}
+                      onChange={(e) => updateSetting("telegram_chat_id", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="123456789"
+                    />
+                    <p className="mt-1 text-[11px] text-zinc-500">Lấy từ @userinfobot trên Telegram</p>
+                  </Field>
+                </div>
+              </AdminCard>
+
+              {/* Payment Gateways — Stripe only */}
+              <AdminCard>
+                <SectionHeader
+                  icon={CreditCard}
+                  eyebrow="Payment Gateway"
+                  title="Cổng thanh toán Stripe"
+                  description="Cấu hình Stripe để nhận thanh toán. Lấy keys từ dashboard.stripe.com."
+                />
+                <div className="mt-6 space-y-6">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Stripe Publishable Key">
+                      <input
+                        type="text"
+                        value={settings.stripe_publishable_key ?? ""}
+                        onChange={(e) => updateSetting("stripe_publishable_key", e.target.value)}
+                        className="admin-input font-mono text-sm"
+                        placeholder="pk_test_..."
+                      />
+                    </Field>
+                    <Field label="Stripe Secret Key">
+                      <input
+                        type="password"
+                        value={settings.stripe_secret_key ?? ""}
+                        onChange={(e) => updateSetting("stripe_secret_key", e.target.value)}
+                        className="admin-input font-mono text-sm"
+                        placeholder="sk_test_..."
+                        autoComplete="off"
+                      />
+                    </Field>
+                    <Field label="Stripe Webhook Secret">
+                      <input
+                        type="password"
+                        value={settings.stripe_webhook_secret ?? ""}
+                        onChange={(e) => updateSetting("stripe_webhook_secret", e.target.value)}
+                        className="admin-input font-mono text-sm"
+                        placeholder="whsec_..."
+                        autoComplete="off"
+                      />
+                    </Field>
+                  </div>
+                </div>
+              </AdminCard>
+
+              {/* Google OAuth */}
+              <AdminCard>
+                <SectionHeader
+                  icon={Globe}
+                  eyebrow="Authentication"
+                  title="Google OAuth"
+                  description="Cho phép đăng nhập bằng tài khoản Google."
+                />
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  <Field label="Google Client ID">
+                    <input
+                      type="text"
+                      value={settings.google_client_id ?? ""}
+                      onChange={(e) => updateSetting("google_client_id", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="...apps.googleusercontent.com"
+                    />
+                  </Field>
+                  <Field label="Google Client Secret">
+                    <input
+                      type="password"
+                      value={settings.google_client_secret ?? ""}
+                      onChange={(e) => updateSetting("google_client_secret", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="..."
+                      autoComplete="off"
+                    />
+                    <p className="mt-1 text-[11px] text-zinc-500">Lấy tại: Google Cloud Console → APIs & Services → Credentials</p>
+                  </Field>
+                </div>
+              </AdminCard>
+
+              {/* AWS S3 */}
+              <AdminCard>
+                <SectionHeader
+                  icon={Database}
+                  eyebrow="File Storage"
+                  title="AWS S3"
+                  description="Lưu trữ hình ảnh và file trên AWS S3."
+                />
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  <Field label="S3 Bucket Name">
+                    <input
+                      type="text"
+                      value={settings.aws_s3_bucket ?? ""}
+                      onChange={(e) => updateSetting("aws_s3_bucket", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="likefood-images"
+                    />
+                  </Field>
+                  <Field label="AWS Region">
+                    <input
+                      type="text"
+                      value={settings.aws_region ?? ""}
+                      onChange={(e) => updateSetting("aws_region", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="us-east-1"
+                    />
+                  </Field>
+                  <Field label="AWS Access Key ID">
+                    <input
+                      type="password"
+                      value={settings.aws_access_key_id ?? ""}
+                      onChange={(e) => updateSetting("aws_access_key_id", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="AKIA..."
+                      autoComplete="off"
+                    />
+                  </Field>
+                  <Field label="AWS Secret Access Key">
+                    <input
+                      type="password"
+                      value={settings.aws_secret_access_key ?? ""}
+                      onChange={(e) => updateSetting("aws_secret_access_key", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="..."
+                      autoComplete="off"
+                    />
+                  </Field>
+                </div>
+              </AdminCard>
+
+              {/* Analytics */}
+              <AdminCard>
+                <SectionHeader
+                  icon={Bell}
+                  eyebrow="Analytics"
+                  title="Theo dõi & Phân tích"
+                  description="Cấu hình Google Analytics, Facebook Pixel, Google Tag Manager."
+                />
+                <div className="mt-6 grid gap-4 md:grid-cols-3">
+                  <Field label="Google Analytics Tracking ID">
+                    <input
+                      type="text"
+                      value={settings.ga_tracking_id ?? ""}
+                      onChange={(e) => updateSetting("ga_tracking_id", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="G-XXXXXXXXXX"
+                    />
+                  </Field>
+                  <Field label="Facebook Pixel ID">
+                    <input
+                      type="text"
+                      value={settings.fb_pixel_id ?? ""}
+                      onChange={(e) => updateSetting("fb_pixel_id", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="1234567890"
+                    />
+                  </Field>
+                  <Field label="Google Tag Manager ID">
+                    <input
+                      type="text"
+                      value={settings.gtm_id ?? ""}
+                      onChange={(e) => updateSetting("gtm_id", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="GTM-XXXXXXX"
+                    />
+                  </Field>
+                </div>
+              </AdminCard>
+
+              {/* Sentry */}
+              <AdminCard>
+                <SectionHeader
+                  icon={ShieldCheck}
+                  eyebrow="Error Monitoring"
+                  title="Sentry"
+                  description="Theo dõi lỗi và crash reports."
+                />
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  <Field label="Sentry Organization">
+                    <input
+                      type="text"
+                      value={settings.sentry_org ?? ""}
+                      onChange={(e) => updateSetting("sentry_org", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="likefood"
+                    />
+                  </Field>
+                  <Field label="Sentry Project">
+                    <input
+                      type="text"
+                      value={settings.sentry_project ?? ""}
+                      onChange={(e) => updateSetting("sentry_project", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="likefood-frontend"
+                    />
+                  </Field>
+                  <Field label="Sentry Auth Token">
+                    <input
+                      type="password"
+                      value={settings.sentry_auth_token ?? ""}
+                      onChange={(e) => updateSetting("sentry_auth_token", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="sntrys..."
+                      autoComplete="off"
+                    />
+                  </Field>
+                  <Field label="Sentry DSN">
+                    <input
+                      type="text"
+                      value={settings.sentry_dsn ?? ""}
+                      onChange={(e) => updateSetting("sentry_dsn", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="https://...@sentry.io/..."
+                    />
+                  </Field>
+                </div>
+              </AdminCard>
+
+              {/* Health Check */}
+              <AdminCard>
+                <SectionHeader
+                  icon={ShieldCheck}
+                  eyebrow="Health Check"
+                  title="Health Check Secret"
+                  description="Bảo vệ endpoint health check bằng secret."
+                />
+                <div className="mt-6">
+                  <Field label="Health Secret">
+                    <input
+                      type="password"
+                      value={settings.health_secret ?? ""}
+                      onChange={(e) => updateSetting("health_secret", e.target.value)}
+                      className="admin-input font-mono text-sm"
+                      placeholder="Tạo ngẫu nhiên: openssl rand -hex 32"
+                      autoComplete="off"
+                    />
+                    <p className="mt-1 text-[11px] text-zinc-500">Dùng cho /api/health?secret=...</p>
+                  </Field>
+                </div>
+              </AdminCard>
+
+              <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-5">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Ghi chú quan trọng</p>
+                <ul className="mt-3 space-y-2 text-sm text-zinc-400">
+                  <li>- <strong>Ưu tiên</strong>: Giá trị lưu trong Admin → Database → Environment. Nếu để trống, hệ thống sẽ dùng biến môi trường trong file .env.</li>
+                  <li>- <strong>Bảo mật</strong>: Các trường secret/password chỉ hiển thị dấu chấm (••••), không lưu plain text vào localStorage.</li>
+                  <li>- <strong>Khôi phục</strong>: Nếu cần reset về mặc định, xóa giá trị trong Admin và hệ thống sẽ dùng .env.</li>
+                </ul>
+              </div>
             </div>
           ) : null}
 
@@ -633,10 +1003,10 @@ export default function AdminSettingsPage() {
                     <input value={profile.phone} onChange={(event) => setProfile((prev) => ({ ...prev, phone: event.target.value }))} className="admin-input" placeholder="+1 555 000 1234" />
                   </Field>
                   <Field label="Email">
-                    <input value={profile.email} readOnly className="admin-input bg-slate-100 text-slate-500" />
+                    <input value={profile.email} readOnly className="admin-input bg-zinc-800 text-zinc-500" />
                   </Field>
                   <Field label="Ngày tham gia">
-                    <input value={profile.createdAt ? new Date(profile.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : ""} readOnly className="admin-input bg-slate-100 text-slate-500" />
+                    <input value={profile.createdAt ? new Date(profile.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : ""} readOnly className="admin-input bg-zinc-800 text-zinc-500" />
                   </Field>
                   <Button size="lg" onClick={() => void saveProfile()} disabled={isSavingProfile}>
                     {isSavingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
@@ -647,12 +1017,13 @@ export default function AdminSettingsPage() {
 
               <AdminCard>
                 <SectionHeader icon={LayoutDashboard} eyebrow="Tổng quan cài đặt" title="Trang này quản lý những gì" description="Cấu hình quản trị được kết nối trực tiếp với API thực thay vì các trường form bị bỏ lại." />
-                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   <MiniTile title="Thông tin cửa hàng" body="Nội dung thương hiệu, metadata, thông tin hỗ trợ và địa chỉ đều có thể chỉnh sửa tại đây." />
                   <MiniTile title="Thương mại" body="Phí vận chuyển, ngưỡng miễn phí, thuế và điểm tích lũy đều có thể điều chỉnh." />
                   <MiniTile title="Kênh liên lạc" body="Liên kết mạng xã hội và cấu hình SMTP có thể cập nhật mà không cần sửa code." />
                   <MiniTile title="Thanh toán" body="Cấu hình phương thức thanh toán, tài khoản ngân hàng và mã QR để thanh toán thuận tiện." />
                   <MiniTile title="Vận hành" body="Thanh thông báo, chế độ bảo trì và gửi thông báo hàng loạt được quản lý tập trung." />
+                  <MiniTile title="Kết nối" body="API keys, OAuth, S3, Sentry và các dịch vụ bên thứ 3." />
                 </div>
               </AdminCard>
             </div>
@@ -722,13 +1093,13 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-start gap-4">
-      <div className="flex h-12 w-12 items-center justify-center rounded-[1.15rem] bg-slate-100 text-slate-700">
+      <div className="flex h-12 w-12 items-center justify-center rounded-[1.15rem] bg-zinc-800 text-zinc-300">
         <Icon className="h-5 w-5" />
       </div>
       <div>
-        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{eyebrow}</p>
-        <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">{title}</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">{description}</p>
+        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-zinc-500">{eyebrow}</p>
+        <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-100">{title}</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">{description}</p>
       </div>
     </div>
   );
@@ -745,7 +1116,7 @@ function Field({
 }) {
   return (
     <div className={className}>
-      <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{label}</label>
+      <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.18em] text-zinc-500">{label}</label>
       {children}
     </div>
   );
@@ -785,19 +1156,19 @@ function CheckCard({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-[1.5rem] border p-4 text-left transition ${checked ? "border-slate-900 bg-slate-950 text-white" : "border-slate-200 bg-slate-50 text-slate-700"}`}
+      className={`rounded-lg border p-4 text-left transition ${checked ? "border-teal-600 bg-teal-600/10 text-teal-400" : "border-zinc-700 bg-zinc-900 text-zinc-300"}`}
     >
-      <p className="font-black">{title}</p>
-      <p className={`mt-2 text-sm leading-6 ${checked ? "text-white/70" : "text-slate-500"}`}>{description}</p>
+      <p className="font-semibold">{title}</p>
+      <p className={`mt-2 text-sm ${checked ? "text-teal-400/70" : "text-zinc-500"}`}>{description}</p>
     </button>
   );
 }
 
 function MiniTile({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-      <p className="font-black text-slate-950">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-500">{body}</p>
+    <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+      <p className="font-semibold text-zinc-200">{title}</p>
+      <p className="mt-2 text-sm text-zinc-500">{body}</p>
     </div>
   );
 }
@@ -815,7 +1186,7 @@ function Stat({
 }) {
   return (
     <div>
-      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{label}</p>
+      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-zinc-400">{label}</p>
       <p className={`mt-2 font-black ${compact ? "truncate text-lg" : "text-3xl"} ${tone}`}>{value}</p>
     </div>
   );

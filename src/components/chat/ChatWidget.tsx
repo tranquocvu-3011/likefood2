@@ -108,7 +108,7 @@ export default function ChatWidget() {
         >
           <MessageCircle className="w-5 h-5" />
           <span className="hidden md:inline text-xs font-semibold">
-            Hỏi LIKEFOOD AI
+            Chat ngay
           </span>
         </button>
       )}
@@ -119,7 +119,7 @@ export default function ChatWidget() {
           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-gradient-to-br from-emerald-600 via-teal-600 to-slate-800 text-white">
             <div>
               <p className="text-xs font-bold tracking-wide uppercase">
-                LIKEFOOD AI
+                LIKEFOOD
               </p>
               <p className="text-[11px] text-white/80">
                 Trợ lý 24/7 về mua hàng & đặc sản Việt Nam

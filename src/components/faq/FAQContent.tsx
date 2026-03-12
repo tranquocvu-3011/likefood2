@@ -194,8 +194,8 @@ export function FAQContent() {
                                     text: locale === "vi" ? "Tìm câu trả lời theo từ khóa hoặc theo nhóm vấn đề." : "Search by keyword or browse by topic.",
                                 },
                                 {
-                                    title: locale === "vi" ? "Có AI hỗ trợ" : "AI-assisted help",
-                                    text: locale === "vi" ? "Nếu chưa thấy câu trả lời, trợ lý AI ở góc phải có thể gợi ý nhanh." : "If you still need help, the AI assistant can guide you further.",
+                                    title: locale === "vi" ? "Có hỗ trợ trực tiếp" : "Live support",
+                                    text: locale === "vi" ? "Nếu chưa thấy câu trả lời, nhấn nút chat ở góc phải để được hỗ trợ nhanh." : "If you still need help, click the chat button in the corner for quick support.",
                                 },
                                 {
                                     title: locale === "vi" ? "Ưu tiên rõ ràng" : "Clear next step",
@@ -264,8 +264,8 @@ export function FAQContent() {
                                 </h2>
                                 <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
                                     {locale === "vi"
-                                        ? "Bạn thử đổi từ khóa khác hoặc dùng trợ lý AI để mô tả nhu cầu cụ thể hơn."
-                                        : "Try another keyword or use the AI assistant for a more specific request."}
+                                        ? "Bạn thử đổi từ khóa khác hoặc liên hệ trực tiếp để được hỗ trợ cụ thể hơn."
+                                        : "Try another keyword or contact us directly for more specific help."}
                                 </p>
                             </div>
                         ) : (
@@ -285,12 +285,12 @@ export function FAQContent() {
                                     {locale === "vi" ? "Cần hỗ trợ thêm" : "Need more help"}
                                 </p>
                                 <h2 className="mt-2 text-2xl font-black tracking-tight">
-                                    {locale === "vi" ? "Kết hợp FAQ với trợ lý AI để tìm câu trả lời nhanh hơn" : "Combine the FAQ with the AI assistant for faster help"}
+                                    {locale === "vi" ? "Vẫn chưa tìm được câu trả lời?" : "Still haven't found your answer?"}
                                 </h2>
                                 <p className="mt-2 max-w-2xl text-sm leading-6 text-white/75">
                                     {locale === "vi"
-                                        ? "FAQ phù hợp khi bạn cần câu trả lời chuẩn hóa. Nếu nhu cầu của bạn cụ thể hơn, hãy mở trợ lý AI ở góc màn hình hoặc vào trang liên hệ."
-                                        : "FAQ works best for standard questions. For more specific help, open the AI assistant in the corner or go to the contact page."}
+                                        ? "FAQ phù hợp khi bạn cần câu trả lời chuẩn hóa. Nếu nhu cầu của bạn cụ thể hơn, hãy nhấn nút chat ở góc màn hình hoặc vào trang liên hệ."
+                                        : "FAQ works best for standard questions. For more specific help, click the chat button in the corner or go to the contact page."}
                                 </p>
                             </div>
                             <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">

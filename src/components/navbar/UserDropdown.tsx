@@ -16,6 +16,7 @@ import { signOut } from "next-auth/react";
 import { logger } from "@/lib/logger";
 import Image from "next/image";
 import DailyCheckIn from "@/components/shared/DailyCheckIn";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface UserDropdownProps {
     isOpen: boolean;
@@ -35,6 +36,7 @@ interface UserStats {
 }
 
 export default function UserDropdown({ isOpen, onClose, user }: UserDropdownProps) {
+    const { t } = useLanguage();
     const [stats, setStats] = useState<UserStats | null>(null);
     const [isLoadingStats, setIsLoadingStats] = useState(false);
     const [isCheckInOpen, setIsCheckInOpen] = useState(false);
@@ -69,11 +71,11 @@ export default function UserDropdown({ isOpen, onClose, user }: UserDropdownProp
     }, [user.image]);
 
     const menuItems = [
-        { icon: Package, label: "Đơn hàng của tôi", href: "/profile/orders", badge: null },
-        { icon: Heart, label: "Sản phẩm yêu thích", href: "/profile/wishlist", badge: stats?.wishlist ? String(stats.wishlist) : null },
-        { icon: Sparkles, label: "Điểm danh nhận quà", onClick: () => setIsCheckInOpen(true), badge: null },
-        { icon: Ticket, label: "Voucher của tôi", href: "/profile/vouchers", badge: stats?.vouchers ? String(stats.vouchers) : null },
-        { icon: Settings, label: "Cài đặt tài khoản", href: "/profile", badge: null },
+        { icon: Package, label: t("navbar.myOrders"), href: "/profile/orders", badge: null },
+        { icon: Heart, label: t("navbar.myWishlist"), href: "/profile/wishlist", badge: stats?.wishlist ? String(stats.wishlist) : null },
+        { icon: Sparkles, label: t("navbar.dailyCheckIn"), onClick: () => setIsCheckInOpen(true), badge: null },
+        { icon: Ticket, label: t("navbar.myVouchers"), href: "/profile/vouchers", badge: stats?.vouchers ? String(stats.vouchers) : null },
+        { icon: Settings, label: t("navbar.accountSettings"), href: "/profile", badge: null },
     ];
 
     return (
@@ -121,7 +123,7 @@ export default function UserDropdown({ isOpen, onClose, user }: UserDropdownProp
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                        <h4 className="text-[14px] font-black text-slate-900 truncate">{user.name || "Khách hàng"}</h4>
+                                        <h4 className="text-[14px] font-black text-slate-900 truncate">{user.name || t("navbar.customer")}</h4>
                                         {user.role === "ADMIN" && (
                                             <span className="px-2 py-0.5 bg-amber-100 text-amber-600 text-[8px] font-black rounded-full flex items-center gap-1">
                                                 <Crown className="w-2.5 h-2.5" />
@@ -143,15 +145,15 @@ export default function UserDropdown({ isOpen, onClose, user }: UserDropdownProp
                                     <>
                                         <div className="flex-1 p-2.5 bg-white rounded-2xl text-center border border-slate-100/50">
                                             <div className="text-[14px] font-black text-primary">{stats?.orders ?? 0}</div>
-                                            <div className="text-[9px] font-bold text-slate-400 uppercase">Đơn hàng</div>
+                                            <div className="text-[9px] font-bold text-slate-400 uppercase">{t("navbar.statsOrders")}</div>
                                         </div>
                                         <div className="flex-1 p-2.5 bg-white rounded-2xl text-center border border-slate-100/50">
                                             <div className="text-[14px] font-black text-primary">{stats?.wishlist ?? 0}</div>
-                                            <div className="text-[9px] font-bold text-slate-400 uppercase">Yêu thích</div>
+                                            <div className="text-[9px] font-bold text-slate-400 uppercase">{t("navbar.statsWishlist")}</div>
                                         </div>
                                         <div className="flex-1 p-2.5 bg-white rounded-2xl text-center border border-slate-100/50">
                                             <div className="text-[14px] font-black text-primary">{stats?.vouchers ?? 0}</div>
-                                            <div className="text-[9px] font-bold text-slate-400 uppercase">Voucher</div>
+                                            <div className="text-[9px] font-bold text-slate-400 uppercase">{t("navbar.statsVouchers")}</div>
                                         </div>
                                     </>
                                 )}
@@ -171,7 +173,7 @@ export default function UserDropdown({ isOpen, onClose, user }: UserDropdownProp
                                         <div className="w-9 h-9 rounded-2xl bg-emerald-500 flex items-center justify-center shadow-sm">
                                             <Crown className="w-4 h-4 text-white" />
                                         </div>
-                                        <span className="text-[12px] font-black text-emerald-700 uppercase tracking-wider">Trang quản trị</span>
+                                        <span className="text-[12px] font-black text-emerald-700 uppercase tracking-wider">{t("navbar.adminPortal")}</span>
                                     </div>
                                     <ChevronRight className="w-4 h-4 text-emerald-400 group-hover:translate-x-1 transition-transform" />
                                 </Link>
@@ -235,7 +237,7 @@ export default function UserDropdown({ isOpen, onClose, user }: UserDropdownProp
                                 className="w-full flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 transition-all"
                             >
                                 <LogOut className="w-4 h-4" />
-                                <span className="text-[11px] font-black uppercase tracking-wider">Đăng xuất</span>
+                                <span className="text-[11px] font-black uppercase tracking-wider">{t("navbar.logout")}</span>
                             </button>
                         </div>
                     </motion.div>

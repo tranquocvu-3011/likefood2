@@ -92,126 +92,138 @@ export default function InvoicePage() {
 
     if (!order) return null;
 
-    return (
-        <div className="min-h-screen bg-slate-50 py-12">
-            <div className="page-container-wide">
-                {/* Print Header - Hidden on screen, visible when printing */}
-                <div className="hidden print:block mb-8 text-center">
-                    <h1 className="text-3xl font-black uppercase tracking-tighter mb-2">LIKEFOOD</h1>
-                    <p className="text-slate-600">Hóa đơn bán hàng</p>
-                </div>
+    const isPaid = order.paymentStatus === "PAID" || order.status === "DELIVERED" || order.status === "SHIPPED";
 
-                {/* Screen Header */}
-                <div className="print:hidden mb-8 flex items-center justify-between">
+    return (
+        <div className="min-h-screen bg-slate-100 py-10 print:bg-white print:py-0">
+            <div className="max-w-3xl mx-auto px-4">
+
+                {/* Screen-only toolbar */}
+                <div className="print:hidden mb-6 flex items-center justify-between">
                     <Link
                         href={`/orders/${params.id}`}
-                        className="inline-flex items-center gap-2 text-slate-400 hover:text-primary transition-colors"
+                        className="inline-flex items-center gap-2 text-slate-500 hover:text-primary transition-colors text-sm font-bold"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        <span className="text-sm font-bold">Quay lại đơn hàng</span>
+                        Quay lại đơn hàng
                     </Link>
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={handlePrint}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-full text-sm font-bold hover:bg-primary/90 transition-colors"
-                        >
-                            <Download className="w-4 h-4" />
-                            In / Tải PDF
-                        </button>
-                    </div>
+                    <button
+                        onClick={handlePrint}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-black hover:bg-slate-800 transition-colors shadow"
+                    >
+                        <Download className="w-4 h-4" />
+                        In / Tải PDF
+                    </button>
                 </div>
 
-                {/* Invoice Content */}
-                <div className="bg-white rounded-2xl shadow-lg p-8 print:shadow-none print:rounded-none">
-                    {/* Header */}
-                    <div className="mb-8 pb-8 border-b-2 border-slate-200">
+                {/* Invoice Card */}
+                <div className="bg-white shadow-2xl print:shadow-none relative overflow-hidden" style={{ borderRadius: "1rem" }}>
+
+                    {/* PAID stamp */}
+                    {isPaid && (
+                        <div className="absolute top-8 right-8 rotate-[-15deg] z-10 print:block">
+                            <div className="border-4 border-emerald-500 rounded-lg px-4 py-1.5">
+                                <span className="text-2xl font-black tracking-widest text-emerald-500 uppercase opacity-80">PAID</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Top accent bar */}
+                    <div className="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600" />
+
+                    {/* Invoice Header */}
+                    <div className="px-8 pt-7 pb-6 border-b border-slate-100">
                         <div className="flex justify-between items-start">
                             <div>
-                                <h1 className="text-4xl font-black uppercase tracking-tighter mb-2 text-primary">
-                                    LIKEFOOD
-                                </h1>
-                                <p className="text-slate-600 font-medium">Tinh hoa đặc sản Việt Nam</p>
+                                <div className="flex items-baseline gap-2 mb-1">
+                                    <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">LIKE</h1>
+                                    <h1 className="text-3xl font-black uppercase tracking-tighter text-emerald-600">FOOD</h1>
+                                </div>
+                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Tinh hoa đặc sản Việt Nam</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
-                                    Hóa đơn số
-                                </p>
-                                <p className="text-2xl font-black text-slate-900">
+                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Hóa đơn</p>
+                                <p className="text-2xl font-black text-slate-900 font-mono tracking-tight">
                                     #{order.id.slice(-8).toUpperCase()}
                                 </p>
-                                <p className="text-sm text-slate-500 mt-2">
+                                <p className="text-xs text-slate-400 mt-1.5 font-medium">
                                     {new Date(order.createdAt).toLocaleDateString("vi-VN", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
+                                        year: "numeric", month: "long", day: "numeric",
+                                    })}
+                                </p>
+                                <p className="text-[10px] text-slate-400 font-medium">
+                                    {new Date(order.createdAt).toLocaleTimeString("vi-VN", {
+                                        hour: "2-digit", minute: "2-digit",
                                     })}
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Order Info */}
-                    <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Customer & Shipping Info */}
+                    <div className="px-8 py-5 grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-slate-100 bg-slate-50/50">
                         <div>
-                            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-3">
-                                Thông tin khách hàng
-                            </h3>
-                            <p className="font-bold text-slate-900">{session?.user?.name || "Khách hàng"}</p>
-                            <p className="text-slate-600 text-sm mt-1">{session?.user?.email}</p>
+                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Khách hàng</p>
+                            <p className="font-black text-slate-900 text-sm">{session?.user?.name || "Khách hàng"}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">{session?.user?.email}</p>
                         </div>
                         <div>
-                            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-3">
-                                Địa chỉ giao hàng
-                            </h3>
-                            {order.shippingAddress && (
-                                <p className="text-slate-900 font-medium">
-                                    {order.shippingAddress}
-                                    {order.shippingCity && `, ${order.shippingCity}`}
-                                    {order.shippingZipCode && ` ${order.shippingZipCode}`}
-                                </p>
-                            )}
-                            {order.shippingPhone && (
-                                <p className="text-slate-600 text-sm mt-1">{order.shippingPhone}</p>
+                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Giao hàng đến</p>
+                            {order.shippingAddress ? (
+                                <>
+                                    <p className="font-bold text-slate-900 text-sm leading-relaxed">
+                                        {order.shippingAddress}
+                                        {order.shippingCity && `, ${order.shippingCity}`}
+                                        {order.shippingZipCode && ` ${order.shippingZipCode}`}
+                                    </p>
+                                    {order.shippingPhone && (
+                                        <p className="text-xs text-slate-500 mt-0.5">{order.shippingPhone}</p>
+                                    )}
+                                </>
+                            ) : (
+                                <p className="text-xs text-slate-400 italic">Chưa có địa chỉ</p>
                             )}
                         </div>
                     </div>
 
+                    {/* Payment method badge */}
+                    {order.paymentMethod && (
+                        <div className="px-8 py-3 border-b border-slate-100 flex items-center gap-2">
+                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Thanh toán:</p>
+                            <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 uppercase tracking-wider">
+                                {order.paymentMethod}
+                            </span>
+                            {isPaid && (
+                                <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 uppercase tracking-wider">
+                                    Đã thanh toán
+                                </span>
+                            )}
+                        </div>
+                    )}
+
                     {/* Items Table */}
-                    <div className="mb-8">
+                    <div className="px-8 py-5">
                         <table className="w-full border-collapse">
                             <thead>
-                                <tr className="border-b-2 border-slate-200">
-                                    <th className="text-left py-3 px-4 text-xs font-black uppercase tracking-widest text-slate-400">
-                                        Sản phẩm
-                                    </th>
-                                    <th className="text-center py-3 px-4 text-xs font-black uppercase tracking-widest text-slate-400">
-                                        Số lượng
-                                    </th>
-                                    <th className="text-right py-3 px-4 text-xs font-black uppercase tracking-widest text-slate-400">
-                                        Đơn giá
-                                    </th>
-                                    <th className="text-right py-3 px-4 text-xs font-black uppercase tracking-widest text-slate-400">
-                                        Thành tiền
-                                    </th>
+                                <tr className="border-b border-slate-200">
+                                    <th className="text-left pb-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400">Sản phẩm</th>
+                                    <th className="text-center pb-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 w-16">SL</th>
+                                    <th className="text-right pb-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 w-28">Đơn giá</th>
+                                    <th className="text-right pb-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 w-28">Thành tiền</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {order.items.map((item) => (
-                                    <tr key={item.id} className="border-b border-slate-100">
-                                        <td className="py-4 px-4">
-                                            <p className="font-bold text-slate-900">{item.product.name}</p>
+                                {order.items.map((item, idx) => (
+                                    <tr
+                                        key={item.id}
+                                        className={`border-b border-slate-50 ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/60"}`}
+                                    >
+                                        <td className="py-3">
+                                            <p className="font-bold text-slate-900 text-sm leading-tight">{item.product.name}</p>
                                         </td>
-                                        <td className="py-4 px-4 text-center text-slate-600 font-medium">
-                                            {item.quantity}
-                                        </td>
-                                        <td className="py-4 px-4 text-right text-slate-600 font-medium">
-                                            {formatPrice(item.price)}
-                                        </td>
-                                        <td className="py-4 px-4 text-right font-black text-slate-900">
-                                            {formatPrice(item.price * item.quantity)}
-                                        </td>
+                                        <td className="py-3 text-center text-slate-500 font-bold text-sm">{item.quantity}</td>
+                                        <td className="py-3 text-right text-slate-500 font-medium text-sm">{formatPrice(item.price)}</td>
+                                        <td className="py-3 text-right font-black text-slate-900 text-sm">{formatPrice(item.price * item.quantity)}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -219,51 +231,53 @@ export default function InvoicePage() {
                     </div>
 
                     {/* Summary */}
-                    <div className="mt-8 pt-8 border-t-2 border-slate-200">
-                        <div className="max-w-md ml-auto space-y-3">
-                            <div className="flex justify-between text-slate-600">
-                                <span className="font-bold">Tạm tính:</span>
-                                <span className="font-black">{formatPrice(order.subtotal ?? order.total)}</span>
+                    <div className="px-8 pb-7 border-t border-dashed border-slate-200 pt-5">
+                        <div className="max-w-xs ml-auto space-y-2">
+                            <div className="flex justify-between text-sm text-slate-500">
+                                <span className="font-bold">Tạm tính</span>
+                                <span className="font-black text-slate-700">{formatPrice(order.subtotal ?? order.total)}</span>
                             </div>
                             {order.shippingFee && order.shippingFee > 0 && (
-                                <div className="flex justify-between text-slate-600">
-                                    <span className="font-bold">Vận chuyển:</span>
-                                    <span className="font-black">{formatPrice(order.shippingFee)}</span>
+                                <div className="flex justify-between text-sm text-slate-500">
+                                    <span className="font-bold">Vận chuyển</span>
+                                    <span className="font-black text-slate-700">{formatPrice(order.shippingFee)}</span>
                                 </div>
                             )}
                             {(order.discount ?? 0) > 0 && (
-                                <div className="flex justify-between text-green-600">
-                                    <span className="font-bold">Giảm giá:</span>
+                                <div className="flex justify-between text-sm text-emerald-600">
+                                    <span className="font-bold">Giảm giá</span>
                                     <span className="font-black">-{formatPrice(order.discount || 0)}</span>
                                 </div>
                             )}
-                            <div className="flex justify-between text-2xl font-black pt-3 border-t-2 border-slate-200">
-                                <span>Tổng cộng:</span>
-                                <span className="text-primary">{formatPrice(order.total)}</span>
+                            {/* Total row */}
+                            <div className="mt-3 pt-3 border-t-2 border-slate-200">
+                                <div className="flex justify-between items-baseline">
+                                    <span className="text-xs font-black uppercase tracking-widest text-slate-400">Tổng cộng</span>
+                                    <span className="text-2xl font-black text-slate-900 tracking-tight">
+                                        {formatPrice(order.total)}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Footer */}
-                    <div className="mt-12 pt-8 border-t border-slate-200 text-center text-xs text-slate-400">
-                        <p>Cảm ơn bạn đã mua sắm tại LIKEFOOD!</p>
-                        <p className="mt-2">Hóa đơn này được tạo tự động và có giá trị pháp lý.</p>
+                    <div className="bg-slate-50 border-t border-slate-100 px-8 py-4 text-center">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
+                            Cảm ơn bạn đã tin tưởng LIKEFOOD!
+                        </p>
+                        <p className="text-[9px] text-slate-300 font-medium">
+                            Hóa đơn được tạo tự động · {new Date().getFullYear()} LIKEFOOD
+                        </p>
                     </div>
                 </div>
             </div>
 
-            {/* Print Styles */}
             <style jsx global>{`
                 @media print {
-                    body {
-                        background: white;
-                    }
-                    .print\\:hidden {
-                        display: none !important;
-                    }
-                    .print\\:block {
-                        display: block !important;
-                    }
+                    body { background: white; }
+                    .print\\:hidden { display: none !important; }
+                    .print\\:block { display: block !important; }
                 }
             `}</style>
         </div>

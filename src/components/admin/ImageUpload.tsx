@@ -95,7 +95,7 @@ export default function ImageUpload({
                 {value
                     .filter((url) => typeof url === "string" && url.trim() !== "")
                     .map((url) => (
-                    <div key={url} className="relative w-[150px] h-[150px] rounded-2xl overflow-hidden border-2 border-slate-100 group">
+                    <div key={url} className="relative w-[150px] h-[150px] rounded-2xl overflow-hidden border-2 border-zinc-800 group">
                         <div className="z-10 absolute top-2 right-2">
                             <Button
                                 type="button"
@@ -119,17 +119,17 @@ export default function ImageUpload({
 
                 {(!disabled && (multiple || value.length === 0)) && (
                     <label className={`
-                        w-[150px] h-[150px] rounded-2xl border-2 border-dashed border-slate-200 
+                        w-[150px] h-[150px] rounded-2xl border-2 border-dashed border-zinc-700 
                         flex flex-col items-center justify-center gap-2 cursor-pointer
-                        hover:border-primary/50 hover:bg-primary/5 transition-all
+                        hover:border-teal-500/50 hover:bg-teal-500/5 transition-all
                         ${isUploading ? "opacity-50 cursor-not-allowed" : ""}
                     `}>
                         {isUploading ? (
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
                         ) : (
                             <>
-                                <Upload className="h-8 w-8 text-slate-400" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center px-4">
+                                <Upload className="h-8 w-8 text-zinc-500" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center px-4">
                                     {multiple ? "Thêm ảnh" : "Tải ảnh lên"}
                                 </span>
                             </>
@@ -147,7 +147,7 @@ export default function ImageUpload({
             </div>
 
             {value.length === 0 && !isUploading && (
-                <div className="flex items-center gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 italic text-slate-400 text-xs font-medium">
+                <div className="flex items-center gap-2 p-4 bg-zinc-900/50 rounded-2xl border border-zinc-800 italic text-zinc-500 text-xs font-medium">
                     <ImageIcon className="h-4 w-4" />
                     Chưa có ảnh nào được chọn
                 </div>

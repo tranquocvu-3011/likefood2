@@ -48,11 +48,12 @@ export async function POST(req: NextRequest) {
     // Create notification record
     const notification = await prisma.pushNotification.create({
       data: {
+        id: crypto.randomUUID(),
         userId,
         type,
         title,
         body: notificationBody,
-        data: data !== undefined ? (data as Prisma.InputJsonValue) : Prisma.JsonNull,
+        data: data !== undefined ? JSON.stringify(data) : null,
       },
     });
 

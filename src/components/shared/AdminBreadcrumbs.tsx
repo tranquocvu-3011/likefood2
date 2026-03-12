@@ -51,24 +51,24 @@ export default function AdminBreadcrumbs() {
   });
 
   return (
-    <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-xs">
+    <nav className="mb-2 flex flex-wrap items-center gap-1 text-xs">
       <Link
         href="/admin/dashboard"
-        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-400 transition hover:border-slate-300 hover:text-slate-700"
+        className="inline-flex h-6 w-6 items-center justify-center rounded border border-slate-700/60 bg-slate-800 text-slate-500 transition hover:text-slate-300"
       >
-        <Home className="h-3.5 w-3.5" />
+        <Home className="h-3 w-3" />
       </Link>
       {breadcrumbs.map((crumb) => (
-        <span key={crumb.href} className="inline-flex items-center gap-1.5">
-          <ChevronRight className="h-3 w-3 text-slate-300" />
+        <span key={crumb.href} className="inline-flex items-center gap-1">
+          <ChevronRight className="h-2.5 w-2.5 text-slate-600" />
           {crumb.isLast ? (
-            <span className="rounded-lg border border-slate-200/80 bg-white px-2.5 py-1.5 font-semibold text-slate-800">
+            <span className="rounded border border-slate-700/60 bg-slate-800 px-2 py-1 font-semibold text-slate-300">
               {crumb.label}
             </span>
           ) : (
             <Link
               href={crumb.href}
-              className="rounded-lg px-2.5 py-1.5 font-medium text-slate-500 transition hover:bg-white hover:text-slate-800"
+              className="rounded px-2 py-1 font-medium text-slate-500 transition hover:bg-slate-800 hover:text-slate-300"
             >
               {crumb.label}
             </Link>

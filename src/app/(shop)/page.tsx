@@ -17,6 +17,7 @@ import { ProductGridSkeleton } from "@/components/ui/product-skeleton";
 import FeaturedProductsSection from "@/components/home/FeaturedProductsSection";
 import PersonalizedRecommendationsSection from "@/components/home/PersonalizedRecommendationsSection";
 import type { Metadata } from "next";
+import prisma from "@/lib/prisma";
 
 // Lazy-load các section dưới fold để giảm JS ban đầu & cải thiện INP
 const WhyChooseUs = dynamic(
@@ -111,21 +112,38 @@ export const metadata: Metadata = {
 export const revalidate = 300;
 
 export default async function Home() {
+  // Fetch homepage section visibility config from admin
+  let sectionConfig: Record<string, { isActive: boolean; position: number }> = {};
+  try {
+    const sections = await prisma.homepageSection.findMany({
+      select: { key: true, isActive: true, position: true },
+    });
+    sectionConfig = Object.fromEntries(
+      sections.map((s) => [s.key, { isActive: s.isActive, position: s.position }])
+    );
+  } catch {
+    // DB unavailable — show everything by default
+  }
+
+  // Returns true if section is active (defaults to true if not configured in admin)
+  const show = (key: string) => sectionConfig[key]?.isActive ?? true;
+
   return (
     <>
       <StructuredData />
       <div id="main-content" className="flex flex-col gap-0">
         {/* Section 1: Hero Banner với Overlay */}
-        <HeroCarousel />
-        <FlashSaleBanner />
+        {show("hero") && <HeroCarousel />}
+        {show("flash-sale") && <FlashSaleBanner />}
 
         {/* Section 1.5: Homepage Search Bar */}
-        <HomeSearchBar />
+        {show("search") && <HomeSearchBar />}
 
         {/* Section 2: Category Showcase */}
-        <CategoryShowcase />
+        {show("categories") && <CategoryShowcase />}
 
         {/* Section 3: Featured Products - Streaming with Skeleton */}
+        {show("featured-products") && (
         <Suspense fallback={
           <div className="w-full px-4 sm:px-6 lg:px-[6%] py-20">
             <div className="mb-12 text-center">
@@ -137,27 +155,28 @@ export default async function Home() {
         }>
           <FeaturedProductsSection />
         </Suspense>
+        )}
 
         {/* Section 4: Why Choose Us */}
-        <WhyChooseUs />
+        {show("why-us") && <WhyChooseUs />}
 
         {/* Section 4.2: Personalized / Trending Recommendations */}
-        <PersonalizedRecommendationsSection />
+        {show("recommendations") && <PersonalizedRecommendationsSection />}
 
         {/* Section 4.5: Stats Section */}
-        <StatsSection />
+        {show("stats") && <StatsSection />}
 
         {/* Section 5: Vietnam Story */}
-        <VietnamStory />
+        {show("vietnam-story") && <VietnamStory />}
 
         {/* Section 7: Customer Reviews */}
-        <CustomerReviews />
+        {show("testimonials") && <CustomerReviews />}
 
         {/* Section 8: Recent Posts */}
-        <RecentPosts />
+        {show("posts") && <RecentPosts />}
 
         {/* Section 7.5: Recently Viewed Products */}
-        <RecentlyViewedClient />
+        {show("recently-viewed") && <RecentlyViewedClient />}
 
       </div>
     </>

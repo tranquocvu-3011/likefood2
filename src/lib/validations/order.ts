@@ -112,12 +112,15 @@ export const createOrderSchema = z.object({
 /**
  * Create order schema dành riêng cho body mà frontend hiện tại đang gửi
  * (được dùng ở API route /api/orders – sau đó server sẽ tự tính lại giá từ DB).
+ *
+ * productId: dùng z.string() thay vì cuidSchema vì cart items có thể dùng
+ * composite ID (productId_variantId) hoặc CUID tùy cách add to cart.
  */
 export const createOrderRequestSchema = z.object({
     items: z
         .array(z.object({
-            productId: cuidSchema,
-            variantId: cuidSchema.optional().nullable(),
+            productId: z.string().min(1, 'Product ID is required'),
+            variantId: z.string().optional().nullable(),
             quantity: z.coerce
                 .number()
                 .int('Số lượng phải là số nguyên')
@@ -166,9 +169,9 @@ export const createOrderRequestSchema = z.object({
         .optional()
         .nullable(),
 
-    discount: positiveNumberSchema.optional().default(0),
+    discount: z.coerce.number().min(0, 'Giảm giá không hợp lệ').optional().default(0),
 
-    shippingFee: positiveNumberSchema.optional().default(0),
+    shippingFee: z.coerce.number().min(0, 'Phí vận chuyển không hợp lệ').optional().default(0),
 
     notes: z
         .string()
@@ -210,8 +213,8 @@ export const updateOrderStatusSchema = z.object({
 export const guestOrderSchema = z.object({
     items: z
         .array(z.object({
-            productId: cuidSchema,
-            variantId: cuidSchema.optional().nullable(),
+            productId: z.string().min(1, 'Product ID is required'),
+            variantId: z.string().optional().nullable(),
             quantity: z.coerce
                 .number()
                 .int('Số lượng phải là số nguyên')

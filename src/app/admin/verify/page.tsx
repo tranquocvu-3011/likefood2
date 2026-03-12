@@ -114,7 +114,7 @@ export default function AdminVerifyPage() {
 
     if (status === "loading") {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-900">
+            <div className="min-h-screen flex items-center justify-center bg-zinc-900">
                 <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
             </div>
         );
@@ -125,7 +125,7 @@ export default function AdminVerifyPage() {
     }
 
     return (
-        <div className="relative min-h-screen flex items-center justify-center p-4 bg-slate-900 overflow-hidden font-sans selection:bg-emerald-500/30">
+        <div className="relative min-h-screen flex items-center justify-center p-4 bg-zinc-900 overflow-hidden font-sans selection:bg-emerald-500/30">
             {/* Background Effects */}
             <div className="absolute inset-0 z-0">
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
@@ -161,7 +161,7 @@ export default function AdminVerifyPage() {
                             transition={{ type: "spring", delay: 0.2 }}
                             className="relative w-20 h-20 rounded-3xl bg-gradient-to-tr from-emerald-500 to-teal-400 p-[2px] mb-6 shadow-2xl shadow-emerald-500/30"
                         >
-                            <div className="w-full h-full rounded-[1.4rem] bg-slate-900 flex items-center justify-center">
+                            <div className="w-full h-full rounded-[1.4rem] bg-zinc-900 flex items-center justify-center">
                                 <ShieldAlert className="w-10 h-10 text-emerald-400" />
                             </div>
                         </motion.div>
@@ -183,7 +183,7 @@ export default function AdminVerifyPage() {
                                 <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                                     <Mail className="w-4 h-4 text-emerald-400" />
                                 </div>
-                                <p className="text-[13px] text-slate-300 leading-relaxed font-medium">
+                                <p className="text-[13px] text-zinc-300 leading-relaxed font-medium">
                                     Mã bảo vệ gồm <strong className="text-white">6 ký tự</strong> đã được điều phối tới email <span className="text-emerald-400 font-bold break-all">{session.user.email}</span>
                                 </p>
                             </motion.div>
@@ -215,11 +215,11 @@ export default function AdminVerifyPage() {
 
                             <Button
                                 type="submit"
-                                className="w-full h-14 mt-4 text-[15px] font-black tracking-wide rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-900 shadow-xl shadow-emerald-500/20 transition-all border-none"
+                                className="w-full h-14 mt-4 text-[15px] font-black tracking-wide rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-xl shadow-emerald-500/20 transition-all border-none"
                                 disabled={isLoading || otp.length < 6}
                             >
                                 {isLoading ? (
-                                    <Loader2 className="w-6 h-6 animate-spin text-slate-900" />
+                                    <Loader2 className="w-6 h-6 animate-spin text-white" />
                                 ) : (
                                     <span className="flex items-center">
                                         Ủy Quyền Truy Cập <ArrowRight className="w-5 h-5 ml-2" />
@@ -229,11 +229,11 @@ export default function AdminVerifyPage() {
                         </form>
 
                         <div className="mt-8 text-center pt-6 border-t border-white/10">
-                            <p className="text-[11px] font-black text-slate-500 mb-4 uppercase tracking-[0.2em]">Chưa Nhận Được Mã?</p>
+                            <p className="text-[11px] font-black text-zinc-500 mb-4 uppercase tracking-[0.2em]">Chưa Nhận Được Mã?</p>
                             <Button
                                 type="button"
                                 variant="ghost"
-                                className="w-full h-12 rounded-xl border border-white/5 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white font-bold transition-all text-sm"
+                                className="w-full h-12 rounded-xl border border-white/5 bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-white font-bold transition-all text-sm"
                                 onClick={sendOTP}
                                 disabled={isSending || cooldown > 0}
                             >

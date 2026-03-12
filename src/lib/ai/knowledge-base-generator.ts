@@ -1369,6 +1369,7 @@ async function seedEnhancedKnowledgeBase() {
     try {
       await prisma.aiKnowledge.create({
         data: {
+          id: crypto.randomUUID(),
           category: qa.category,
           question: qa.question,
           answer: qa.answer,
@@ -1376,6 +1377,7 @@ async function seedEnhancedKnowledgeBase() {
           language: qa.language,
           priority: qa.priority,
           isActive: true,
+          updatedAt: new Date(),
         },
       });
       successCount++;

@@ -5,84 +5,181 @@
  * https://github.com/tranquocvu-3011/likefood
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
-// PUT - Rename a category (update all products with that category)
-export async function PUT(request: Request) {
+function makeSlug(name: string) {
+    return name
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+}
+
+async function requireAdmin() {
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user.role !== "ADMIN" && session.user.role !== "SUPER_ADMIN")) {
+        return null;
+    }
+    return session;
+}
+
+// GET - List all categories from Category model (admin view with id included)
+export async function GET() {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session || (session.user.role !== "ADMIN" && session.user.role !== "SUPER_ADMIN")) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+        const session = await requireAdmin();
+        if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const { oldName, newName } = await request.json();
-
-        if (!oldName || !newName) {
-            return NextResponse.json({ error: "Cần cung cấp tên cũ và tên mới" }, { status: 400 });
-        }
-        if (typeof oldName !== "string" || oldName.trim().length === 0 || oldName.length > 200) {
-            return NextResponse.json({ error: "oldName không hợp lệ (tối đa 200 ký tự)" }, { status: 400 });
-        }
-        if (typeof newName !== "string" || newName.trim().length === 0 || newName.length > 200) {
-            return NextResponse.json({ error: "newName không hợp lệ (tối đa 200 ký tự)" }, { status: 400 });
-        }
-
-        // Check if newName already exists
-        const existingProducts = await prisma.product.count({
-            where: { category: newName },
+        const categories = await prisma.category.findMany({
+            orderBy: [{ position: "asc" }, { name: "asc" }],
+            include: {
+                _count: { select: { products: true } },
+            },
         });
 
-        if (existingProducts > 0 && oldName !== newName) {
-            return NextResponse.json(
-                { error: `Danh mục "${newName}" đã tồn tại với ${existingProducts} sản phẩm` },
-                { status: 409 }
-            );
-        }
+        // Exclude "Khác" category from admin list (hidden everywhere)
+        const filtered = categories.filter((c) => c.name !== "Khác" && c.slug !== "khac");
 
-        // Update all products with old category name to new name
-        const result = await prisma.product.updateMany({
-            where: { category: oldName },
-            data: { category: newName },
-        });
-
-        return NextResponse.json({
-            message: `Đã đổi tên "${oldName}" → "${newName}" cho ${result.count} sản phẩm`,
-            count: result.count,
-        });
+        return NextResponse.json(
+            filtered.map((c) => ({
+                id: c.id,
+                name: c.name,
+                slug: c.slug,
+                description: c.description,
+                imageUrl: c.imageUrl,
+                parentId: c.parentId,
+                position: c.position,
+                isVisible: c.isVisible,
+                isActive: c.isActive,
+                productCount: c._count.products,
+            }))
+        );
     } catch (error) {
-        console.error("Category rename error:", error);
-        return NextResponse.json({ error: "Lỗi khi đổi tên danh mục" }, { status: 500 });
+        console.error("Admin category GET error:", error);
+        return NextResponse.json({ error: "Lỗi khi lấy danh mục" }, { status: 500 });
     }
 }
 
-// GET - Get all categories with product counts
-export async function GET() {
+// POST - Create new category in Category model
+export async function POST(request: NextRequest) {
     try {
-        const products = await prisma.product.findMany({
-            select: { category: true },
-            distinct: ["category"],
+        const session = await requireAdmin();
+        if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+        const body = await request.json();
+        const { name, description, imageUrl, parentId, position } = body;
+
+        if (!name || typeof name !== "string" || name.trim().length === 0 || name.length > 200) {
+            return NextResponse.json({ error: "Tên danh mục không hợp lệ (tối đa 200 ký tự)" }, { status: 400 });
+        }
+
+        const trimmedName = name.trim();
+        let slug = makeSlug(trimmedName);
+
+        // Ensure slug uniqueness
+        let suffix = 0;
+        let candidateSlug = slug;
+        while (await prisma.category.findUnique({ where: { slug: candidateSlug } })) {
+            suffix += 1;
+            candidateSlug = `${slug}-${suffix}`;
+        }
+        slug = candidateSlug;
+
+        const category = await prisma.category.create({
+            data: {
+                name: trimmedName,
+                slug,
+                description: description?.trim() || null,
+                imageUrl: imageUrl?.trim() || null,
+                parentId: parentId || null,
+                position: typeof position === "number" ? position : 0,
+                isVisible: true,
+                isActive: true,
+            },
         });
 
-        const categoriesWithCounts = await Promise.all(
-            products.map(async (p) => {
-                const count = await prisma.product.count({
-                    where: { category: p.category },
-                });
-                return {
-                    name: p.category,
-                    slug: p.category?.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "unknown",
-                    productCount: count,
-                };
-            })
-        );
-
-        categoriesWithCounts.sort((a, b) => b.productCount - a.productCount);
-        return NextResponse.json(categoriesWithCounts);
+        return NextResponse.json(category, { status: 201 });
     } catch (error) {
-        console.error("Category fetch error:", error);
-        return NextResponse.json({ error: "Lỗi khi lấy danh mục" }, { status: 500 });
+        console.error("Admin category POST error:", error);
+        return NextResponse.json({ error: "Lỗi khi tạo danh mục" }, { status: 500 });
+    }
+}
+
+// PUT - Update category name/slug by id
+export async function PUT(request: NextRequest) {
+    try {
+        const session = await requireAdmin();
+        if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+        const { id, name, description, imageUrl, isActive, isVisible, position } = await request.json();
+
+        if (!id || typeof id !== "string") {
+            return NextResponse.json({ error: "id danh mục là bắt buộc" }, { status: 400 });
+        }
+
+        const existing = await prisma.category.findUnique({ where: { id } });
+        if (!existing) return NextResponse.json({ error: "Không tìm thấy danh mục" }, { status: 404 });
+
+        const updateData: Record<string, unknown> = {};
+
+        if (name && typeof name === "string" && name.trim().length > 0) {
+            const trimmedName = name.trim();
+            updateData.name = trimmedName;
+            // Regenerate slug only if name changed
+            if (trimmedName !== existing.name) {
+                let slug = makeSlug(trimmedName);
+                let suffix = 0;
+                let candidateSlug = slug;
+                while (true) {
+                    const conflict = await prisma.category.findUnique({ where: { slug: candidateSlug } });
+                    if (!conflict || conflict.id === id) break;
+                    suffix += 1;
+                    candidateSlug = `${slug}-${suffix}`;
+                }
+                updateData.slug = candidateSlug;
+            }
+        }
+        if (description !== undefined) updateData.description = description?.trim() || null;
+        if (imageUrl !== undefined) updateData.imageUrl = imageUrl?.trim() || null;
+        if (typeof isActive === "boolean") updateData.isActive = isActive;
+        if (typeof isVisible === "boolean") updateData.isVisible = isVisible;
+        if (typeof position === "number") updateData.position = position;
+
+        const updated = await prisma.category.update({ where: { id }, data: updateData });
+        return NextResponse.json(updated);
+    } catch (error) {
+        console.error("Admin category PUT error:", error);
+        return NextResponse.json({ error: "Lỗi khi cập nhật danh mục" }, { status: 500 });
+    }
+}
+
+// DELETE - Remove category by id (products with this categoryId will have it set to null via FK)
+export async function DELETE(request: NextRequest) {
+    try {
+        const session = await requireAdmin();
+        if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+        const { searchParams } = new URL(request.url);
+        const id = searchParams.get("id");
+
+        if (!id) return NextResponse.json({ error: "id là bắt buộc" }, { status: 400 });
+
+        const existing = await prisma.category.findUnique({ where: { id }, include: { _count: { select: { products: true } } } });
+        if (!existing) return NextResponse.json({ error: "Không tìm thấy danh mục" }, { status: 404 });
+
+        if (existing._count.products > 0) {
+            // Detach products (set categoryId to null) before deletion
+            await prisma.product.updateMany({ where: { categoryId: id }, data: { categoryId: null } });
+        }
+
+        await prisma.category.delete({ where: { id } });
+        return NextResponse.json({ message: `Đã xóa danh mục "${existing.name}"` });
+    } catch (error) {
+        console.error("Admin category DELETE error:", error);
+        return NextResponse.json({ error: "Lỗi khi xóa danh mục" }, { status: 500 });
     }
 }

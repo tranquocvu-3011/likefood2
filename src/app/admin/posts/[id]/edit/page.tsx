@@ -41,7 +41,7 @@ export default function EditPostPage({ params }: { params: { id: string } }) {
 
     if (!post) {
         return (
-            <div className="h-96 flex items-center justify-center text-slate-400 font-bold">
+            <div className="h-96 flex items-center justify-center text-zinc-400 font-bold">
                 Không tìm thấy bài viết
             </div>
         );

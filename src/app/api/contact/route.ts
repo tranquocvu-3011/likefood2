@@ -11,6 +11,7 @@ import { sendContactEmail } from "@/lib/mail";
 import prisma from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { contactSchema } from "@/lib/validations/contact";
+import { verifyTurnstileToken } from "@/lib/captcha";
 
 export async function POST(req: Request) {
     try {
@@ -33,7 +34,12 @@ export async function POST(req: Request) {
             );
         }
 
-        const { name, email, phone, subject, message } = validation.data;
+        const { name, email, phone, subject, message, turnstileToken } = validation.data;
+
+        const captcha = await verifyTurnstileToken({ req, token: turnstileToken, action: "contact" });
+        if (!captcha.ok) {
+            return NextResponse.json({ error: captcha.message }, { status: 400 });
+        }
 
         // 1. Lưu vào Database
         const contactMessage = await prisma.contactmessage.create({
@@ -56,11 +62,11 @@ export async function POST(req: Request) {
         });
 
         if (!result.success) {
-            logger.error("Failed to send contact email notification", {
-                context: "contact-email",
-                contactId: contactMessage.id,
-                error: result.error,
-            });
+            logger.error(
+                "Failed to send contact email notification",
+                new Error(result.error || "Unknown contact mail error"),
+                { context: "contact-email", contactId: contactMessage.id }
+            );
             return NextResponse.json(
                 { error: "Không thể gửi email. Vui lòng kiểm tra cấu hình SMTP." },
                 { status: 500 }

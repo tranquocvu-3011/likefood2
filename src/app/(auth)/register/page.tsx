@@ -21,9 +21,8 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { signIn } from "next-auth/react";
 import { isValidEmailFormat, isDisposableEmail, isStrongPassword } from "@/lib/validation";
-import TurnstileWidget from "@/components/auth/TurnstileWidget";
 import { useLanguage } from "@/lib/i18n/context";
-import MathCaptcha from "@/components/auth/MathCaptcha";
+import { CaptchaField } from "@/components/auth/CaptchaField";
 
 function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -329,11 +328,7 @@ export default function RegisterPage() {
                                 </div>
 
                                 <div className="flex justify-center py-2">
-                                    <TurnstileWidget onVerify={setTurnstileToken} theme="light" />
-                                </div>
-
-                                <div className="py-2">
-                                    <MathCaptcha onValidate={setIsCaptchaValid} />
+                                    <CaptchaField onToken={setTurnstileToken} onValidChange={setIsCaptchaValid} />
                                 </div>
 
                                 <Button disabled={isLoading || !isCaptchaValid} type="submit" className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-emerald-600 text-white font-bold uppercase tracking-widest transition-all shadow-lg shadow-slate-200 disabled:opacity-50 disabled:cursor-not-allowed">

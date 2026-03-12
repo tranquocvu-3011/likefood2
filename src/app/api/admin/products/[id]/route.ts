@@ -76,11 +76,14 @@ export async function PUT(
             isOnSale,
             badgeText,
             tags,
+            tagSlugs,
             category,
+            categoryId,
             inventory,
             image,
             featured,
             weight,
+            isVisible,
             images: galleryImages,
         } = body;
 
@@ -106,7 +109,41 @@ export async function PUT(
             if (!Number.isNaN(parsed)) inventoryNumber = parsed;
         }
 
+        const tagInputs: string[] = Array.isArray(tagSlugs)
+            ? tagSlugs.map((t: unknown) => String(t)).map(t => t.trim()).filter(Boolean)
+            : (typeof tags === "string" ? tags.split(",").map((t: string) => t.trim()).filter(Boolean) : []);
+
         const updatedProduct = await prisma.$transaction(async (tx) => {
+            // Resolve category mapping (admin can send categoryId or category name)
+            let finalCategoryId: string | null | undefined = undefined;
+            let finalCategoryName: string | undefined = undefined;
+            if (typeof categoryId === "string" && categoryId.trim()) {
+                const c = await tx.category.findFirst({
+                    where: { id: categoryId.trim(), isActive: true },
+                    select: { id: true, name: true },
+                });
+                if (c) {
+                    finalCategoryId = c.id;
+                    finalCategoryName = c.name;
+                }
+            } else if (typeof category === "string" && category.trim()) {
+                // Keep legacy behavior (store name string) but also upsert Category row
+                const catSlug = category.trim()
+                    .toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/(^-|-$)/g, "");
+                const c = await tx.category.upsert({
+                    where: { slug: catSlug || `cat-${id.slice(-6)}` },
+                    update: { name: category.trim() },
+                    create: { name: category.trim(), slug: catSlug || `cat-${id.slice(-6)}`, isActive: true, isVisible: true },
+                    select: { id: true, name: true },
+                });
+                finalCategoryId = c.id;
+                finalCategoryName = c.name;
+            }
+
             // Update main product info
             const product = await tx.product.update({
                 where: { id },
@@ -121,12 +158,14 @@ export async function PUT(
                         isOnSale: !!isOnSale && !!salePriceNumber,
                     }),
                     ...(badgeText !== undefined && { badgeText: badgeText || null }),
-                    ...(tags !== undefined && { tags: tags || null }),
-                    ...(category && { category }),
+                    ...(tags !== undefined && { tags: typeof tags === "string" ? tags : (tagInputs.length ? tagInputs.join(",") : null) }),
+                    ...(finalCategoryName ? { category: finalCategoryName } : (category ? { category } : {})),
+                    ...(finalCategoryId !== undefined ? { categoryId: finalCategoryId } : {}),
                     ...(inventoryNumber !== null && { inventory: inventoryNumber }),
                     ...(image !== undefined && { image: image || null }),
                     ...(typeof featured !== "undefined" && { featured }),
                     ...(weight !== undefined && { weight: weight || null }),
+                    ...(typeof isVisible !== "undefined" && { isVisible: !!isVisible }),
                 },
             });
 
@@ -144,6 +183,32 @@ export async function PUT(
                             order: index,
                             isPrimary: false,
                         })),
+                    });
+                }
+            }
+
+            // Sync tags relation if provided
+            if (tags !== undefined || tagSlugs !== undefined) {
+                await tx.producttag.deleteMany({ where: { productId: id } });
+                if (tagInputs.length > 0) {
+                    const tagIds = await Promise.all(tagInputs.slice(0, 20).map(async (t) => {
+                        const slug = t
+                            .toLowerCase()
+                            .normalize("NFD")
+                            .replace(/[\u0300-\u036f]/g, "")
+                            .replace(/[^a-z0-9]+/g, "-")
+                            .replace(/(^-|-$)/g, "");
+                        const tag = await tx.tag.upsert({
+                            where: { slug: slug || `tag-${id.slice(-6)}-${Math.random().toString(16).slice(2, 6)}` },
+                            update: { name: t },
+                            create: { name: t, slug: slug || `tag-${id.slice(-6)}-${Math.random().toString(16).slice(2, 6)}`, isActive: true },
+                            select: { id: true },
+                        });
+                        return tag.id;
+                    }));
+                    await tx.producttag.createMany({
+                        data: tagIds.map((tagId) => ({ productId: id, tagId })),
+                        skipDuplicates: true,
                     });
                 }
             }

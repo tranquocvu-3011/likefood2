@@ -161,6 +161,10 @@ export async function POST(req: Request) {
 
         const parsed = createOrderRequestSchema.safeParse(rawBody);
         if (!parsed.success) {
+            logger.warn("Order validation failed", {
+                context: "orders-api",
+                zodErrors: parsed.error.issues.map(i => ({ field: i.path.join('.'), message: i.message, code: i.code })),
+            });
             return NextResponse.json(
                 validationErrorResponse(parsed.error),
                 { status: 400 }
@@ -202,6 +206,39 @@ export async function POST(req: Request) {
                     order: existingOrder,
                     message: "Order already exists",
                 });
+            }
+        }
+
+        // Verify user exists in database (prevent FK constraint violation)
+        let userId = session.user.id;
+        const existingUserById = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true },
+        });
+        if (!existingUserById) {
+            // Session ID not in DB — look up by email (handles OAuth ID mismatch)
+            if (session.user.email) {
+                const existingUserByEmail = await prisma.user.findUnique({
+                    where: { email: session.user.email },
+                    select: { id: true },
+                });
+                if (existingUserByEmail) {
+                    userId = existingUserByEmail.id;
+                    logger.info("Remapped userId via email", { sessionId: session.user.id, dbUserId: userId });
+                } else {
+                    try {
+                        const newUser = await prisma.user.create({
+                            data: { id: userId, email: session.user.email, name: session.user.name || "LIKEFOOD User" },
+                        });
+                        userId = newUser.id;
+                        logger.info("Auto-created user for order", { userId });
+                    } catch (createErr) {
+                        logger.error("Failed to create user", createErr as Error, { userId });
+                        return NextResponse.json({ error: "Không thể tạo tài khoản. Vui lòng đăng nhập lại." }, { status: 400 });
+                    }
+                }
+            } else {
+                return NextResponse.json({ error: "Tài khoản không hợp lệ. Vui lòng đăng nhập lại." }, { status: 400 });
             }
         }
 
@@ -300,7 +337,7 @@ export async function POST(req: Request) {
                         const FLASH_SALE_PER_USER_LIMIT = 5;
                         const userFlashOrders = await tx.order.findMany({
                             where: {
-                                userId: session.user.id,
+                                userId: userId,
                                 createdAt: { gte: product.saleStartAt! },
                                 orderItems: { some: { productId: item.productId } },
                             },
@@ -368,7 +405,7 @@ export async function POST(req: Request) {
 
                 // Check if user has claimed this voucher
                 const userVoucher = await tx.uservoucher.findUnique({
-                    where: { userId_couponId: { userId: session.user.id, couponId: coupon.id } }
+                    where: { userId_couponId: { userId: userId, couponId: coupon.id } }
                 });
 
                 if (!userVoucher) {
@@ -406,7 +443,7 @@ export async function POST(req: Request) {
             let pointsDiscountAmount = 0;
             if (pointsToUse > 0) {
                 const user = await tx.user.findUnique({
-                    where: { id: session.user.id },
+                    where: { id: userId },
                     select: { points: true }
                 });
 
@@ -428,7 +465,7 @@ export async function POST(req: Request) {
                 // The WHERE clause (points >= pointsToUse) is evaluated atomically in MySQL,
                 // so concurrent orders cannot both pass even if they read the same balance.
                 const updated = await tx.user.updateMany({
-                    where: { id: session.user.id, points: { gte: pointsToUse } },
+                    where: { id: userId, points: { gte: pointsToUse } },
                     data: { points: { decrement: pointsToUse } }
                 });
 
@@ -438,7 +475,7 @@ export async function POST(req: Request) {
 
                 await tx.pointtransaction.create({
                     data: {
-                        userId: session.user.id,
+                        userId: userId,
                         amount: -pointsToUse,
                         type: "SPEND",
                         description: `Sá»­ dá»¥ng cho Ä‘Æ¡n hÃ ng`,
@@ -450,7 +487,7 @@ export async function POST(req: Request) {
 
             const newOrder = await tx.order.create({
                 data: {
-                    userId: session.user.id,
+                    userId: userId,
                     status: "PENDING",
                     subtotal,
                     shippingFee: calculatedShippingFee,
@@ -530,7 +567,7 @@ export async function POST(req: Request) {
             const earnedPoints = Math.floor(subtotal);
             if (earnedPoints > 0) {
                 await tx.user.update({
-                    where: { id: session.user.id },
+                    where: { id: userId },
                     data: {
                         points: { increment: earnedPoints },
                     },
@@ -538,7 +575,7 @@ export async function POST(req: Request) {
 
                 await tx.pointtransaction.create({
                     data: {
-                        userId: session.user.id,
+                        userId: userId,
                         orderId: newOrder.id,
                         amount: earnedPoints,
                         type: "EARN",
@@ -553,14 +590,14 @@ export async function POST(req: Request) {
         // Auto-create order notification cho user
         try {
             await createOrderNotification(
-                session.user.id,
+                userId,
                 order.id,
                 'PENDING',
                 order.total
             );
         } catch (notifError) {
             logger.error('Failed to create order notification', notifError as Error, {
-                userId: session.user.id,
+                userId: userId,
                 orderId: order.id,
             });
             // KhÃ´ng fail order náº¿u notification lá»—i

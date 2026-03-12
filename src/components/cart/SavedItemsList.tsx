@@ -11,7 +11,7 @@ import Link from "next/link";
 import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, X } from "lucide-react";
-import { formatPrice } from "@/lib/currency";
+import PriceDisplay from "@/components/ui/price-display";
 import { useLanguage } from "@/lib/i18n/context";
 
 export interface SavedItem {
@@ -61,7 +61,7 @@ export function SavedItemsList({ items, onMoveToCart, onRemove }: SavedItemsList
                             <Link href={`/products/${item.slug || item.id}`} prefetch={true}>
                                 <h3 className="font-black text-lg md:text-xl hover:text-primary transition-colors">{item.name}</h3>
                             </Link>
-                            <p className="text-slate-900 font-black text-lg mt-1">{formatPrice(item.price)}</p>
+                            <PriceDisplay currentPrice={item.price} size="md" className="mt-1" showDiscountBadge={false} />
                         </div>
                         <div className="flex items-center gap-2 mt-4">
                             <Button

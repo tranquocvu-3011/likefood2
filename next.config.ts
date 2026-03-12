@@ -57,6 +57,11 @@ const nextConfig: NextConfig = {
                 protocol: "https",
                 hostname: "drive.google.com",
             },
+            // Flag CDN for language switcher
+            {
+                protocol: "https",
+                hostname: "flagcdn.com",
+            },
             // Add your image CDN here when configured (e.g., Cloudinary, AWS S3)
             // Example for Cloudinary:
             // {

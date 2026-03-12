@@ -43,6 +43,7 @@ export async function GET(req: Request) {
                     authorName: true,
                     category: true,
                     publishedAt: true,
+                    content: true, // For read time calculation
                 }
             }),
             prisma.post.count({ where }),

@@ -13,6 +13,8 @@ import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import { formatPrice } from "@/lib/currency";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "@/lib/i18n/context";
+import QuantitySelector from "@/components/ui/quantity-selector";
+import PriceDisplay from "@/components/ui/price-display";
 
 export interface CartItem {
     id: string;
@@ -133,26 +135,22 @@ export function CartItemList({
                                     <Trash2 className="w-5 h-5" />
                                 </button>
                             </div>
-                            <p className="text-slate-900 font-black text-lg mt-1">{formatPrice(item.price)}</p>
+                            <PriceDisplay
+                                currentPrice={item.price}
+                                size="md"
+                                className="mt-1"
+                                showDiscountBadge={false}
+                            />
                         </div>
-
                         <div className="flex items-center justify-between mt-4">
                             <div className="flex items-center gap-2">
-                                <div className="flex items-center border-2 border-slate-100 rounded-2xl p-1.5 bg-white shadow-sm">
-                                    <button
-                                        onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-                                        className="w-10 h-10 md:w-11 md:h-11 flex items-center justify-center hover:bg-slate-50 rounded-2xl transition-colors text-slate-600 hover:text-primary font-black text-xl"
-                                    >
-                                        -
-                                    </button>
-                                    <span className="px-3 md:px-4 font-black text-lg md:text-xl w-8 text-center">{item.quantity}</span>
-                                    <button
-                                        onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                                        className="w-10 h-10 md:w-11 md:h-11 flex items-center justify-center hover:bg-slate-50 rounded-2xl transition-colors text-slate-600 hover:text-primary font-black text-xl"
-                                    >
-                                        +
-                                    </button>
-                                </div>
+                                <QuantitySelector
+                                    value={item.quantity}
+                                    min={1}
+                                    max={item.inventory || 99}
+                                    onChange={(newQty) => onUpdateQuantity(item.id, newQty)}
+                                    size="md"
+                                />
                                 {session.data?.user ? (
                                     <button
                                         onClick={() => onSaveForLater(item)}

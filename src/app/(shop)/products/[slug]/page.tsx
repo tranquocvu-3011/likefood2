@@ -8,11 +8,11 @@
  */
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import {
-    Star, Heart, Share2, ShoppingCart, Plus, Minus, Truck, Shield, ArrowLeft,
-    Loader2, Flame, Zap, ChevronRight, Package, RefreshCw, CreditCard,
-    ShoppingBag
+    Star, Heart, Share2, ShoppingCart, Truck, ArrowLeft,
+    Loader2, Flame, Zap, ChevronRight, Package, ShoppingBag
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
@@ -27,11 +27,27 @@ import { logger } from "@/lib/logger";
 import ProductSpecifications from "@/components/product/ProductSpecifications";
 import ProductStructuredData from "@/components/seo/ProductStructuredData";
 import { useLanguage } from "@/lib/i18n/context";
-import ReviewSummaryAI from "@/components/product/ReviewSummaryAI";
-import FrequentlyBoughtTogether from "@/components/product/FrequentlyBoughtTogether";
-import { ProductQA } from "@/components/product-qa/ProductQA";
+import { formatPrice, formatVndEquivalent } from "@/lib/currency";
+import LoadingState from "@/components/ui/loading-state";
+import ErrorState from "@/components/ui/error-state";
+import QuantitySelector from "@/components/ui/quantity-selector";
+import { Badge } from "@/components/ui/badge";
+import PriceDisplay from "@/components/ui/price-display";
+import { WriteReviewButton } from "@/components/review/WriteReviewButton";
+
+const ReviewSummaryAI = dynamic(() => import("@/components/product/ReviewSummaryAI"), {
+    loading: () => <div className="h-32 bg-slate-100 rounded-2xl animate-pulse" />,
+    ssr: false,
+});
+const FrequentlyBoughtTogether = dynamic(() => import("@/components/product/FrequentlyBoughtTogether"), {
+    loading: () => <div className="h-32 bg-slate-100 rounded-2xl animate-pulse" />,
+    ssr: false,
+});
+
 import { FREE_SHIPPING_THRESHOLD_USD } from "@/lib/commerce";
 import { SizeGuide, SizeGuideButton } from "@/components/product-size-guide/SizeGuide";
+import StickyBuyBar from "@/components/product/StickyBuyBar";
+import TrustBadgesRow from "@/components/product/TrustBadgesRow";
 import { motion } from "framer-motion";
 
 interface ProductVariant {
@@ -261,51 +277,24 @@ export default function ProductDetailPage() {
         : 0;
 
     if (isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-emerald-50/30">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-center"
-                >
-                    <div className="relative w-20 h-20 mx-auto mb-6">
-                        <div className="absolute inset-0 rounded-full border-4 border-emerald-100" />
-                        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-emerald-500 animate-spin" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <ShoppingBag className="w-8 h-8 text-emerald-500" />
-                        </div>
-                    </div>
-                    <p className="text-slate-500 font-semibold text-lg">{t("shop.loadingProduct")}</p>
-                </motion.div>
-            </div>
-        );
+        return <LoadingState fullPage text={t("shop.loadingProduct")} />;
     }
 
     if (error || !product) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 px-6">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-center max-w-md"
-                >
-                    <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-red-100 to-orange-100 flex items-center justify-center mx-auto mb-6">
-                        <Package className="w-12 h-12 text-red-400" />
-                    </div>
-                    <h2 className="text-3xl font-black text-slate-900 mb-3">Oops!</h2>
-                    <p className="text-slate-600 mb-8 text-lg">{
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-emerald-50/20 px-6">
+                <ErrorState
+                    title="Oops!"
+                    message={
                         error === "not_found" ? t("shop.productNotFound") :
                         error === "load_error" ? t("shop.errorLoadingProduct") :
                         error === "network_error" ? t("shop.errorTryAgain") :
                         error || t("shop.productNotFound")
-                    }</p>
-                    <Link href="/products">
-                        <Button className="h-14 px-8 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-lg shadow-xl shadow-emerald-500/30">
-                            <ShoppingBag className="w-5 h-5 mr-2" />
-                            {t("shop.discoverProducts")}
-                        </Button>
-                    </Link>
-                </motion.div>
+                    }
+                    onRetry={() => window.location.reload()}
+                    retryLabel={t("common.back")}
+                    className="max-w-md bg-white p-12 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 border border-slate-100"
+                />
             </div>
         );
     }
@@ -347,7 +336,13 @@ export default function ProductDetailPage() {
                     <motion.button
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        onClick={() => router.back()}
+                        onClick={() => {
+                            if (typeof document !== 'undefined' && document.referrer && document.referrer.includes(window.location.origin)) {
+                                router.back();
+                            } else {
+                                router.push('/products');
+                            }
+                        }}
                         className="mb-6 inline-flex items-center gap-2 text-slate-500 hover:text-emerald-600 transition-colors font-medium"
                     >
                         <ArrowLeft className="w-5 h-5" />
@@ -363,7 +358,7 @@ export default function ProductDetailPage() {
                             transition={{ duration: 0.5 }}
                             className="xl:col-span-5"
                         >
-                            <div className="sticky top-8 max-w-[420px] mx-auto xl:mx-0">
+                            <div className="sticky top-24 max-w-[420px] mx-auto xl:mx-0">
                                 <div className="relative">
                                     {/* Main Image - thu nhỏ */}
                                     <div className="relative aspect-square rounded-2xl overflow-hidden bg-white shadow-xl shadow-slate-200/50 mb-3">
@@ -398,20 +393,20 @@ export default function ProductDetailPage() {
                                         {/* Sale Badge */}
                                         {hasDiscount() && (
                                             <div className="absolute top-6 left-6 z-10">
-                                                <div className="bg-gradient-to-r from-red-500 to-rose-600 px-5 py-2.5 rounded-2xl shadow-xl shadow-red-500/30 flex items-center gap-2">
-                                                    <Flame className="w-5 h-5 text-white fill-white" />
-                                                    <span className="text-lg font-black text-white uppercase">Sale {getDiscountPercent()}%</span>
-                                                </div>
+                                                <Badge variant="sale" className="px-5 py-2.5 rounded-2xl">
+                                                    <Flame className="w-5 h-5 text-white fill-white mr-2" />
+                                                    Sale {getDiscountPercent()}%
+                                                </Badge>
                                             </div>
                                         )}
 
                                         {/* Flash Sale Badge */}
                                         {product.isFlashSale && (
                                             <div className="absolute top-6 right-6 z-10">
-                                                <div className="bg-gradient-to-r from-orange-500 to-red-500 px-5 py-2.5 rounded-2xl shadow-xl shadow-orange-500/30 flex items-center gap-2">
-                                                    <Zap className="w-5 h-5 text-white fill-white" />
-                                                    <span className="text-lg font-black text-white uppercase">Flash Sale</span>
-                                                </div>
+                                                <Badge variant="flash" className="px-5 py-2.5 rounded-2xl">
+                                                    <Zap className="w-5 h-5 text-white fill-white mr-2" />
+                                                    {t("common.flashSale")}
+                                                </Badge>
                                             </div>
                                         )}
 
@@ -445,16 +440,16 @@ export default function ProductDetailPage() {
                                     <ChevronRight className="w-3 h-3" />
                                 </Link>
                                 {product.isFlashSale && (
-                                    <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-red-500 to-rose-600 px-4 py-2 rounded-full text-xs font-black text-white uppercase tracking-widest shadow-lg shadow-red-500/30">
-                                        <Flame className="w-4 h-4" />
-                                        Flash Sale
-                                    </span>
+                                    <Badge variant="flash">
+                                        <Flame className="w-4 h-4 mr-1.5" />
+                                        {t("common.flashSale")}
+                                    </Badge>
                                 )}
                                 {product.isNew && (
-                                    <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-2 rounded-full text-xs font-black text-white uppercase tracking-widest shadow-lg shadow-purple-500/30">
-                                        <Zap className="w-4 h-4" />
+                                    <Badge variant="new">
+                                        <Zap className="w-4 h-4 mr-1.5" />
                                         {t("common.new")}
-                                    </span>
+                                    </Badge>
                                 )}
                             </div>
 
@@ -500,27 +495,27 @@ export default function ProductDetailPage() {
                                 )}
                             </div>
 
+
+
                             {/* Price Section - Enhanced */}
                             <div className="bg-gradient-to-br from-slate-50 via-white to-slate-50 rounded-3xl p-6 border border-slate-100 shadow-lg shadow-slate-100/50">
-                                <div className="flex items-baseline gap-4 mb-4">
-                                    {hasDiscount() ? (
-                                        <>
-                                            <span className="text-5xl font-black bg-gradient-to-r from-red-500 to-rose-500 bg-clip-text text-transparent">
-                                                ${getCurrentPrice().toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                                            </span>
-                                            <span className="text-2xl text-slate-400 line-through font-medium">
-                                                ${getOriginalPrice().toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                                            </span>
-                                            <span className="px-4 py-1.5 bg-gradient-to-r from-red-500 to-rose-500 text-white text-sm font-black rounded-full shadow-lg shadow-red-500/30">
-                                                -{getDiscountPercent()}%
-                                            </span>
-                                        </>
-                                    ) : (
-                                        <span className="text-5xl font-black bg-gradient-to-r from-slate-800 to-slate-900 bg-clip-text text-transparent">
-                                            ${getCurrentPrice().toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                                        </span>
-                                    )}
-                                </div>
+                                <PriceDisplay
+                                    currentPrice={product.price}
+                                    originalPrice={product.originalPrice}
+                                    salePrice={product.salePrice}
+                                    isOnSale={product.isOnSale}
+                                    size="xl"
+                                    showDiscountBadge={true}
+                                />
+                                {/* VND Equivalent */}
+                                <p className="mt-2 text-sm font-semibold text-slate-400">
+                                    {formatVndEquivalent(getCurrentPrice())}
+                                </p>
+                                {selectedVariant && selectedVariant.priceAdjustment !== 0 && (
+                                    <p className="mt-2 text-xs font-bold text-emerald-600 uppercase tracking-widest">
+                                        + {formatPrice(selectedVariant.priceAdjustment)} (Tuỳ chọn {selectedVariant.weight || selectedVariant.flavor})
+                                    </p>
+                                )}
 
                                 {/* Sold Progress */}
                                 {hasDiscount() && product.soldCount != null && product.soldCount > 0 && (
@@ -545,11 +540,11 @@ export default function ProductDetailPage() {
                             </div>
 
                             {/* Freeship Progress */}
-                            <div className={`p-5 rounded-2xl border-2 transition-all ${getCurrentPrice() >= 50
+                            <div className={`p-5 rounded-2xl border-2 transition-all ${getCurrentPrice() >= FREE_SHIPPING_THRESHOLD_USD
                                     ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200'
                                     : 'bg-gradient-to-r from-blue-50 to-sky-50 border-blue-200'
                                 }`}>
-                                {getCurrentPrice() >= 50 ? (
+                                {getCurrentPrice() >= FREE_SHIPPING_THRESHOLD_USD ? (
                                     <div className="flex items-center gap-3">
                                         <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-green-500/30">
                                             <Truck className="w-6 h-6 text-white" />
@@ -574,7 +569,7 @@ export default function ProductDetailPage() {
                                             />
                                         </div>
                                         <p className="text-sm text-blue-600 font-medium">
-                                        {t("cart.addMoreForFreeShip").replace("{amount}", `$${(FREE_SHIPPING_THRESHOLD_USD - getCurrentPrice()).toFixed(2)}`)}
+                                        {t("cart.addMoreForFreeShip").replace("{amount}", formatPrice(FREE_SHIPPING_THRESHOLD_USD - getCurrentPrice()))}
                                         </p>
                                     </div>
                                 )}
@@ -625,22 +620,13 @@ export default function ProductDetailPage() {
                             <div className="space-y-5 pt-6 border-t border-slate-200">
                                 <div className="flex items-center gap-5">
                                     <span className="text-sm font-bold uppercase tracking-widest text-slate-400">{t("common.quantity")}:</span>
-                                    <div className="flex items-center border-2 border-slate-200 rounded-2xl p-1 bg-white shadow-inner">
-                                        <button
-                                            onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                            className="w-12 h-12 flex items-center justify-center hover:bg-slate-50 rounded-xl transition-colors text-slate-600 font-bold"
-                                        >
-                                            <Minus className="w-5 h-5" />
-                                        </button>
-                                        <span className="px-8 font-black text-xl">{quantity}</span>
-                                        <button
-                                            onClick={() => setQuantity(Math.min(getCurrentInventory(), quantity + 1))}
-                                            disabled={quantity >= getCurrentInventory()}
-                                            className="w-12 h-12 flex items-center justify-center hover:bg-slate-50 rounded-xl transition-colors text-slate-600 font-bold disabled:opacity-40"
-                                        >
-                                            <Plus className="w-5 h-5" />
-                                        </button>
-                                    </div>
+                                    <QuantitySelector
+                                        value={quantity}
+                                        min={1}
+                                        max={getCurrentInventory()}
+                                        onChange={(val) => setQuantity(val)}
+                                        size="lg"
+                                    />
                                 </div>
 
                                 {/* Action Buttons */}
@@ -693,44 +679,7 @@ export default function ProductDetailPage() {
                             </div>
 
                             {/* Trust Badges */}
-                            <div className="grid grid-cols-2 gap-4 pt-6">
-                                <div className="flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
-                                        <Truck className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-slate-800">{t("shop.fastDelivery")}</p>
-                                        <p className="text-xs text-slate-500">{t("shop.deliveryDays")}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                                        <Shield className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-slate-800">{t("shop.qualityGuarantee")}</p>
-                                        <p className="text-xs text-slate-500">{t("shop.authentic")}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br from-blue-50 to-sky-50 border border-blue-100">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-sky-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                                        <RefreshCw className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-slate-800">{t("shop.easyReturn")}</p>
-                                        <p className="text-xs text-slate-500">{t("shop.returnDays")}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-100">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
-                                        <CreditCard className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-slate-800">{t("shop.securePayment")}</p>
-                                        <p className="text-xs text-slate-500">{t("shop.multiplePayments")}</p>
-                                    </div>
-                                </div>
-                            </div>
+                            <TrustBadgesRow t={t} />
                         </motion.div>
                     </div>
 
@@ -888,16 +837,33 @@ export default function ProductDetailPage() {
                         />
                     </motion.div>
 
-                    {/* Q&A Section */}
+                    {/* Customer Reviews Section */}
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         className="mb-16"
                     >
-                        <ProductQA
-                            productSlug={product.slug || ""}
-                            productName={product.name}
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                                <Star className="w-7 h-7 text-white" />
+                            </div>
+                            <div className="flex-1">
+                                <h2 className="text-3xl font-black uppercase tracking-tight text-slate-900">
+                                    {t("shop.customerReviews")}
+                                </h2>
+                                <p className="text-slate-500 text-sm font-medium mt-1">
+                                    {t("shop.beFirstReview")}
+                                </p>
+                            </div>
+                            <WriteReviewButton
+                                productId={product.id}
+                                productName={product.name}
+                                productImage={product.image || undefined}
+                            />
+                        </div>
+                        <ReviewSummaryAI
+                            productId={product.id}
                         />
                     </motion.div>
 
@@ -932,6 +898,17 @@ export default function ProductDetailPage() {
                     )}
                 </div>
             </div>
+            {/* Sticky Buy Bar - Mobile Only */}
+            <StickyBuyBar
+                productName={product.name}
+                price={getCurrentPrice()}
+                originalPrice={hasDiscount() ? getOriginalPrice() : undefined}
+                inStock={getCurrentInventory() > 0}
+                isAddingToCart={isAddingToCart}
+                onAddToCart={handleAddToCart}
+                onBuyNow={handleBuyNow}
+                t={t}
+            />
         </div>
     );
 }

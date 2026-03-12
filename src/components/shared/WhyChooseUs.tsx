@@ -10,6 +10,8 @@
 import { motion } from "framer-motion";
 import { Shield, Truck, RotateCcw, Lock, Headphones, Award } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/context";
+import { FREE_SHIPPING_THRESHOLD_USD } from "@/lib/commerce";
+import { formatPrice } from "@/lib/currency";
 
 export default function WhyChooseUs() {
     const { t, language } = useLanguage();
@@ -25,7 +27,9 @@ export default function WhyChooseUs() {
         {
             icon: Truck,
             title: language === "vi" ? "Miễn phí ship" : "Free Shipping",
-            description: language === "vi" ? "Đơn hàng trên $500 giao miễn phí toàn quốc" : "Free nationwide shipping on orders over $500",
+            description: language === "vi" 
+                ? `Đơn hàng trên ${formatPrice(FREE_SHIPPING_THRESHOLD_USD)} giao miễn phí toàn quốc` 
+                : `Free nationwide shipping on orders over ${formatPrice(FREE_SHIPPING_THRESHOLD_USD)}`,
             gradient: "from-blue-500 to-cyan-400",
             glow: "rgba(59,130,246,0.20)",
         },
@@ -60,7 +64,7 @@ export default function WhyChooseUs() {
     ];
 
     return (
-        <section className="relative py-20 md:py-28 bg-gradient-to-b from-slate-50/60 via-white to-slate-50/60 overflow-hidden">
+        <section className="relative py-7 md:py-10 bg-gradient-to-b from-slate-50/60 via-white to-slate-50/60 overflow-hidden">
             {/* Ambient glows */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-0 right-1/3 w-[600px] h-[400px] bg-amber-50/60 rounded-full blur-3xl" />
@@ -69,12 +73,12 @@ export default function WhyChooseUs() {
 
             <div className="relative page-container-wide">
                 {/* Section Header */}
-                <div className="text-center mb-14 md:mb-20">
+                <div className="text-center mb-8 md:mb-10">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
-                        className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary rounded-full px-4 py-1.5 text-sm font-semibold mb-5"
+                        className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary rounded-full px-3 py-1 text-xs font-semibold mb-3"
                     >
                         <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                         {language === "vi" ? "Cam kết của chúng tôi" : "Our Promise"}
@@ -85,7 +89,7 @@ export default function WhyChooseUs() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: 0.1 }}
-                        className="text-4xl md:text-5xl xl:text-6xl font-black text-slate-900 mb-4 leading-tight"
+                        className="text-2xl md:text-3xl xl:text-4xl font-black text-slate-900 mb-3 leading-tight"
                     >
                         {t("home.whyChooseUs")}{" "}
                         <span className="bg-gradient-to-r from-primary to-cyan-500 bg-clip-text text-transparent">
@@ -107,7 +111,7 @@ export default function WhyChooseUs() {
                 </div>
 
                 {/* Reasons Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-5 md:gap-7">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                     {reasons.map((reason, index) => (
                         <motion.div
                             key={reason.title}
@@ -123,7 +127,7 @@ export default function WhyChooseUs() {
                             <motion.div
                                 whileHover={{ y: -10, scale: 1.02 }}
                                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                className="relative h-full bg-white rounded-3xl p-7 md:p-9 border border-slate-100 group overflow-hidden cursor-default"
+                                className="relative h-full bg-white rounded-2xl p-5 md:p-6 border border-slate-100 group overflow-hidden cursor-default"
                                 style={{
                                     boxShadow: `0 4px 24px -4px rgba(0,0,0,0.07), 0 12px 40px -8px ${reason.glow}`,
                                 }}
@@ -143,7 +147,7 @@ export default function WhyChooseUs() {
                                 <motion.div
                                     whileHover={{ rotate: [0, -8, 8, 0], scale: 1.1 }}
                                     transition={{ duration: 0.5 }}
-                                    className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br ${reason.gradient} flex items-center justify-center mb-6 shadow-lg`}
+                                    className={`w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br ${reason.gradient} flex items-center justify-center mb-4 shadow-lg`}
                                 >
                                     <reason.icon className="w-7 h-7 md:w-8 md:h-8 text-white drop-shadow" />
                                 </motion.div>

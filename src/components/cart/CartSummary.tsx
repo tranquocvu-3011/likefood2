@@ -14,6 +14,7 @@ import { Truck } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/context";
 import { DEFAULT_SHIPPING_FEE_USD, FREE_SHIPPING_THRESHOLD_USD } from "@/lib/commerce";
+import PriceDisplay from "@/components/ui/price-display";
 
 interface CartSummaryProps {
     selectedTotal: number;
@@ -83,32 +84,32 @@ export function CartSummary({
                 <h2 className="font-black text-xl mb-6">{t("cart.orderSummary")}</h2>
 
                 <div className="space-y-4 text-sm">
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                         <span className="text-slate-600">{language === "vi" ? "Tạm tính" : "Subtotal"} ({selectedCount} {language === "vi" ? "sản phẩm" : "items"})</span>
-                        <span className="font-bold">{formatPrice(subtotal)}</span>
+                        <PriceDisplay currentPrice={subtotal} size="md" showDiscountBadge={false} />
                     </div>
 
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                         <span className="text-slate-600">{t("cart.shipping")}</span>
                         <span className="font-bold">
                             {shipping === 0 ? (
                                 <span className="text-green-600">{t("cart.free")}</span>
                             ) : (
-                                formatPrice(shipping)
+                                <PriceDisplay currentPrice={shipping} size="md" showDiscountBadge={false} />
                             )}
                         </span>
                     </div>
 
                     {discount > 0 && (
-                        <div className="flex justify-between">
+                        <div className="flex justify-between items-center">
                             <span className="text-slate-600">{t("cart.discount")}</span>
                             <span className="font-bold text-green-600">-{formatPrice(discount)}</span>
                         </div>
                     )}
 
-                    <div className="border-t border-slate-100 pt-4 flex justify-between">
+                    <div className="border-t border-slate-100 pt-4 flex justify-between items-center">
                         <span className="font-black text-lg">{t("cart.total")}</span>
-                        <span className="font-black text-xl text-primary">{formatPrice(total)}</span>
+                        <PriceDisplay currentPrice={total} size="md" />
                     </div>
                 </div>
 

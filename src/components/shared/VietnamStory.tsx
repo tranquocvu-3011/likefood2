@@ -23,7 +23,7 @@ const steps = [
         border: "border-blue-100",
         accent: "text-blue-600",
         ring: "ring-blue-200",
-        stat: "500+ nguồn hàng",
+        stat: "100+ nguồn hàng",
         statIcon: Star,
     },
     {
@@ -60,9 +60,9 @@ const steps = [
 const floatingDots = [
     { cx: 10, cy: 20, r: 3, delay: 0 },
     { cx: 90, cy: 15, r: 5, delay: 0.5 },
-    { cx: 5,  cy: 70, r: 4, delay: 1 },
+    { cx: 5, cy: 70, r: 4, delay: 1 },
     { cx: 95, cy: 65, r: 3, delay: 1.5 },
-    { cx: 50, cy: 5,  r: 6, delay: 0.8 },
+    { cx: 50, cy: 5, r: 6, delay: 0.8 },
     { cx: 30, cy: 90, r: 4, delay: 0.3 },
     { cx: 70, cy: 85, r: 3, delay: 1.2 },
 ];
@@ -74,7 +74,7 @@ export default function VietnamStory() {
     const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
 
     return (
-        <section ref={sectionRef} className="relative py-12 md:py-20 overflow-hidden bg-gradient-to-br from-slate-50 via-white to-emerald-50/40">
+        <section ref={sectionRef} className="relative py-6 md:py-10 overflow-hidden bg-gradient-to-br from-slate-50 via-white to-emerald-50/40">
             {/* Light background glows */}
             <motion.div style={{ y: bgY }} className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-[-20%] left-[-15%] w-[60%] h-[70%] bg-emerald-200/40 rounded-full blur-[140px]" />
@@ -131,7 +131,7 @@ export default function VietnamStory() {
                     >
                         🇻🇳 Hành trình của chúng tôi
                     </motion.span>
-                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 leading-none tracking-tight mb-3">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 leading-none tracking-tight mb-3">
                         Từ <span className="relative inline-block">
                             <span className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 bg-clip-text text-transparent">
                                 Việt Nam
@@ -261,7 +261,7 @@ export default function VietnamStory() {
                         {/* Trust stats row */}
                         <div className="flex flex-wrap justify-center gap-6 mt-5">
                             {[
-                                { value: "500+", label: "Sản phẩm đặc sản" },
+                                { value: "100+", label: "Sản phẩm đặc sản" },
                                 { value: "2–3", label: "Ngày giao hàng" },
                                 { value: "10K+", label: "Khách hàng tin dùng" },
                                 { value: "100%", label: "Chính hãng" },

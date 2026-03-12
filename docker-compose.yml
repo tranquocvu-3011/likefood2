@@ -79,6 +79,24 @@ services:
     networks:
       - weblikefood_net
 
+  # ─── phpMyAdmin ────────────────────────────────────────────
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: weblikefood_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 128M
+      MAX_EXECUTION_TIME: 600
+      MEMORY_LIMIT: 512M
+    depends_on:
+      - mysql
+    ports:
+      - "127.0.0.1:8080:80"   # Chỉ bind localhost — KHÔNG mở ra internet
+    networks:
+      - weblikefood_net
+
 volumes:
   mysql_data:
   redis_data:

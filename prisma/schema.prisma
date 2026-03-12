@@ -1,13 +1,7 @@
-// LIKEFOOD - Vietnamese Specialty Marketplace
-// Copyright (c) 2026 Trần Quốc Vũ
-// Licensed under the MIT License
-// https://github.com/tranquocvu-3011/likefood
-
 generator client {
   provider        = "prisma-client-js"
   output          = "../src/generated/client"
-  // M-04: Enable full-text search on MySQL (requires @@fulltext in models)
-  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+  previewFeatures = ["fullTextIndex", "fullTextSearch"]
 }
 
 datasource db {
@@ -16,34 +10,34 @@ datasource db {
 }
 
 model user {
-  id                String             @id @default(cuid())
-  email             String             @unique
-  password          String?
-  name              String?
-  role              String             @default("USER")
-  emailVerified     DateTime?
-  image             String?            @db.LongText
-  phone             String?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @default(now()) @updatedAt
-  avatarUrl         String?            @db.VarChar(512)
-  lastCheckIn       DateTime?
-  points            Int                @default(0)
-  twoFactorEnabled       Boolean            @default(false)
-  notificationPreferences Json?
-  activeSessions    activesession[]
-  addresses         address[]
-  cart              cart?
-  loginHistory      loginhistory[]
-  notifications     notification[]
-  orders            order[]
-  pointTransactions pointtransaction[]
-  productQAs        productqa[]
-  refundRequests    refundrequest[]
-  reviews           review[]
-  twoFactorTokens   twofactortoken[]
-  userVouchers      uservoucher[]
-  wishlists         wishlist[]
+  id                      String             @id @default(cuid())
+  email                   String             @unique
+  password                String?
+  name                    String?
+  role                    String             @default("USER")
+  emailVerified           DateTime?
+  image                   String?            @db.LongText
+  phone                   String?
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @default(now()) @updatedAt
+  avatarUrl               String?            @db.VarChar(512)
+  lastCheckIn             DateTime?
+  points                  Int                @default(0)
+  twoFactorEnabled        Boolean            @default(false)
+  notificationPreferences String?            @db.LongText
+  activeSessions          activesession[]
+  addresses               address[]
+  cart                    cart?
+  loginHistory            loginhistory[]
+  notifications           notification[]
+  orders                  order[]
+  pointTransactions       pointtransaction[]
+  productQAs              productqa[]
+  refundRequests          refundrequest[]
+  reviews                 review[]
+  twoFactorTokens         twofactortoken[]
+  userVouchers            uservoucher[]
+  wishlists               wishlist[]
 }
 
 model verificationtoken {
@@ -128,7 +122,6 @@ model product {
   id                String                 @id @default(cuid())
   name              String
   slug              String?                @unique
-  code              String?                @unique
   description       String                 @db.Text
   price             Float
   salePrice         Float?
@@ -137,25 +130,31 @@ model product {
   isOnSale          Boolean                @default(false)
   badgeText         String?
   image             String?
+  // Legacy category name (will be migrated to Category relation)
   category          String
-  weight            String?
+  categoryId        String?
   inventory         Int                    @default(0)
   featured          Boolean                @default(false)
+  // Controls whether product should be visible on storefront
+  isVisible         Boolean                @default(true)
   brandId           String?
   originalPrice     Float?
+  // Legacy tags CSV (will be migrated to Tag relation)
   tags              String?
   ratingAvg         Float                  @default(0)
   ratingCount       Int                    @default(0)
   soldCount         Int                    @default(0)
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @default(now()) @updatedAt
-  // DB-03: Soft delete support
+  code              String?                @unique
+  weight            String?
   deletedAt         DateTime?
   isDeleted         Boolean                @default(false)
   cartItems         cartitem[]
   flashSaleProducts flashsaleproduct[]
   orderItems        orderitem[]
   brand             brand?                 @relation(fields: [brandId], references: [id])
+  categoryRel       category?              @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   productImages     productimage[]
   productMedia      productmedia[]
   productQAs        productqa[]
@@ -164,16 +163,65 @@ model product {
   productVariants   productvariant[]
   productViews      productview[]
   reviews           review[]
+  productTags       producttag[]
   wishlists         wishlist[]
 
   @@index([brandId])
   @@index([category])
+  @@index([categoryId])
   @@index([isOnSale])
   @@index([featured])
+  @@index([isVisible])
   @@index([soldCount])
   @@index([ratingAvg])
-  // M-04: Full-text search index — use with prisma.$queryRaw MATCH AGAINST for fast search
   @@fulltext([name, description])
+}
+
+model category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?    @db.Text
+  imageUrl    String?    @db.VarChar(512)
+  parentId    String?
+  position    Int        @default(0)
+  isVisible   Boolean    @default(true)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  parent      category?  @relation("CategoryParent", fields: [parentId], references: [id], onDelete: SetNull)
+  children    category[] @relation("CategoryParent")
+  products    product[]
+
+  @@index([parentId])
+  @@index([position])
+  @@index([isVisible])
+  @@index([isActive])
+}
+
+model tag {
+  id        String      @id @default(cuid())
+  name      String
+  slug      String      @unique
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  products  producttag[]
+
+  @@index([isActive])
+}
+
+model producttag {
+  productId String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  product   product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag       tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+  @@index([tagId])
 }
 
 model productimage {
@@ -563,115 +611,6 @@ model productshipping {
   product       product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
-// =====================================================
-// AI & Analytics Models - Added for AI Upgrade Plan
-// =====================================================
-
-/// Behavior event tracking for AI personalization
-model behaviorEvent {
-  id          String   @id @default(cuid())
-  userId      String?
-  sessionId   String
-  eventType   String
-  eventData   Json?
-  url         String?  @db.VarChar(500)
-  referrer    String?  @db.VarChar(500)
-  deviceType  String   @default("desktop") // mobile, desktop, tablet
-  createdAt   DateTime @default(now())
-
-  @@index([userId])
-  @@index([sessionId])
-  @@index([eventType])
-  @@index([createdAt])
-}
-
-/// User segments for AI personalization
-model userSegment {
-  id            String   @id @default(cuid())
-  userId        String
-  segment       String   // new_user, browser, cart_abandoner, repeat_customer, vip, etc.
-  score         Float    @default(1.0) // Confidence score
-  calculatedAt DateTime @default(now())
-  expiresAt     DateTime?
-
-  @@unique([userId, segment])
-  @@index([segment])
-}
-
-/// AI Knowledge Base for chatbot
-model aiKnowledge {
-  id          String   @id @default(cuid())
-  category    String   // faq, policy, product, shipping, payment, etc.
-  question    String?  @db.Text // For Q&A type
-  answer      String   @db.LongText
-  keywords    String?  // Comma-separated keywords for search
-  language    String   @default("vi") // vi, en, both
-  priority    Int      @default(0) // Higher = more important
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([category])
-  @@index([language])
-  @@index([isActive])
-}
-
-/// Conversation history for chatbot
-model conversationHistory {
-  id          String   @id @default(cuid())
-  userId      String?
-  sessionId   String
-  role        String   // user, assistant
-  message     String   @db.LongText
-  intent      String?  // Detected intent
-  confidence  Float?   // Intent confidence
-  feedback    String?  // positive, negative, neutral
-  createdAt   DateTime @default(now())
-
-  @@index([userId])
-  @@index([sessionId])
-  @@index([createdAt])
-}
-
-/// Email campaigns for AI-driven automation
-model emailCampaign {
-  id              String    @id @default(cuid())
-  name            String
-  triggerType     String    // abandoned_cart, purchase, signup, etc.
-  subject         String
-  body            String    @db.LongText
-  language        String    @default("vi")
-  segmentFilter   Json?     // User segments to target
-  scheduledAt    DateTime?
-  sentCount       Int       @default(0)
-  openCount       Int       @default(0)
-  clickCount      Int       @default(0)
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  @@index([triggerType])
-  @@index([isActive])
-}
-
-/// Push notifications for AI-driven alerts
-model pushNotification {
-  id          String    @id @default(cuid())
-  userId      String
-  type        String    // flash_sale, price_drop, restock, order_update, etc.
-  title       String
-  body        String
-  data        Json?     // Payload data
-  sentAt      DateTime  @default(now())
-  readAt      DateTime?
-  deliveredAt DateTime?
-  clickedAt   DateTime?
-
-  @@index([userId])
-  @@index([type])
-  @@index([sentAt])
-}
-
 model flashsalecampaign {
   id        String             @id @default(cuid())
   name      String
@@ -725,23 +664,212 @@ model newslettersubscriber {
   @@index([subscribedAt])
 }
 
-
-
 /// Individual email queue entries for transactional emails
 model emailqueue {
-  id           String    @id @default(cuid())
-  userId       String?
-  email        String
-  subject      String
-  templateKey  String
-  data         Json?
-  status       String    @default("PENDING")
-  priority     String    @default("NORMAL")
-  scheduledAt  DateTime?
-  sentAt       DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt  
+  id          String    @id @default(cuid())
+  userId      String?
+  email       String
+  subject     String
+  templateKey String
+  data        String?   @db.LongText
+  status      String    @default("PENDING")
+  priority    String    @default("NORMAL")
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
   @@index([userId])
   @@index([status])
   @@index([scheduledAt])
+}
+
+model AiKnowledge {
+  id        String   @id
+  category  String
+  question  String?  @db.Text
+  answer    String   @db.LongText
+  keywords  String?
+  language  String   @default("vi")
+  priority  Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@index([category], map: "aiKnowledge_category_idx")
+  @@index([isActive], map: "aiKnowledge_isActive_idx")
+  @@index([language], map: "aiKnowledge_language_idx")
+  @@map("aiknowledge")
+}
+
+model BehaviorEvent {
+  id         String   @id
+  userId     String?
+  sessionId  String
+  eventType  String
+  eventData  String?  @db.LongText
+  url        String?  @db.VarChar(500)
+  referrer   String?  @db.VarChar(500)
+  deviceType String   @default("desktop")
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt], map: "behaviorEvent_createdAt_idx")
+  @@index([eventType], map: "behaviorEvent_eventType_idx")
+  @@index([sessionId], map: "behaviorEvent_sessionId_idx")
+  @@index([userId], map: "behaviorEvent_userId_idx")
+  @@map("behaviorevent")
+}
+
+model ConversationHistory {
+  id         String   @id
+  userId     String?
+  sessionId  String
+  role       String
+  message    String   @db.LongText
+  intent     String?
+  confidence Float?
+  feedback   String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt], map: "conversationHistory_createdAt_idx")
+  @@index([sessionId], map: "conversationHistory_sessionId_idx")
+  @@index([userId], map: "conversationHistory_userId_idx")
+  @@map("conversationhistory")
+}
+
+model DynamicPage {
+  id              String   @id
+  title           String
+  slug            String   @unique(map: "dynamicPage_slug_key")
+  content         String   @db.LongText
+  excerpt         String?  @db.Text
+  metaTitle       String?
+  metaDescription String?
+  image           String?
+  template        String   @default("default")
+  type            String
+  isPublished     Boolean  @default(true)
+  isDefault       Boolean  @default(false)
+  order           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+
+  @@index([isPublished], map: "dynamicPage_isPublished_idx")
+  @@index([slug], map: "dynamicPage_slug_idx")
+  @@index([type], map: "dynamicPage_type_idx")
+  @@map("dynamicpage")
+}
+
+model emailcampaign {
+  id            String    @id
+  name          String
+  triggerType   String
+  subject       String
+  body          String    @db.LongText
+  language      String    @default("vi")
+  segmentFilter String?   @db.LongText
+  scheduledAt   DateTime?
+  sentCount     Int       @default(0)
+  openCount     Int       @default(0)
+  clickCount    Int       @default(0)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+
+  @@index([isActive], map: "emailCampaign_isActive_idx")
+  @@index([triggerType], map: "emailCampaign_triggerType_idx")
+}
+
+model HomepageSection {
+  id          String    @id
+  key         String    @unique(map: "homepageSection_key_key")
+  title       String?
+  subtitle    String?
+  description String?   @db.Text
+  config      String?   @db.LongText
+  type        String
+  isActive    Boolean   @default(true)
+  position    Int       @default(0)
+  limit       Int       @default(10)
+  startAt     DateTime?
+  endAt       DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+
+  @@index([isActive], map: "homepageSection_isActive_idx")
+  @@index([position], map: "homepageSection_position_idx")
+  @@map("homepagesection")
+}
+
+model MenuItem {
+  id         String    @id
+  name       String
+  slug       String    @unique(map: "menuItem_slug_key")
+  type       String
+  url        String?
+  categoryId String?
+  productId  String?
+  pageId     String?
+  icon       String?
+  parentId   String?
+  position   Int       @default(0)
+  isVisible  Boolean   @default(true)
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime
+
+  parent     MenuItem?  @relation("MenuItemParent", fields: [parentId], references: [id], onDelete: SetNull, map: "menuItem_parentId_fkey")
+  children   MenuItem[] @relation("MenuItemParent")
+
+  @@index([isVisible], map: "menuItem_isVisible_idx")
+  @@index([parentId], map: "menuItem_parentId_idx")
+  @@index([position], map: "menuItem_position_idx")
+  @@map("menuitem")
+}
+
+model PushNotification {
+  id          String    @id
+  userId      String
+  type        String
+  title       String
+  body        String
+  data        String?   @db.LongText
+  sentAt      DateTime  @default(now())
+  readAt      DateTime?
+  deliveredAt DateTime?
+  clickedAt   DateTime?
+
+  @@index([sentAt], map: "pushNotification_sentAt_idx")
+  @@index([type], map: "pushNotification_type_idx")
+  @@index([userId], map: "pushNotification_userId_idx")
+  @@map("pushnotification")
+}
+
+model SiteConfig {
+  id          String   @id
+  key         String   @unique(map: "siteConfig_key_key")
+  value       String   @db.Text
+  type        String   @default("text")
+  category    String   @default("general")
+  description String?
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+
+  @@index([category], map: "siteConfig_category_idx")
+  @@index([key], map: "siteConfig_key_idx")
+  @@map("siteconfig")
+}
+
+model UserSegment {
+  id           String    @id
+  userId       String
+  segment      String
+  score        Float     @default(1)
+  calculatedAt DateTime  @default(now())
+  expiresAt    DateTime?
+
+  @@unique([userId, segment], map: "userSegment_userId_segment_key")
+  @@index([segment], map: "userSegment_segment_idx")
+  @@map("usersegment")
 }

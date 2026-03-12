@@ -13,7 +13,7 @@ import { Zap, Mail, Loader2, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n/context";
-import MathCaptcha from "@/components/auth/MathCaptcha";
+import { CaptchaField } from "@/components/auth/CaptchaField";
 
 function MagicLinkContent() {
     const { t } = useLanguage();
@@ -21,6 +21,7 @@ function MagicLinkContent() {
     const [isLoading, setIsLoading] = useState(false);
     const [isSent, setIsSent] = useState(false);
     const [isCaptchaValid, setIsCaptchaValid] = useState(false);
+    const [turnstileToken, setTurnstileToken] = useState("");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -35,7 +36,7 @@ function MagicLinkContent() {
             const res = await fetch("/api/auth/magic-link", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify({ email, turnstileToken }),
             });
             let data: { message?: string; error?: string } = {};
             try {
@@ -109,7 +110,7 @@ function MagicLinkContent() {
                             </div>
 
                             <div className="py-2">
-                                <MathCaptcha onValidate={setIsCaptchaValid} />
+                                <CaptchaField onToken={setTurnstileToken} onValidChange={setIsCaptchaValid} />
                             </div>
 
                             <button

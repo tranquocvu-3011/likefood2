@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
     await prisma.user.update({
       where: { id: userId },
       data: {
-        notificationPreferences: preferences as unknown as Prisma.InputJsonValue,
+        notificationPreferences: JSON.stringify(preferences),
       },
     });
 

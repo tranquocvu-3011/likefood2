@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState } from "react";
 
 interface TurnstileWidgetProps {
+    siteKey?: string;
     onVerify: (token: string) => void;
     onError?: () => void;
     onExpire?: () => void;
@@ -27,13 +28,14 @@ declare global {
 }
 
 export default function TurnstileWidget({
+    siteKey: siteKeyProp,
     onVerify, onError, onExpire, theme = "light"
 }: TurnstileWidgetProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const widgetIdRef = useRef<string | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
 
-    const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
+    const siteKey = (siteKeyProp ?? process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "").trim();
 
     useEffect(() => {
         if (!siteKey) return; // No key configured — skip silently

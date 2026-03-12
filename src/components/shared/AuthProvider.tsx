@@ -11,6 +11,8 @@ import { SessionProvider } from "next-auth/react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { WishlistProvider } from "@/contexts/WishlistContext";
+
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -33,5 +35,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
     }, [router]);
 
-    return <SessionProvider>{children}</SessionProvider>;
+    return (
+        <SessionProvider>
+            <WishlistProvider>
+                {children}
+            </WishlistProvider>
+        </SessionProvider>
+    );
 }

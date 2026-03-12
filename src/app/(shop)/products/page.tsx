@@ -9,12 +9,10 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import Link from "next/link";
-import ProductCard from "@/components/product/ProductCard";
-import { Search, SlidersHorizontal, ChevronDown, ChevronUp, Loader2, X, LayoutGrid, List, Filter, Star, Package, Truck } from "lucide-react";
+import { Search, ChevronUp, Loader2, X, Filter } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ProductGridSkeleton } from "@/components/ui/product-skeleton";
 import { tracking } from "@/lib/tracking";
 import { prefetchCommonRoutes } from "@/lib/prefetch";
 import type { Product, ProductSearchHint } from "@/types/product";
@@ -22,32 +20,27 @@ import { logger } from "@/lib/logger";
 import { useLanguage } from "@/lib/i18n/context";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Sub-components
+import FilterSidebar from "@/components/products/FilterSidebar";
+import SortBar from "@/components/products/SortBar";
+import ActiveFiltersBar from "@/components/products/ActiveFiltersBar";
+import ProductGrid from "@/components/products/ProductGrid";
+
 // Categories will be translated dynamically based on language
 
-// Normalize category slugs / English names → Vietnamese DB-canonical names
-const CATEGORY_TO_DB: Record<string, string> = {
-    // URL slugs
+// Fallback slug → Vietnamese name map (used when API is unavailable)
+const CATEGORY_TO_DB_STATIC: Record<string, string> = {
     "ca-kho": "Cá khô",
     "muc-kho": "Tôm & Mực khô",
     "trai-cay-say": "Trái cây sấy",
     "banh-mut": "Trà & Bánh mứt",
     "gia-vi": "Gia vị Việt",
-    // English display names
-    "Dried Fish": "Cá khô",
-    "Dried Shrimp & Squid": "Tôm & Mực khô",
-    "Dried Fruits": "Trái cây sấy",
-    "Tea & Sweets": "Trà & Bánh mứt",
-    "Vietnamese Spices": "Gia vị Việt",
 };
 
-// Vietnamese canonical name → English display name
-const VI_TO_EN_NAME: Record<string, string> = {
-    "Cá khô": "Dried Fish",
-    "Tôm & Mực khô": "Dried Shrimp & Squid",
-    "Trái cây sấy": "Dried Fruits",
-    "Trà & Bánh mứt": "Tea & Sweets",
-    "Gia vị Việt": "Vietnamese Spices",
-};
+// Fallback category names (used when /api/categories is unavailable)
+const FALLBACK_CATEGORY_NAMES = ["Cá khô", "Tôm & Mực khô", "Trái cây sấy", "Trà & Bánh mứt", "Gia vị Việt"];
+
+type DbCategory = { id: string; name: string; slug: string };
 
 function ProductCatalogContent() {
     const searchParams = useSearchParams();
@@ -55,19 +48,35 @@ function ProductCatalogContent() {
     const { t, language } = useLanguage();
     const querySearch = searchParams.get("search") || "";
 
-    const CATEGORIES = [
-        t("shopPage.allCategories"),
-        language === "vi" ? "Cá khô" : "Dried Fish",
-        language === "vi" ? "Tôm & Mực khô" : "Dried Shrimp & Squid",
-        language === "vi" ? "Trái cây sấy" : "Dried Fruits",
-        language === "vi" ? "Trà & Bánh mứt" : "Tea & Sweets",
-        language === "vi" ? "Gia vị Việt" : "Vietnamese Spices",
-    ];
+    // Dynamic categories from DB (admin panel Category model)
+    const [dbCategories, setDbCategories] = useState<DbCategory[]>([]);
+    useEffect(() => {
+        fetch('/api/categories')
+            .then(r => r.ok ? r.json() : [])
+            .then((data: unknown) => {
+                if (Array.isArray(data) && data.length > 0) setDbCategories(data as DbCategory[]);
+            })
+            .catch(() => {});
+    }, []);
+
+    // Build category list from DB; fallback to static list if API unavailable
+    const categoryNames = dbCategories.length > 0
+        ? dbCategories.map(c => c.name)
+        : FALLBACK_CATEGORY_NAMES;
+
+    const CATEGORIES = [t("shopPage.allCategories"), ...categoryNames];
+
+    // Build slug → Vietnamese name map: merge static fallback with DB slugs
+    const CATEGORY_TO_DB: Record<string, string> = {
+        ...CATEGORY_TO_DB_STATIC,
+        ...Object.fromEntries(dbCategories.map(c => [c.slug, c.name])),
+    };
 
     const TAGS = [
         { id: "gift", label: t("shopPage.tagGift") },
         { id: "diet", label: t("shopPage.tagDiet") },
         { id: "spicy", label: t("shopPage.tagSpicy") },
+        { id: "traditional", label: language === "vi" ? "Truyền thống" : "Traditional" },
     ];
 
     const SORT_OPTIONS = [
@@ -121,7 +130,6 @@ function ProductCatalogContent() {
     const [total, setTotal] = useState(0);
 
     // UI States
-    const [showSortMenu, setShowSortMenu] = useState(false);
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -198,12 +206,9 @@ function ProductCatalogContent() {
     useEffect(() => {
         skipNextUrlSync.current = true;
         setSearchQuery(querySearch);
-        // Normalize slug / English category name → current-language display name
+        // Normalize slug → Vietnamese DB name, then use directly (always VI canonical)
         const viName = CATEGORY_TO_DB[queryCategory] ?? queryCategory;
-        const displayCat = language === "en"
-            ? (VI_TO_EN_NAME[viName] ?? viName)
-            : viName;
-        setSelectedCategory(displayCat || queryCategory);
+        setSelectedCategory(viName || queryCategory);
         setMinPrice(queryMinPrice);
         setMaxPrice(queryMaxPrice);
         setSelectedTags(
@@ -497,9 +502,9 @@ function ProductCatalogContent() {
         <>
         <div className="bg-slate-50 min-h-screen">
             {/* Layout thu gọn: max-width nhỏ lại ~ một nửa so với full width */}
-            <div className="max-w-5xl mx-auto px-4 sm:px-6">
+            <div className="max-w-[82rem] mx-auto px-4 sm:px-6 lg:px-8">
             {/* Header section - Cleaned up to avoid double search bar */}
-            <section className="bg-white pt-10 pb-6 border-b border-slate-100">
+            <section className="bg-white pt-7 pb-5 border-b border-slate-100">
                 <div>
                     {/* Breadcrumbs */}
                     <div className="mb-6 flex items-center gap-2 text-sm">
@@ -512,16 +517,16 @@ function ProductCatalogContent() {
 
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                         <div className="max-w-2xl">
-                            <h1 className="text-4xl font-black uppercase tracking-tighter sm:text-6xl text-black">
+                            <h1 className="text-3xl font-black uppercase tracking-tighter sm:text-5xl text-black">
                                 {t("shopPage.shopTitle")} <span className="text-primary">LIKEFOOD</span>
                             </h1>
-                            <p className="text-muted-foreground mt-2 text-lg">
+                            <p className="text-muted-foreground mt-1.5 text-sm">
                                 {t("shopPage.qualityProducts")}
                             </p>
                         </div>
 
-                        {/* Search bar + total products */}
-                        <div className="w-full md:w-[380px] relative" ref={searchContainerRef}>
+                        {/* Search bar + total products — hidden on mobile to avoid double search bar */}
+                        <div className="hidden md:block w-full md:w-[380px] relative" ref={searchContainerRef}>
                             <div className="bg-slate-900 text-white px-4 py-2 rounded-2xl mb-2 flex items-center justify-between gap-2">
                                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">
                                     {t("shopPage.available")}
@@ -641,8 +646,8 @@ function ProductCatalogContent() {
                 </div>
             </section>
 
-            <div className="py-8">
-                <div className="flex flex-col lg:flex-row gap-12">
+            <div className="py-5">
+                <div className="flex flex-col lg:flex-row gap-6">
                     {/* Mobile: Filter toggle button */}
                     <div className="lg:hidden flex items-center justify-between mb-2">
                         <button
@@ -661,463 +666,89 @@ function ProductCatalogContent() {
                     </div>
 
                     {/* Filters Sidebar — desktop always visible, mobile conditionally shown */}
-                    <div className={`w-full lg:w-56 shrink-0 ${showMobileFilters ? "block" : "hidden lg:block"}`}>
-                        <div className="bg-white/90 backdrop-blur-xl p-4 sm:p-5 rounded-2xl border border-slate-100/80 sticky top-24 shadow-[0_8px_40px_rgba(0,0,0,0.04)]">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-lg font-black uppercase tracking-wider flex items-center gap-2.5">
-                                    <div className="w-8 h-8 rounded-2xl bg-emerald-50 flex items-center justify-center">
-                                        <SlidersHorizontal className="w-4 h-4 text-emerald-600" />
-                                    </div>
-                                    {t("shopPage.filters")}
-                                </h3>
-                                {hasActiveFilters && (
-                                    <button
-                                        onClick={handleClearFilters}
-                                        className="text-[10px] font-black uppercase tracking-widest text-rose-500 hover:text-rose-600 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg transition-all"
-                                    >
-                                        {t("shopPage.clearFilters")}
-                                    </button>
-                                )}
-                            </div>
-
-                            <div className="space-y-5">
-                                <div>
-                                    <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-3 px-1">
-                                        {t("shopPage.productCategories")}
-                                    </h4>
-                                    <div className="flex flex-col gap-1">
-                                        {CATEGORIES.map((cat) => {
-                                            const isActive = selectedCategory === cat;
-                                            const gradient = getCategoryGradient(cat);
-                                            return (
-                                                <button
-                                                    key={cat}
-                                                    onClick={() => setSelectedCategory(cat)}
-                                                    className={`text-left px-4 py-2.5 rounded-2xl text-sm font-bold transition-all duration-200 ${isActive
-                                                        ? `bg-gradient-to-r ${gradient} text-white shadow-md scale-[1.02]`
-                                                        : "text-slate-600 hover:bg-slate-50 hover:pl-5"
-                                                        }`}
-                                                >
-                                                    {cat}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                <div className="pt-5 border-t border-slate-100/80">
-                                    <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-3 px-1">
-                                        {t("shopPage.priceRange")}
-                                    </h4>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <input
-                                            type="number"
-                                            placeholder={t("shopPage.priceFrom")}
-                                            value={minPrice}
-                                            onChange={(e) => setMinPrice(e.target.value)}
-                                            className="bg-slate-50/80 px-3.5 py-2.5 rounded-2xl text-sm font-bold border border-slate-100 focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 outline-none transition-all"
-                                        />
-                                        <input
-                                            type="number"
-                                            placeholder={t("shopPage.priceTo")}
-                                            value={maxPrice}
-                                            onChange={(e) => setMaxPrice(e.target.value)}
-                                            className="bg-slate-50/80 px-3.5 py-2.5 rounded-2xl text-sm font-bold border border-slate-100 focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 outline-none transition-all"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="pt-5 border-t border-slate-100/80">
-                                    <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-3 px-1">
-                                        {t("shopPage.tags")}
-                                    </h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {TAGS.map((tag) => {
-                                            const isSelected = selectedTags.includes(tag.id);
-                                            return (
-                                                <button
-                                                    key={tag.id}
-                                                    onClick={() => {
-                                                        if (isSelected) {
-                                                            setSelectedTags(selectedTags.filter(t => t !== tag.id));
-                                                        } else {
-                                                            setSelectedTags([...selectedTags, tag.id]);
-                                                        }
-                                                    }}
-                                                    className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all duration-200 ${isSelected
-                                                        ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20 scale-105"
-                                                        : "text-slate-600 hover:bg-slate-50 bg-white border border-slate-100 hover:border-slate-200"
-                                                        }`}
-                                                >
-                                                    {tag.label}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                <div className="pt-5 border-t border-slate-100/80">
-                                    <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-3 px-1">
-                                        {t("shopPage.rating")}
-                                    </h4>
-                                    <button
-                                        onClick={() => setMinRating(minRating === 4 ? 0 : 4)}
-                                        className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-xs transition-all duration-200 ${minRating === 4
-                                            ? "bg-amber-50 text-amber-700 border border-amber-200 shadow-sm"
-                                            : "text-slate-600 hover:bg-slate-50 bg-white border border-slate-100"
-                                            }`}
-                                    >
-                                        <span className="text-amber-400">⭐</span> {t("shopPage.ratingAbove4")}
-                                    </button>
-                                </div>
-
-                                <div className="pt-5 border-t border-slate-100/80 space-y-3">
-                                    <label className="flex items-center gap-3 cursor-pointer group">
-                                        <input
-                                            type="checkbox"
-                                            checked={inStockOnly}
-                                            onChange={(e) => { setInStockOnly(e.target.checked); setPage(1); }}
-                                            className="w-4.5 h-4.5 rounded-md border-slate-300 text-emerald-500 focus:ring-emerald-300 transition-all"
-                                        />
-                                        <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">
-                                            {t("shopPage.inStockOnly")}
-                                        </span>
-                                    </label>
-                                    <label className="flex items-center gap-3 cursor-pointer group">
-                                        <input
-                                            type="checkbox"
-                                            checked={freeShippingOnly}
-                                            onChange={(e) => { setFreeShippingOnly(e.target.checked); setPage(1); }}
-                                            className="w-4.5 h-4.5 rounded-md border-slate-300 text-emerald-500 focus:ring-emerald-300 transition-all"
-                                        />
-                                        <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">
-                                            {t("shopPage.freeShippingOnly")}
-                                        </span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
+                    <div className={`w-full lg:w-64 shrink-0 ${showMobileFilters ? "block" : "hidden lg:block"}`}>
+                        <FilterSidebar
+                            categories={CATEGORIES}
+                            tags={TAGS}
+                            selectedCategory={selectedCategory}
+                            minPrice={minPrice}
+                            maxPrice={maxPrice}
+                            selectedTags={selectedTags}
+                            minRating={minRating}
+                            inStockOnly={inStockOnly}
+                            freeShippingOnly={freeShippingOnly}
+                            hasActiveFilters={hasActiveFilters}
+                            onCategoryChange={setSelectedCategory}
+                            onMinPriceChange={setMinPrice}
+                            onMaxPriceChange={setMaxPrice}
+                            onTagsChange={setSelectedTags}
+                            onRatingChange={setMinRating}
+                            onInStockChange={setInStockOnly}
+                            onFreeShippingChange={setFreeShippingOnly}
+                            onClearFilters={handleClearFilters}
+                            onPageReset={() => setPage(1)}
+                            getCategoryGradient={getCategoryGradient}
+                        />
                     </div>
 
-                    {/* Product Grid */}
+                    {/* Product Grid Area */}
                     <div className="flex-1">
-                        <div className="flex flex-wrap justify-between items-start gap-3 mb-8">
-                            <div className="bg-white/80 backdrop-blur-sm border border-slate-200 px-5 py-3 rounded-2xl shadow-sm">
-                                <p className="text-slate-600 font-bold text-sm">
-                                    {t("shopPage.showing")} <span className="text-emerald-600 font-black px-1.5 py-0.5 bg-emerald-50 rounded-md">{total}</span> {t("shopPage.productsLabel")}
-                                    {selectedCategory !== t("shopPage.allCategories") && (
-                                        <> {t("shopPage.inCategory")} <span className="text-slate-900 font-black tracking-wide">&quot;{selectedCategory}&quot;</span></>
-                                    )}
-                                    {debouncedSearch && (
-                                        <> {t("shopPage.forSearch")} <span className="text-slate-900 font-black tracking-wide">&quot;{debouncedSearch}&quot;</span></>
-                                    )}
-                                </p>
-                            </div>
+                        <SortBar
+                            total={total}
+                            selectedCategory={selectedCategory}
+                            debouncedSearch={debouncedSearch}
+                            sort={sort}
+                            sortOptions={SORT_OPTIONS}
+                            onSortChange={setSort}
+                            viewMode={viewMode}
+                            onViewModeChange={setViewMode}
+                            itemsPerPage={itemsPerPage}
+                            onItemsPerPageChange={setItemsPerPage}
+                            onPageReset={() => setPage(1)}
+                        />
 
-                            <div className="flex items-center gap-3 flex-wrap">
-                            {/* Items per page */}
-                            <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl px-3 py-2.5 shadow-sm">
-                                <span className="text-xs font-bold text-slate-500">{language === "vi" ? "Hiển thị" : "Show"}:</span>
-                                {[12, 24, 48].map(n => (
-                                    <button
-                                        key={n}
-                                        onClick={() => { setItemsPerPage(n); setPage(1); }}
-                                        className={`w-8 h-7 rounded-xl text-xs font-black transition-all ${itemsPerPage === n ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-100"}`}
-                                    >{n}</button>
-                                ))}
-                            </div>
-
-                            {/* Sort Dropdown */}
-                            <div className="relative">
-                                <button
-                                    onClick={() => setShowSortMenu(!showSortMenu)}
-                                    className="flex items-center gap-2 font-bold text-sm bg-white px-5 py-3 rounded-2xl border border-slate-100 hover:bg-slate-50 transition-colors"
-                                >
-                                    {t("shopPage.sortBy")} {SORT_OPTIONS.find(opt => opt.value === sort)?.label || t("shopPage.sortNewest")}
-                                    <ChevronDown className={`w-4 h-4 transition-transform ${showSortMenu ? "rotate-180" : ""}`} />
-                                </button>
-
-                                {showSortMenu && (
-                                    <>
-                                        <div
-                                            className="fixed inset-0 z-10"
-                                            onClick={() => setShowSortMenu(false)}
-                                        />
-                                        <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 z-20 overflow-hidden">
-                                            {SORT_OPTIONS.map((option) => (
-                                                <button
-                                                    key={option.value}
-                                                    onClick={() => {
-                                                        setSort(option.value);
-                                                        setShowSortMenu(false);
-                                                    }}
-                                                    className={`w-full text-left px-5 py-3 text-sm font-bold transition-colors ${sort === option.value
-                                                        ? "bg-primary text-white"
-                                                        : "text-slate-600 hover:bg-slate-50"
-                                                        }`}
-                                                >
-                                                    {option.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
-                            {/* View Mode Toggle */}
-                            <div className="flex items-center gap-1.5 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl p-1 shadow-sm">
-                                <button
-                                    onClick={() => setViewMode("grid")}
-                                    className={`p-2.5 rounded-2xl transition-all ${viewMode === "grid"
-                                        ? "bg-slate-900 text-white shadow-md"
-                                        : "text-slate-400 hover:text-slate-700 hover:bg-slate-50"
-                                        }`}
-                                    title="Grid View"
-                                >
-                                    <LayoutGrid className="w-4 h-4" />
-                                </button>
-                                <button
-                                    onClick={() => setViewMode("list")}
-                                    className={`p-2.5 rounded-2xl transition-all ${viewMode === "list"
-                                        ? "bg-slate-900 text-white shadow-md"
-                                        : "text-slate-400 hover:text-slate-700 hover:bg-slate-50"
-                                        }`}
-                                    title="List View"
-                                >
-                                    <List className="w-4 h-4" />
-                                </button>
-                            </div>
-                            </div>{/* end right-side controls */}
-                        </div>
-
-                        {/* Applied Filters - Chips (all active filters) */}
                         {hasActiveFilters && (
-                            <div className="flex flex-wrap items-center gap-2 mb-8 p-4 sm:p-5 bg-white rounded-3xl border border-slate-100 shadow-sm">
-                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest shrink-0">{t("shopPage.filtering")}</span>
-
-                                {searchQuery && (
-                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-700 rounded-2xl border border-slate-200">
-                                        <Search className="w-3 h-3 text-slate-400" />
-                                        <span className="text-xs font-bold">&quot;{searchQuery}&quot;</span>
-                                        <button onClick={() => { setSearchQuery(""); setPage(1); }} className="hover:bg-slate-200 rounded-full p-0.5 transition-colors text-slate-400 hover:text-slate-900"><X className="w-3 h-3" /></button>
-                                    </div>
-                                )}
-
-                                {selectedCategory !== t("shopPage.allCategories") && (
-                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-2xl border border-primary/20">
-                                        <Package className="w-3 h-3" />
-                                        <span className="text-xs font-bold">{selectedCategory}</span>
-                                        <button onClick={() => { setSelectedCategory(t("shopPage.allCategories")); setPage(1); }} className="hover:bg-primary/20 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
-                                    </div>
-                                )}
-
-                                {(minPrice || maxPrice) && (
-                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-700 rounded-2xl border border-slate-200">
-                                        <span className="text-xs font-bold">
-                                            {t("shopPage.priceLabel")} {minPrice ? formatPrice(Number(minPrice)) : "0"} – {maxPrice ? formatPrice(Number(maxPrice)) : "∞"}
-                                        </span>
-                                        <button onClick={() => { setMinPrice(""); setMaxPrice(""); setPage(1); }} className="hover:bg-slate-200 rounded-full p-0.5 transition-colors text-slate-400 hover:text-slate-900"><X className="w-3 h-3" /></button>
-                                    </div>
-                                )}
-
-                                {selectedTags.map(tag => {
-                                    const tagLabel = TAGS.find(t => t.id === tag)?.label ?? tag;
-                                    return (
-                                        <div key={tag} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-200">
-                                            <span className="text-xs font-bold">{tagLabel}</span>
-                                            <button onClick={() => { setSelectedTags(prev => prev.filter(t => t !== tag)); setPage(1); }} className="hover:bg-emerald-200 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
-                                        </div>
-                                    );
-                                })}
-
-                                {minRating > 0 && (
-                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-2xl border border-amber-200">
-                                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                                        <span className="text-xs font-bold">{minRating}+</span>
-                                        <button onClick={() => { setMinRating(0); setPage(1); }} className="hover:bg-amber-200 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
-                                    </div>
-                                )}
-
-                                {inStockOnly && (
-                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-2xl border border-green-200">
-                                        <span className="text-xs font-bold">{language === "vi" ? "Còn hàng" : "In stock"}</span>
-                                        <button onClick={() => { setInStockOnly(false); setPage(1); }} className="hover:bg-green-200 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
-                                    </div>
-                                )}
-
-                                {freeShippingOnly && (
-                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-700 rounded-2xl border border-sky-200">
-                                        <Truck className="w-3 h-3" />
-                                        <span className="text-xs font-bold">{language === "vi" ? "Miễn ship" : "Free ship"}</span>
-                                        <button onClick={() => { setFreeShippingOnly(false); setPage(1); }} className="hover:bg-sky-200 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
-                                    </div>
-                                )}
-
-                                {sort !== "newest" && (
-                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 text-violet-700 rounded-2xl border border-violet-200">
-                                        <span className="text-xs font-bold">{SORT_OPTIONS.find(o => o.value === sort)?.label}</span>
-                                        <button onClick={() => { setSort("newest"); setPage(1); }} className="hover:bg-violet-200 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
-                                    </div>
-                                )}
-
-                                <button
-                                    onClick={handleClearFilters}
-                                    className="ml-auto px-3 py-1.5 text-[10px] font-bold text-rose-500 hover:bg-rose-50 rounded-2xl border border-rose-100 hover:border-rose-200 transition-colors uppercase tracking-widest"
-                                >
-                                    {t("shopPage.clearAll")}
-                                </button>
-                            </div>
+                            <ActiveFiltersBar
+                                searchQuery={searchQuery}
+                                selectedCategory={selectedCategory}
+                                minPrice={minPrice}
+                                maxPrice={maxPrice}
+                                selectedTags={selectedTags}
+                                minRating={minRating}
+                                inStockOnly={inStockOnly}
+                                freeShippingOnly={freeShippingOnly}
+                                sort={sort}
+                                tags={TAGS}
+                                sortOptions={SORT_OPTIONS}
+                                onSearchClear={() => { setSearchQuery(""); setPage(1); }}
+                                onCategoryClear={() => { setSelectedCategory(t("shopPage.allCategories")); setPage(1); }}
+                                onPriceClear={() => { setMinPrice(""); setMaxPrice(""); setPage(1); }}
+                                onTagRemove={(tagId) => { setSelectedTags(prev => prev.filter(t => t !== tagId)); setPage(1); }}
+                                onRatingClear={() => { setMinRating(0); setPage(1); }}
+                                onInStockClear={() => { setInStockOnly(false); setPage(1); }}
+                                onFreeShippingClear={() => { setFreeShippingOnly(false); setPage(1); }}
+                                onSortClear={() => { setSort("newest"); setPage(1); }}
+                                onClearAll={handleClearFilters}
+                            />
                         )}
 
-                        {/* Loading State */}
-                        {isLoading && (
-                            <ProductGridSkeleton count={12} />
-                        )}
-
-                        {/* Error State */}
-                        {error && !isLoading && (
-                            <div className="bg-red-50 border border-red-100 rounded-2xl p-8 text-center">
-                                <p className="text-red-600 font-bold">{error}</p>
-                                <button
-                                    onClick={fetchProducts}
-                                    className="mt-4 px-6 py-3 bg-red-600 text-white rounded-full font-bold hover:bg-red-700 transition-colors"
-                                >
-                                    {t("shopPage.tryAgain")}
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Products Grid */}
-                        {!isLoading && !error && (
-                            <>
-                                {products.length === 0 ? (
-                                    <div className="bg-white rounded-2xl p-20 text-center">
-                                        <p className="text-xl font-black uppercase tracking-tighter mb-2">
-                                            {t("shopPage.noProductsFound")}
-                                        </p>
-                                        <p className="text-slate-500 font-medium mb-6">
-                                            {t("shopPage.noResultsFor")}&nbsp;
-                                            {debouncedSearch ? (
-                                                <span className="font-black text-slate-900">
-                                                    “{debouncedSearch}”
-                                                </span>
-                                            ) : (
-                                                t("shopPage.currentFilters")
-                                            )}
-                                            .
-                                        </p>
-
-                                        {/* Gợi ý keyword/cate khi không có kết quả */}
-                                        <div className="mb-6">
-                                            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-3">
-                                                {t("shopPage.quickSuggestions")}
-                                            </p>
-                                            <div className="flex flex-wrap justify-center gap-2">
-                                                {(language === "vi"
-                                                    ? ["cá khô", "mực", "tôm khô", "trái cây sấy"]
-                                                    : ["dried fish", "squid", "dried shrimp", "dried fruits"]
-                                                ).map((suggest) => (
-                                                    <button
-                                                        key={suggest}
-                                                        onClick={() => {
-                                                            setSearchQuery(suggest);
-                                                            setSelectedCategory(t("shopPage.allCategories"));
-                                                            setPage(1);
-                                                        }}
-                                                        className="px-4 py-2 rounded-full bg-slate-50 text-sm font-bold text-slate-600 hover:bg-slate-100"
-                                                    >
-                                                        {suggest}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {hasActiveFilters && (
-                                            <button
-                                                onClick={handleClearFilters}
-                                                className="px-8 py-4 bg-primary text-white rounded-full font-black uppercase tracking-widest hover:bg-primary/90 transition-all"
-                                            >
-                                                {t("shopPage.clearFilters")}
-                                            </button>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className={`transition-all duration-300 ${viewMode === "grid"
-                                            ? "grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-5"
-                                            : "flex flex-col gap-3 sm:gap-4"
-                                            }`}>
-                                            {products.map((product, index) => (
-                                                <div
-                                                    key={product.id}
-                                                    className="w-full animate-in fade-in slide-in-from-bottom-3"
-                                                    style={{ animationDelay: `${index * 40}ms`, animationFillMode: "both" }}
-                                                >
-                                                    <ProductCard
-                                                        product={{
-                                                            ...product,
-                                                            onSale: product.isOnSale,
-                                                            hasVoucher: voucherFlags.hasVoucher,
-                                                            hasFreeship: voucherFlags.hasFreeship,
-                                                        }}
-                                                        viewMode={viewMode}
-                                                    />
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        {/* Pagination */}
-                                        {totalPages > 1 && (
-                                            <div className="mt-20 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-                                                <button
-                                                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                                                    disabled={page === 1}
-                                                    className="px-5 sm:px-6 py-2.5 sm:py-3 bg-white/80 backdrop-blur-sm border border-slate-200 text-slate-700 font-bold uppercase tracking-widest rounded-2xl hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm disabled:opacity-40 disabled:hover:bg-white/80 disabled:hover:text-slate-700 disabled:hover:border-slate-200 disabled:cursor-not-allowed text-[10px] sm:text-xs"
-                                                >
-                                                    {t("shopPage.prevPage")}
-                                                </button>
-
-                                                <div className="flex items-center gap-1.5 sm:gap-2">
-                                                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                                        let pageNum;
-                                                        if (totalPages <= 5) {
-                                                            pageNum = i + 1;
-                                                        } else if (page <= 3) {
-                                                            pageNum = i + 1;
-                                                        } else if (page >= totalPages - 2) {
-                                                            pageNum = totalPages - 4 + i;
-                                                        } else {
-                                                            pageNum = page - 2 + i;
-                                                        }
-
-                                                        return (
-                                                            <button
-                                                                key={pageNum}
-                                                                onClick={() => setPage(pageNum)}
-                                                                className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl sm:rounded-2xl font-black transition-all text-sm sm:text-base ${page === pageNum
-                                                                    ? "bg-slate-900 text-white shadow-lg shadow-slate-900/20"
-                                                                    : "bg-white/80 backdrop-blur-sm border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 hover:border-slate-300"
-                                                                    }`}
-                                                            >
-                                                                {pageNum}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-
-                                                <button
-                                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                                    disabled={page === totalPages}
-                                                    className="px-5 sm:px-6 py-2.5 sm:py-3 bg-white/80 backdrop-blur-sm border border-slate-200 text-slate-700 font-bold uppercase tracking-widest rounded-2xl hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm disabled:opacity-40 disabled:hover:bg-white/80 disabled:hover:text-slate-700 disabled:hover:border-slate-200 disabled:cursor-not-allowed text-[10px] sm:text-xs"
-                                                >
-                                                    {t("shopPage.nextPage")}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-                            </>
-                        )}
+                        <ProductGrid
+                            products={products}
+                            isLoading={isLoading}
+                            error={error}
+                            viewMode={viewMode}
+                            debouncedSearch={debouncedSearch}
+                            hasActiveFilters={hasActiveFilters}
+                            voucherFlags={voucherFlags}
+                            page={page}
+                            totalPages={totalPages}
+                            onPageChange={setPage}
+                            onRetry={fetchProducts}
+                            onClearFilters={handleClearFilters}
+                            onSearchChange={setSearchQuery}
+                            onCategoryReset={() => setSelectedCategory(t("shopPage.allCategories"))}
+                            onPageReset={() => setPage(1)}
+                        />
                     </div>
                 </div>
             </div>

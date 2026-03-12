@@ -33,13 +33,18 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     // Try to get initial language from cookie on client side
     const getInitialLanguage = (): Language => {
         if (typeof window !== "undefined") {
+            // 1. Check localStorage preference first
             const stored = localStorage.getItem("language");
             if (stored === "vi" || stored === "en") return stored;
+            // 2. Check cookie preference
             const cookies = document.cookie.split(";").find(c => c.trim().startsWith("language="));
             if (cookies) {
                 const lang = cookies.split("=")[1]?.trim();
                 if (lang === "vi" || lang === "en") return lang;
             }
+            // 3. Auto-detect browser language
+            const browserLang = navigator.language || (navigator as unknown as { userLanguage?: string }).userLanguage || "";
+            if (browserLang.startsWith("en")) return "en";
         }
         return "vi";
     };

@@ -2,23 +2,27 @@
 
 /**
  * LIKEFOOD - Vietnamese Specialty Marketplace
+ * AI Chatbot — Messenger-style premium interface
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
- * https://github.com/tranquocvu-3011/likefood
  */
 
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, useCallback, type KeyboardEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useChatOpen } from "@/contexts/ChatOpenContext";
 import { analytics } from "@/lib/analytics/sdk";
 import { useLanguage } from "@/lib/i18n/context";
 import {
   ArrowUp,
-  MessageCircle,
   RotateCcw,
   Sparkles,
+  X,
+  Minus,
+  Bot,
+  Zap,
 } from "lucide-react";
 
+/* ─── Types ─── */
 interface Message {
   id: string;
   role: "user" | "model";
@@ -26,29 +30,124 @@ interface Message {
   timestamp: Date;
 }
 
+/* ─── Constants ─── */
 const INITIAL_MESSAGE: Message = {
   id: "initial",
   role: "model",
   content:
-    "Xin chào! Mình là **LIKEFOOD AI** - trợ lý thông minh của cửa hàng. Mình có thể:\n\n• Gợi ý sản phẩm phù hợp với nhu cầu của bạn\n• Giải đáp về chính sách giao hàng, đổi trả\n• Hướng dẫn theo dõi đơn hàng\n• Tư vấn quà biếu, combo tiết kiệm\n\nBạn cần hỗ trợ gì ạ?",
+    "Xin chào! 👋 Mình là **LIKEFOOD AI** — trợ lý ẩm thực thông minh của bạn.\n\n🛒 Gợi ý sản phẩm phù hợp\n📦 Theo dõi đơn hàng\n🎁 Tư vấn combo & quà biếu\n💬 Giải đáp mọi thắc mắc\n\nBạn cần mình giúp gì nào? 😊",
   timestamp: new Date(),
 };
 
-const SUGGESTED_PROMPTS = [
-  "Tôi muốn mua trà / cà phê đặc sản",
-  "Gợi ý quà biếu đặc sản Việt cho gia đình ở Mỹ",
-  "Phí giao hàng và mức freeship hiện tại là gì?",
-  "Tôi cần đồ ăn vặt gọn nhẹ để mang đi làm",
-  "Hướng dẫn theo dõi đơn hàng sau khi thanh toán",
+const QUICK_REPLIES = [
+  { emoji: "🍵", text: "Gợi ý trà & cà phê" },
+  { emoji: "🎁", text: "Combo quà biếu" },
+  { emoji: "🚚", text: "Phí giao hàng" },
+  { emoji: "📦", text: "Theo dõi đơn hàng" },
 ];
 
+/* ─── Helpers ─── */
 function formatTime(date: Date) {
-  return date.toLocaleTimeString("en-US", {
+  return date.toLocaleTimeString("vi-VN", {
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 
+/**  Simple markdown → HTML (bold, italic, links, line breaks) */
+function renderMarkdown(text: string) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br/>');
+}
+
+/* ─── Typing Indicator (Messenger-style dots) ─── */
+function TypingIndicator() {
+  return (
+    <div className="flex items-end gap-2.5">
+      <BotAvatar size="sm" />
+      <div className="rounded-2xl rounded-bl-md bg-white px-4 py-3 shadow-sm border border-slate-100">
+        <div className="flex items-center gap-1">
+          <motion.span
+            className="block h-2 w-2 rounded-full bg-emerald-400"
+            animate={{ y: [0, -6, 0] }}
+            transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+          />
+          <motion.span
+            className="block h-2 w-2 rounded-full bg-emerald-400"
+            animate={{ y: [0, -6, 0] }}
+            transition={{ duration: 0.6, repeat: Infinity, delay: 0.15 }}
+          />
+          <motion.span
+            className="block h-2 w-2 rounded-full bg-emerald-400"
+            animate={{ y: [0, -6, 0] }}
+            transition={{ duration: 0.6, repeat: Infinity, delay: 0.3 }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Bot Avatar ─── */
+function BotAvatar({ size = "md" }: { size?: "sm" | "md" }) {
+  const dims = size === "sm" ? "h-7 w-7" : "h-9 w-9";
+  return (
+    <div className={`${dims} shrink-0 rounded-full bg-gradient-to-br from-emerald-500 via-teal-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-200/50 ring-2 ring-white`}>
+      <Bot className={size === "sm" ? "h-3.5 w-3.5 text-white" : "h-4.5 w-4.5 text-white"} />
+    </div>
+  );
+}
+
+/* ─── Message Bubble ─── */
+function MessageBubble({ message, isLast }: { message: Message; isLast: boolean }) {
+  const isModel = message.role === "model";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className={`flex items-end gap-2.5 ${isModel ? "justify-start" : "justify-end"}`}
+    >
+      {isModel && <BotAvatar size="sm" />}
+
+      <div className={`group relative max-w-[82%] ${isModel ? "" : "order-1"}`}>
+        <div
+          className={`rounded-2xl px-4 py-2.5 text-[13.5px] leading-relaxed ${
+            isModel
+              ? "rounded-bl-md bg-white text-slate-700 shadow-sm border border-slate-100"
+              : "rounded-br-md bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-200/30"
+          }`}
+        >
+          <div
+            className="whitespace-pre-wrap [&_strong]:font-semibold"
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }}
+          />
+        </div>
+
+        {/* Timestamp — show on last message or hover */}
+        <div
+          className={`mt-1 text-[10px] font-medium transition-opacity ${
+            isLast ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          } ${isModel ? "text-slate-400 pl-1" : "text-slate-400 text-right pr-1"}`}
+        >
+          {formatTime(message.timestamp)}
+        </div>
+      </div>
+
+      {/* User "avatar" — initials */}
+      {!isModel && (
+        <div className="h-7 w-7 shrink-0 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-[10px] font-bold text-white shadow ring-2 ring-white">
+          B
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+/* ─── Main Component ─── */
 export default function ChatbotAI() {
   const { setChatOpen } = useChatOpen();
   const { t, language } = useLanguage();
@@ -59,67 +158,65 @@ export default function ChatbotAI() {
   const [isLoading, setIsLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [showQuickReplies, setShowQuickReplies] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  /* ─ Scroll hide for FAB ─ */
   useEffect(() => {
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      if (currentScrollY > lastScrollY && currentScrollY > 120) {
-        setIsVisible(false);
-      } else {
-        setIsVisible(true);
-      }
-      setLastScrollY(currentScrollY);
+      const y = window.scrollY;
+      setIsVisible(y <= lastScrollY || y < 120);
+      setLastScrollY(y);
     };
-
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
+  /* ─ Auto-scroll on new message ─ */
   useEffect(() => {
     if (!scrollRef.current) return;
-    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isLoading]);
 
+  /* ─ Focus textarea ─ */
   useEffect(() => {
-    if (isOpen && !isMinimized) {
-      textareaRef.current?.focus();
-    }
+    if (isOpen && !isMinimized) textareaRef.current?.focus();
   }, [isOpen, isMinimized]);
 
+  /* ─ Escape to close ─ */
   useEffect(() => {
     const handleEscape = (e: globalThis.KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        setIsOpen(false);
-        setIsMinimized(false);
-        setChatOpen(false);
-      }
+      if (e.key === "Escape" && isOpen) closeAssistant();
     };
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [isOpen, setChatOpen]);
+  }, [isOpen]);
 
-  const openAssistant = () => {
+  const openAssistant = useCallback(() => {
     setIsOpen(true);
     setIsMinimized(false);
     setChatOpen(true);
-  };
+  }, [setChatOpen]);
 
-  const closeAssistant = () => {
+  const closeAssistant = useCallback(() => {
     setIsOpen(false);
     setIsMinimized(false);
     setChatOpen(false);
-  };
+  }, [setChatOpen]);
 
   const resetConversation = () => {
     setMessages([INITIAL_MESSAGE]);
     setInput("");
+    setShowQuickReplies(true);
   };
 
+  /* ─ Send message ─ */
   const sendMessage = async (value?: string) => {
     const nextInput = (value ?? input).trim();
     if (!nextInput || isLoading) return;
+
+    setShowQuickReplies(false);
 
     const userMessage: Message = {
       id: `${Date.now()}-user`,
@@ -132,6 +229,9 @@ export default function ChatbotAI() {
     setInput("");
     setIsLoading(true);
 
+    // Auto-resize textarea back
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+
     try {
       const response = await fetch("/api/ai/chat", {
         method: "POST",
@@ -139,38 +239,39 @@ export default function ChatbotAI() {
         body: JSON.stringify({
           message: nextInput,
           sessionId: analytics.getSessionId(),
-          history: messages.map((message) => ({
-            role: message.role,
-            content: message.content,
-          })),
+          history: messages.map((m) => ({ role: m.role, content: m.content })),
         }),
       });
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data?.error || "Không thể kết nối trợ lý AI.");
+        throw new Error(data?.error || "Không thể kết nối. Vui lòng thử lại!");
       }
+
+      const replyContent = data.content ?? data.response ?? "Mình chưa có câu trả lời phù hợp. Bạn thử hỏi lại cụ thể hơn nhé! 😊";
+
+      // Typing delay — giống người thật (1-2.5s dựa theo độ dài)
+      const typingDelay = Math.min(800 + replyContent.length * 8, 2500);
+      await new Promise((r) => setTimeout(r, typingDelay));
 
       const modelMessage: Message = {
         id: `${Date.now()}-model`,
         role: "model",
-        content: data.content ?? data.response ?? "Mình chưa có câu trả lời phù hợp. Bạn thử đặt câu hỏi cụ thể hơn nhé!",
+        content: replyContent,
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, modelMessage]);
     } catch (error) {
-      const fallbackMessage: Message = {
-        id: `${Date.now()}-error`,
-        role: "model",
-        content:
-          error instanceof Error
-            ? error.message
-            : "Trợ lý AI đang tạm thời gián đoạn. Bạn thử lại sau ít phút nhé!",
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, fallbackMessage]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-error`,
+          role: "model",
+          content: error instanceof Error ? error.message : "Kết nối tạm gián đoạn. Thử lại sau ít phút nhé! 🙏",
+          timestamp: new Date(),
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -183,6 +284,14 @@ export default function ChatbotAI() {
     }
   };
 
+  // Auto-resize textarea
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    const el = e.target;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  };
+
   return (
     <AnimatePresence>
       {isVisible && (
@@ -191,181 +300,193 @@ export default function ChatbotAI() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 24 }}
           transition={{ duration: 0.25 }}
-          className="fixed bottom-20 right-4 z-[110] sm:bottom-6 sm:right-5 lg:bottom-8 lg:right-6"
+          className="fixed bottom-5 right-4 z-[110] sm:bottom-4 sm:right-4"
         >
+          {/* ═══════ FAB Button ═══════ */}
           {!isOpen && (
             <motion.button
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.96 }}
+              whileHover={{ scale: 1.08, y: -3 }}
+              whileTap={{ scale: 0.94 }}
               onClick={openAssistant}
-              className="group relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-emerald-300/50 bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-lg shadow-emerald-900/25 sm:h-[3.5rem] sm:w-[3.5rem]"
-              aria-label={language === "vi" ? "Mở trợ lý AI" : "Open AI assistant"}
+              className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 via-teal-500 to-green-600 text-white shadow-xl shadow-emerald-500/30 ring-4 ring-white/80 transition-shadow hover:shadow-2xl hover:shadow-emerald-500/40"
+              aria-label={language === "vi" ? "LIKEFOOD AI - Mở chat" : "LIKEFOOD AI - Open chat"}
             >
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent_50%)]" />
-              <div className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 shadow">
-                <Sparkles className="h-2.5 w-2.5 text-amber-900" />
-              </div>
-              <div className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm ring-1 ring-white/20">
-                <span className="text-sm font-bold text-white">AI</span>
+              {/* Pulse ring */}
+              <span className="absolute inset-0 rounded-full animate-ping bg-emerald-400/20" />
+              {/* Shine */}
+              <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.3),transparent_50%)]" />
+              {/* Icon */}
+              <Bot className="relative h-6 w-6 text-white drop-shadow" />
+              {/* AI badge */}
+              <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 shadow-lg ring-2 ring-white">
+                <Zap className="h-2.5 w-2.5 text-amber-900" />
               </div>
             </motion.button>
           )}
 
+          {/* ═══════ Chat Window ═══════ */}
           {isOpen && (
             <>
-              {/* Lớp nền mờ nhẹ xung quanh — bấm để đóng */}
+              {/* Backdrop */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                role="button"
-                tabIndex={0}
                 onClick={closeAssistant}
-                className="fixed inset-0 z-[109] bg-slate-900/25 backdrop-blur-md cursor-default"
-                aria-label="Đóng chat (bấm ra ngoài)"
+                className="fixed inset-0 z-[109] bg-black/20"
               />
-              {/* Card toàn màn hình */}
+
+              {/* Chat panel */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.22 }}
-                className="fixed inset-0 z-[110] flex flex-col overflow-hidden bg-white shadow-2xl"
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                transition={{ type: "spring", damping: 25, stiffness: 350 }}
+                className="fixed bottom-0 right-0 top-0 z-[110] flex w-full flex-col overflow-hidden bg-white shadow-2xl sm:bottom-4 sm:right-4 sm:top-auto sm:h-[600px] sm:w-[400px] sm:rounded-2xl sm:border sm:border-slate-200/80"
               >
-              <div className="relative shrink-0 overflow-hidden border-b border-slate-200 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-slate-50 px-4 py-3.5 sm:px-6 shadow-sm">
-                <div className="absolute right-0 top-0 h-24 w-24 rounded-full bg-emerald-300/30 blur-2xl" />
-                <div className="relative flex items-center gap-3">
-                  <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 via-teal-500 to-emerald-700 shadow-lg ring-2 ring-white">
-                    <span className="text-sm font-bold text-white drop-shadow-sm">AI</span>
-                    <div className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 shadow">
-                      <Sparkles className="h-2.5 w-2.5 text-amber-900" />
+                {/* ─── Header ─── */}
+                <div className="shrink-0 bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 px-4 py-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-md ring-2 ring-white/30">
+                        <Bot className="h-5 w-5 text-white" />
+                      </div>
+                      {/* Online dot */}
+                      <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-green-400 ring-2 ring-emerald-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-bold text-white tracking-wide">LIKEFOOD AI</p>
+                        <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                      </div>
+                      <p className="text-[11px] text-emerald-100/90 font-medium">
+                        {isLoading ? "Đang soạn tin nhắn..." : "Trực tuyến • Sẵn sàng hỗ trợ"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setIsMinimized(true)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition hover:bg-white/15 hover:text-white"
+                        aria-label="Thu nhỏ"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={closeAssistant}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition hover:bg-white/15 hover:text-white"
+                        aria-label="Đóng"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold tracking-tight text-slate-800">LIKEFOOD AI</p>
-                    <p className="text-[11px] text-slate-500">Trợ lý AI thông minh · Hỗ trợ 24/7</p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    
+                </div>
+
+                {isMinimized ? (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-sm text-slate-600">Cuộc trò chuyện đang chờ...</span>
                     <button
-                      type="button"
-                      onClick={closeAssistant}
-                      className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                      aria-label="Đóng trợ lý AI"
+                      onClick={() => setIsMinimized(false)}
+                      className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition"
                     >
-                      {t("chat.close")}
+                      Mở lại
                     </button>
                   </div>
-                </div>
-              </div>
-
-              {isMinimized ? (
-                <div className="flex items-center justify-between gap-2 px-3 py-3">
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <MessageCircle className="h-4 w-4 text-emerald-600" />
-                    {t("chat.conversationReady")}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsMinimized(false)}
-                    className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-700"
-                  >
-                    {t("chat.openAgain")}
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="shrink-0 border-b border-slate-100 px-3 py-2.5 sm:px-4">
-                    <div className="mx-auto flex max-w-3xl flex-wrap gap-1.5">
-                      {SUGGESTED_PROMPTS.map((prompt) => (
-                        <button
-                          key={prompt}
-                          type="button"
-                          onClick={() => void sendMessage(prompt)}
-                          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs font-medium leading-snug text-slate-600 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 hover:shadow"
-                        >
-                          {prompt}
-                        </button>
+                ) : (
+                  <>
+                    {/* ─── Messages ─── */}
+                    <div
+                      ref={scrollRef}
+                      className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3 bg-gradient-to-b from-slate-50 to-white"
+                    >
+                      {messages.map((msg, idx) => (
+                        <MessageBubble
+                          key={msg.id}
+                          message={msg}
+                          isLast={idx === messages.length - 1 && !isLoading}
+                        />
                       ))}
-                    </div>
-                  </div>
 
-                  <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-slate-50/80 px-4 py-4 sm:px-6">
-                    <div className="mx-auto max-w-3xl">
-                    {messages.map((message) => {
-                      const isModel = message.role === "model";
-                      return (
-                        <div
-                          key={message.id}
-                          className={`flex ${isModel ? "justify-start" : "justify-end"}`}
+                      {isLoading && <TypingIndicator />}
+
+                      {/* Quick replies — only show at start */}
+                      {showQuickReplies && messages.length <= 1 && !isLoading && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.3 }}
+                          className="pt-2"
                         >
-                          <div
-                            className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-md sm:max-w-xl ${
-                              isModel
-                                ? "border border-slate-200 bg-white text-slate-700 ring-1 ring-slate-100"
-                                : "bg-gradient-to-br from-slate-800 to-slate-900 text-white ring-1 ring-slate-700/50"
-                            }`}
-                          >
-                            <div className="whitespace-pre-wrap text-sm leading-6">{message.content}</div>
-                            <div
-                              className={`mt-2 text-xs font-medium text-slate-500 ${
-                                isModel ? "text-slate-400" : "text-white/60"
-                              }`}
-                            >
-                              {isModel ? "AI" : "Bạn"} · {formatTime(message.timestamp)}
-                            </div>
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2 pl-10">
+                            Gợi ý nhanh
+                          </p>
+                          <div className="flex flex-wrap gap-1.5 pl-10">
+                            {QUICK_REPLIES.map((qr) => (
+                              <button
+                                key={qr.text}
+                                onClick={() => void sendMessage(qr.text)}
+                                className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50/80 px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100 hover:border-emerald-300 hover:shadow-sm active:scale-95"
+                              >
+                                <span>{qr.emoji}</span>
+                                <span>{qr.text}</span>
+                              </button>
+                            ))}
                           </div>
-                        </div>
-                      );
-                    })}
-
-                    {isLoading && (
-                      <div className="flex justify-start">
-                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500 shadow-md flex items-center gap-2">
-                          <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          {t("chat.processing")}
-                        </div>
-                      </div>
-                    )}
+                        </motion.div>
+                      )}
                     </div>
-                  </div>
 
-                  <div className="shrink-0 border-t border-slate-200 bg-white px-4 py-3 sm:px-6 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
-                    <div className="mx-auto max-w-3xl rounded-xl border border-slate-200 bg-slate-50/80 p-3 shadow-inner">
-                      <textarea
-                        ref={textareaRef}
-                        value={input}
-                        onChange={(event) => setInput(event.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder={t("chat.placeholder")}
-                        rows={2}
-                        className="min-h-[48px] max-h-32 w-full resize-none border-0 bg-transparent text-sm leading-6 text-slate-700 outline-none placeholder:text-slate-400"
-                      />
-                      <div className="mt-2 flex items-center justify-between gap-3">
+                    {/* ─── Input Area (Messenger-style) ─── */}
+                    <div className="shrink-0 border-t border-slate-100 bg-white px-3 py-2.5">
+                      <div className="flex items-end gap-2">
+                        {/* Reset button */}
                         <button
-                          type="button"
                           onClick={resetConversation}
-                          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                          aria-label={t("chat.newConversation")}
+                          title="Cuộc trò chuyện mới"
                         >
                           <RotateCcw className="h-4 w-4" />
-                          {t("chat.newConversation")}
                         </button>
-                        <button
-                          type="button"
+
+                        {/* Input container */}
+                        <div className="flex-1 flex items-end rounded-2xl border border-slate-200 bg-slate-50/80 px-3.5 py-1.5 transition-colors focus-within:border-emerald-300 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-100">
+                          <textarea
+                            ref={textareaRef}
+                            value={input}
+                            onChange={handleInputChange}
+                            onKeyDown={handleKeyDown}
+                            placeholder="Nhắn tin cho LIKEFOOD AI..."
+                            rows={1}
+                            className="flex-1 resize-none border-0 bg-transparent text-sm leading-6 text-slate-700 outline-none placeholder:text-slate-400 max-h-[120px]"
+                            style={{ height: "auto" }}
+                          />
+                        </div>
+
+                        {/* Send button */}
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
                           onClick={() => void sendMessage()}
                           disabled={!input.trim() || isLoading}
-                          className="inline-flex h-10 items-center gap-2 rounded-lg bg-slate-800 px-5 text-sm font-bold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all ${
+                            input.trim() && !isLoading
+                              ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-200/50 hover:shadow-lg"
+                              : "bg-slate-100 text-slate-300 cursor-not-allowed"
+                          }`}
+                          aria-label={t("chat.send")}
                         >
-                          {t("chat.send")}
-                          <ArrowUp className="h-4 w-4" />
-                        </button>
+                          <ArrowUp className="h-4.5 w-4.5" />
+                        </motion.button>
                       </div>
+
+                      {/* Powered by label */}
+                      <p className="mt-1.5 text-center text-[9px] font-medium text-slate-300 tracking-wide">
+                        Powered by LIKEFOOD AI • Gemini
+                      </p>
                     </div>
-                  </div>
-                </>
-              )}
-            </motion.div>
+                  </>
+                )}
+              </motion.div>
             </>
           )}
         </motion.div>
@@ -373,5 +494,3 @@ export default function ChatbotAI() {
     </AnimatePresence>
   );
 }
-
-

@@ -51,7 +51,11 @@ export async function POST(req: NextRequest) {
         const emailResult = await sendVerificationEmail(email, otp, "2FA");
         
         if (!emailResult.success) {
-            logger.error("[2FA] Failed to send email:", emailResult.error);
+            logger.error(
+                "[2FA] Failed to send email",
+                new Error(emailResult.error || "Unknown email error"),
+                { context: "2fa-send", email }
+            );
             return NextResponse.json({ error: "Không thể gửi email. Vui lòng kiểm tra cấu hình SMTP." }, { status: 500 });
         }
 

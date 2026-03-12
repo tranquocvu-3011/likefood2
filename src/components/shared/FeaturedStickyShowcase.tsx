@@ -9,8 +9,7 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCart } from "@/contexts/CartContext";
-import { toast } from "sonner";
+import { useCartActions } from "@/contexts/CartContext";
 
 // Sub-components
 import FeaturedHeader from "./featured/FeaturedHeader";
@@ -25,7 +24,7 @@ interface FeaturedStickyShowcaseProps {
 export default function FeaturedStickyShowcase({ products: initialProducts }: FeaturedStickyShowcaseProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
-    const { addItem } = useCart();
+    const { addItem } = useCartActions();
     const [direction, setDirection] = useState(0);
     const [, setCursorDirection] = useState<'left' | 'right' | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -37,7 +36,7 @@ export default function FeaturedStickyShowcase({ products: initialProducts }: Fe
             price: product.price,
             image: product.image || undefined,
         });
-        toast.success(`Đã thêm ${product.name} vào giỏ hàng`);
+        // toast handled by CartContext (auth check + success)
     };
 
     useEffect(() => {
@@ -151,7 +150,7 @@ export default function FeaturedStickyShowcase({ products: initialProducts }: Fe
     return (
         <section
             ref={containerRef}
-            className="relative bg-gradient-to-br from-[#f4f1ea] via-[#f9f7f4] to-[#f4f1ea] w-screen lg:min-h-screen flex flex-col overflow-hidden"
+            className="relative bg-gradient-to-br from-[#f4f1ea] via-[#f9f7f4] to-[#f4f1ea] w-screen lg:min-h-[80vh] flex flex-col overflow-hidden"
         >
             {/* Animated Background Pattern - Optimized */}
             <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none">

@@ -41,7 +41,7 @@ export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyB
         const fetchFBT = async () => {
             try {
                 setIsLoading(true);
-                const res = await fetch(`/api/products/recommendations/fbt?slug=${currentProduct.slug}`);
+                const res = await fetch(`/api/products/recommendations/fbt?product=${currentProduct.slug}`);
                 if (!res.ok) throw new Error("Failed to fetch FBT");
                 const data = await res.json();
                 setRecommended(data);
@@ -76,11 +76,9 @@ export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyB
             return;
         }
 
-        // Always include current product if not already in cart logic (handled by addItem)
-        // But here we just add the selected recommended products
-
+        let addedCount = 0;
         for (const p of selectedProducts) {
-            addItem({
+            const added = addItem({
                 productId: p.id,
                 slug: p.slug,
                 name: p.name,
@@ -89,9 +87,13 @@ export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyB
                 quantity: 1,
                 inventory: p.inventory,
             });
+            if (added) addedCount++;
         }
 
-        toast.success(`Đã thêm ${selectedProducts.length} sản phẩm vào giỏ hàng!`);
+        // Only show summary toast if at least 1 item was added (auth passed)
+        if (addedCount > 1) {
+            toast.success(`Đã thêm ${addedCount} sản phẩm vào giỏ hàng!`);
+        }
         setIsAddingAll(false);
     };
 

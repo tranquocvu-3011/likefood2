@@ -6,18 +6,38 @@
  */
 
 import { NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
 import prisma from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import type Stripe from "stripe";
+import StripeSdk from "stripe";
+import { getSystemSettingTrimmed } from "@/lib/system-settings";
 
 export async function POST(req: Request) {
     const sig = req.headers.get("stripe-signature");
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const webhookSecret =
+        (await getSystemSettingTrimmed("stripe_webhook_secret")) ||
+        process.env.STRIPE_WEBHOOK_SECRET ||
+        "";
+
+    const stripeSecret =
+        (await getSystemSettingTrimmed("stripe_secret_key")) ||
+        process.env.STRIPE_SECRET_KEY ||
+        "";
+
+    const stripe = stripeSecret
+        ? new StripeSdk(stripeSecret, {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              apiVersion: "2024-11-20" as any,
+          })
+        : null;
 
     if (!webhookSecret) {
         logger.error("[STRIPE] STRIPE_WEBHOOK_SECRET is not set", new Error("Webhook secret not configured"), { context: "stripe-webhook" });
         return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 });
+    }
+    if (!stripe) {
+        logger.error("[STRIPE] STRIPE_SECRET_KEY is not set", new Error("Stripe secret not configured"), { context: "stripe-webhook" });
+        return NextResponse.json({ error: "Stripe secret not configured" }, { status: 500 });
     }
 
     if (!sig) {
@@ -44,6 +64,59 @@ export async function POST(req: Request) {
         }
 
         switch (event.type) {
+            // ── Stripe Checkout Session (hosted page) ──
+            case "checkout.session.completed": {
+                const session = event.data.object as Stripe.Checkout.Session;
+                const orderId = session.metadata?.orderId || session.client_reference_id;
+
+                if (orderId) {
+                    // Update order to PAID
+                    const order = await prisma.order.findUnique({
+                        where: { id: orderId },
+                        include: { orderItems: true },
+                    });
+
+                    if (order && order.paymentStatus !== "PAID") {
+                        // 1. Mark as paid
+                        await prisma.order.update({
+                            where: { id: orderId },
+                            data: {
+                                paymentStatus: "PAID",
+                                paymentIntentId: session.payment_intent as string || session.id,
+                            },
+                        });
+
+                        // 2. Decrement inventory + increment soldCount
+                        for (const item of order.orderItems) {
+                            await prisma.product.update({
+                                where: { id: item.productId },
+                                data: {
+                                    inventory: { decrement: item.quantity },
+                                    soldCount: { increment: item.quantity },
+                                },
+                            });
+                        }
+
+                        logger.info(`[STRIPE] Order ${orderId} paid via Checkout Session`, { sessionId: session.id });
+                    }
+                }
+                break;
+            }
+
+            case "checkout.session.expired": {
+                const session = event.data.object as Stripe.Checkout.Session;
+                const orderId = session.metadata?.orderId || session.client_reference_id;
+
+                if (orderId) {
+                    await prisma.order.updateMany({
+                        where: { id: orderId, paymentStatus: { not: "PAID" } },
+                        data: { paymentStatus: "FAILED" },
+                    });
+                }
+                break;
+            }
+
+            // ── Stripe Elements (PaymentIntent) – backward compat ──
             case "payment_intent.succeeded": {
                 const intent = event.data.object as Stripe.PaymentIntent;
                 const paymentIntentId = intent.id as string;
@@ -84,7 +157,7 @@ export async function POST(req: Request) {
                 break;
             }
             default: {
-                // Ignore other events for now
+                // Ignore other events
                 break;
             }
         }

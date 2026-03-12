@@ -140,7 +140,7 @@ export default function CustomerReviews() {
 
     if (loading) {
         return (
-            <section className="bg-gradient-to-b from-white to-slate-50 py-12 md:py-24 flex items-center justify-center min-h-[400px]">
+            <section className="bg-gradient-to-b from-white to-slate-50 py-6 md:py-10 flex items-center justify-center min-h-[400px]">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
             </section>
         );
@@ -148,7 +148,7 @@ export default function CustomerReviews() {
 
     if (reviews.length === 0) {
         return (
-            <section className="bg-gradient-to-b from-white to-slate-50 py-12 md:py-24">
+            <section className="bg-gradient-to-b from-white to-slate-50 py-6 md:py-10">
                 <div className="w-full mx-auto px-6 text-center">
                     <h2 className="text-3xl font-bold text-slate-900 mb-4">💬 Khách hàng <span className="text-primary">nói gì?</span></h2>
                     <p className="text-slate-600 italic">Chưa có đánh giá nào. Hãy là người đầu tiên!</p>
@@ -160,11 +160,11 @@ export default function CustomerReviews() {
     const currentTestimonial = reviews[currentIndex];
 
     return (
-        <section className="bg-gradient-to-b from-white to-slate-50 py-12 md:py-24">
+        <section className="bg-gradient-to-b from-white to-slate-50 py-6 md:py-10">
             <div className="w-full mx-auto px-6 sm:px-10 lg:px-[8%]">
                 {/* Section Header */}
-                <div className="text-center mb-16">
-                    <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">
+                <div className="text-center mb-8">
+                    <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3">
                         💬 Khách hàng <span className="text-primary">nói gì?</span>
                     </h2>
                     <p className="text-lg text-slate-600 font-medium">

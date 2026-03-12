@@ -33,36 +33,49 @@ export async function generateMetadata(
 
         if (!product) {
             return {
-                title: "Sản phẩm không tồn tại",
-                description: "Không tìm thấy sản phẩm",
+                title: "Sản phẩm không tồn tại | LIKEFOOD",
+                description: "Không tìm thấy sản phẩm yêu cầu.",
             };
         }
 
+        const currentPrice = product.salePrice && product.salePrice > 0 ? product.salePrice : product.price;
+        const priceStr = `$${currentPrice.toFixed(2)}`;
         const title = `${product.name} - ${product.category} | LIKEFOOD`;
-        const description = product.description || `${product.name} - Sản phẩm ${product.category} chất lượng cao`;
+        
+        // Tạo description tối ưu cho SEO: 150-160 ký tự, chứa giá & keywords
+        const description = product.description 
+            ? `${product.description.substring(0, 140)}... [Giá: ${priceStr}]` 
+            : `Mua ngay ${product.name} chính gốc - Đặc sản ${product.category} chất lượng cao tại LIKEFOOD chỉ với ${priceStr}. Giao hàng nhanh toàn nước Mỹ, đảm bảo vệ sinh an toàn thực phẩm.`;
+
+        const images = product.image ? [product.image] : ["/og-image.png"];
 
         return {
             title,
             description,
+            alternates: {
+                canonical: `/products/${slug}`,
+            },
             openGraph: {
                 title,
                 description,
-                images: product.image ? [product.image] : [],
+                images,
                 type: "website",
+                siteName: "LIKEFOOD",
+                locale: "vi_VN",
+                url: `/products/${slug}`,
             },
             twitter: {
                 card: "summary_large_image",
                 title,
                 description,
-                images: product.image ? [product.image] : [],
+                images,
+                creator: "@likefood",
             },
         };
-    } catch {
-        // Log error but don't throw - return default metadata
-        // logger.error("Failed to generate metadata", error as Error, { context: "product-layout", slug });
+    } catch (error) {
         return {
-            title: "Sản phẩm | LIKEFOOD",
-            description: "Xem chi tiết sản phẩm",
+            title: "Sản phẩm Đặc sản Việt Nam | LIKEFOOD",
+            description: "Khám phá các loại đặc sản Việt Nam chất lượng cao tại LIKEFOOD.",
         };
     }
 }

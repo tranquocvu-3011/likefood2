@@ -20,7 +20,7 @@ export default function ShopLayout({
 }) {
     return (
         <AnalyticsProvider>
-            <div className="compact-ui">
+            <div className="compact-ui flex flex-col min-h-screen">
                 <Navbar />
                 <main className="flex-1 pb-16 lg:pb-0">
                     <IdleSessionWrapper>

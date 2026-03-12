@@ -18,14 +18,17 @@ const EMPTY_PRODUCT = {
   originalPrice: "",
   salePrice: "",
   category: "",
+  categoryId: "",
   weight: "",
-  inventory: "100",
+  inventory: "9999",
+  inStock: true,
   image: "",
   images: [] as string[],
   featured: false,
   badgeText: "",
   tags: "",
   isOnSale: false,
+  isVisible: true,
 };
 
 export default function NewProductPage() {

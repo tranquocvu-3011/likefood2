@@ -24,8 +24,11 @@ export async function GET(
                     { id: identifier },
                     { slug: identifier },
                 ],
+                isDeleted: false,
+                isVisible: true,
             },
             include: {
+                categoryRel: true,
                 productImages: {
                     orderBy: [
                         { isPrimary: "desc" },
@@ -35,6 +38,13 @@ export async function GET(
                 productVariants: {
                     where: { isActive: true },
                     orderBy: { createdAt: "asc" },
+                },
+                specifications: {
+                    orderBy: { order: "asc" },
+                },
+                shipping: true,
+                productTags: {
+                    include: { tag: true },
                 },
                 reviews: {
                     include: { user: { select: { name: true, image: true } } },
@@ -70,14 +80,15 @@ export async function GET(
             product.saleEndAt >= now;
 
 
-        return NextResponse.json({
+        const res = NextResponse.json({
             ...product,
             avgRating: Math.round((avgRating as number) * 10) / 10,
             reviewCount,
             images: product.productImages,
             variants: product.productVariants,
-            specifications: [],
-            shipping: null,
+            tags: product.productTags?.map((pt) => pt.tag).filter(Boolean) ?? [],
+            specifications: product.specifications ?? [],
+            shipping: product.shipping ?? null,
             // Flash sale support (legacy product-level only for now)
             originalPrice: productMetrics.originalPrice || null,
             salePrice: productMetrics.salePrice || null,
@@ -86,6 +97,8 @@ export async function GET(
             saleStartAt: product.saleStartAt,
             saleEndAt: product.saleEndAt,
         });
+        res.headers.set("Cache-Control", "no-store");
+        return res;
     } catch (error) {
         logger.error("Product fetch error", error as Error, { context: "products-api-get" });
         return NextResponse.json({ error: "Failed to fetch product" }, { status: 500 });

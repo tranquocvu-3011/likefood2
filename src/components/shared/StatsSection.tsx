@@ -217,7 +217,7 @@ export default function StatsSection() {
 
     if (isLoading) {
         return (
-            <section className="py-12 md:py-16 bg-gradient-to-b from-white to-slate-50">
+            <section className="py-8 md:py-11 bg-gradient-to-b from-white to-slate-50">
                 <div className="page-container-wide">
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 max-w-4xl mx-auto">
                         {[1, 2, 3, 4].map((i) => (
@@ -230,7 +230,7 @@ export default function StatsSection() {
     }
 
     return (
-        <section className="relative py-12 md:py-16 bg-gradient-to-b from-white via-slate-50/60 to-white overflow-hidden">
+        <section className="relative py-8 md:py-11 bg-gradient-to-b from-white via-slate-50/60 to-white overflow-hidden">
             {/* Background ambient glows — smaller */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-10 left-1/4 w-[350px] h-[350px] bg-emerald-100/30 rounded-full blur-3xl" />

@@ -41,6 +41,7 @@ export const contactSchema = z.object({
     .min(10, "Nội dung phải có ít nhất 10 ký tự")
     .max(5000, "Nội dung không được quá 5000 ký tự")
     .trim(),
+  turnstileToken: z.string().optional(),
 });
 
 export type ContactInput = z.infer<typeof contactSchema>;
@@ -56,6 +57,7 @@ export const newsletterSchema = z.object({
     .max(255)
     .toLowerCase()
     .trim(),
+  turnstileToken: z.string().optional(),
 });
 
 export type NewsletterInput = z.infer<typeof newsletterSchema>;

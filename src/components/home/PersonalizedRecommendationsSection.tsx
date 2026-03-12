@@ -21,7 +21,7 @@ interface RecommendedProduct {
   name: string;
   price: number;
   originalPrice?: number;
-  image: string;
+  image: string | null;
   category: string;
   brand?: string;
   rating?: number;
@@ -46,16 +46,16 @@ export default function PersonalizedRecommendationsSection() {
         setIsLoading(true);
 
         if (session?.user?.id) {
-          // Personalized for logged-in users
+          // Personalized for logged-in users — limit 6
           const res = await fetch("/api/recommendations/personalized", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: session.user.id, limit: 8 }),
+            body: JSON.stringify({ userId: session.user.id, limit: 6 }),
           });
           if (res.ok) {
             const data = await res.json();
             if (data.products?.length > 0) {
-              setProducts(data.products);
+              setProducts(data.products.slice(0, 6));
               setTitle(t("home.suggestionsForYou"));
               setSubtitle(t("home.basedOnHistory"));
               return;
@@ -63,11 +63,11 @@ export default function PersonalizedRecommendationsSection() {
           }
         }
 
-        // Fallback: trending products
-        const res = await fetch("/api/recommendations/products?type=trending&limit=8");
+        // Fallback: trending products — limit 6
+        const res = await fetch("/api/recommendations/products?type=trending&limit=6");
         if (res.ok) {
           const data = await res.json();
-          setProducts(data.products ?? []);
+          setProducts((data.products ?? []).slice(0, 6));
           setTitle(t("home.featuredProducts"));
           setSubtitle(t("home.mostLovedWeek"));
         }
@@ -88,39 +88,29 @@ export default function PersonalizedRecommendationsSection() {
   const displaySubtitle = subtitle;
 
   return (
-    <section className="w-full px-4 sm:px-6 lg:px-[6%] py-16">
+    <section className="w-full px-4 sm:px-6 lg:px-8 py-6 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-end justify-between mb-8">
+      <div className="flex items-end justify-between mb-5">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            {isPersonalized ? (
-              <Sparkles className="w-4 h-4 text-emerald-500" />
-            ) : (
-              <TrendingUp className="w-4 h-4 text-orange-500" />
-            )}
-            <span className="text-sm font-medium text-muted-foreground uppercase tracking-widest">
-              {isPersonalized ? t("home.aiSuggestion") : t("home.trending")}
-            </span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">{displayTitle}</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-foreground leading-tight">{displayTitle}</h2>
           {displaySubtitle && (
-            <p className="text-sm text-muted-foreground mt-1">{displaySubtitle}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{displaySubtitle}</p>
           )}
         </div>
         <Link
           href="/products"
-          className="flex items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors shrink-0"
+          className="flex items-center gap-0.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors shrink-0"
         >
           {t("common.viewAll")}
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-3.5 h-3.5" />
         </Link>
       </div>
 
-      {/* Product Grid — cards nhỏ hơn, dễ nhìn */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+      {/* Product Grid — exactly 6 products, fixed 3-col × 2-row */}
+      <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
         {isLoading
-          ? Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)
-          : products.map((p, i) => (
+          ? Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)
+          : products.slice(0, 6).map((p, i) => (
               <ProductCard
                 key={p.id || p.slug || `rec-${i}`}
                 product={{

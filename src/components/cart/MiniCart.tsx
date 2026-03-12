@@ -14,6 +14,10 @@ import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
+import QuantitySelector from "@/components/ui/quantity-selector";
+import EmptyState from "@/components/ui/empty-state";
+import PriceDisplay from "@/components/ui/price-display";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface MiniCartProps {
     isOpen: boolean;
@@ -22,6 +26,7 @@ interface MiniCartProps {
 
 export default function MiniCart({ isOpen, onClose }: MiniCartProps) {
     const { items, removeItem, updateQuantity, totalPrice } = useCart();
+    const { t } = useLanguage();
 
     const cartContent = (
         <AnimatePresence>
@@ -51,7 +56,7 @@ export default function MiniCart({ isOpen, onClose }: MiniCartProps) {
                                 <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center">
                                     <ShoppingBag className="w-4.5 h-4.5 text-primary" />
                                 </div>
-                                Giỏ hàng
+                                {t("common.cart")}
                                 <span className="bg-primary text-white text-[10px] font-black px-2 py-0.5 rounded-full ml-1">
                                     {items.length}
                                 </span>
@@ -67,31 +72,25 @@ export default function MiniCart({ isOpen, onClose }: MiniCartProps) {
                         {/* Cart Items */}
                         <div className="flex-1 overflow-y-auto p-5 scrollbar-thin scrollbar-thumb-slate-200">
                             {items.length === 0 ? (
-                                <div className="h-full min-h-[200px] flex flex-col items-center justify-center text-center space-y-4 py-8">
-                                    <motion.div
-                                        initial={{ scale: 0.8, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        transition={{ delay: 0.1, type: "spring" }}
-                                        className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center"
-                                    >
-                                        <ShoppingBag className="w-9 h-9 text-slate-200" />
-                                    </motion.div>
-                                    <div>
-                                        <p className="font-bold text-slate-900 mb-1">Giỏ hàng trống</p>
-                                        <p className="text-sm text-slate-400">Hãy thêm sản phẩm vào giỏ nhé!</p>
-                                    </div>
-                                    <button
-                                        onClick={onClose}
-                                        className="mt-2 px-6 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-sm tracking-wide hover:bg-primary transition-colors"
-                                    >
-                                        Tiếp tục mua sắm
-                                    </button>
-                                </div>
+                                <EmptyState
+                                    icon={ShoppingBag}
+                                    title="Giỏ hàng trống"
+                                    description="Hãy thêm sản phẩm vào giỏ nhé!"
+                                    action={
+                                        <button
+                                            onClick={onClose}
+                                            className="mt-2 px-6 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-sm tracking-wide hover:bg-primary transition-colors"
+                                        >
+                                            {t("cart.continueShopping")}
+                                        </button>
+                                    }
+                                    className="py-12"
+                                />
                             ) : (
                                 <div className="space-y-3">
                                     {items.map((item, idx) => (
                                         <motion.div
-                                            key={item.id}
+                                            key={item.id || `cart-item-${idx}`}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: idx * 0.05 }}
@@ -108,28 +107,22 @@ export default function MiniCart({ isOpen, onClose }: MiniCartProps) {
                                                     <h3 className="font-bold text-slate-900 text-sm leading-tight line-clamp-2 mb-1">
                                                         {item.name}
                                                     </h3>
-                                                    <p className="font-black text-primary text-sm">
-                                                        {formatPrice(item.price)}
-                                                    </p>
+                                                    <PriceDisplay
+                                                        currentPrice={item.price}
+                                                        size="sm"
+                                                        className="mt-1"
+                                                        showDiscountBadge={false}
+                                                    />
                                                 </div>
 
                                                 {/* Quantity Control */}
                                                 <div className="flex items-center justify-between mt-1.5">
-                                                    <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden">
-                                                        <button
-                                                            onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                                                            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all"
-                                                        >
-                                                            <span className="text-sm font-bold leading-none">−</span>
-                                                        </button>
-                                                        <span className="w-7 text-center text-xs font-black text-slate-900">{item.quantity}</span>
-                                                        <button
-                                                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                                            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all"
-                                                        >
-                                                            <span className="text-sm font-bold leading-none">+</span>
-                                                        </button>
-                                                    </div>
+                                                    <QuantitySelector
+                                                        value={item.quantity}
+                                                        onChange={(newQty) => updateQuantity(item.id, newQty)}
+                                                        size="sm"
+                                                        max={item.inventory || 99}
+                                                    />
                                                     <span className="text-xs font-black text-slate-500">
                                                         {formatPrice(item.price * item.quantity)}
                                                     </span>
@@ -154,10 +147,8 @@ export default function MiniCart({ isOpen, onClose }: MiniCartProps) {
                             <div className="bg-white border-t border-slate-100 p-5">
                                 {/* Subtotal */}
                                 <div className="flex items-center justify-between mb-4">
-                                    <span className="font-bold text-slate-500 uppercase tracking-widest text-xs">Tổng cộng</span>
-                                    <span className="text-xl font-black text-slate-900">
-                                        {formatPrice(totalPrice)}
-                                    </span>
+                                    <span className="font-bold text-slate-500 uppercase tracking-widest text-xs">{t("common.total")}</span>
+                                    <PriceDisplay currentPrice={totalPrice} size="md" />
                                 </div>
 
                                 {/* Buttons */}
@@ -167,14 +158,14 @@ export default function MiniCart({ isOpen, onClose }: MiniCartProps) {
                                         onClick={onClose}
                                         className="flex items-center justify-center py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-xs hover:border-primary hover:text-primary transition-all"
                                     >
-                                        Xem chi tiết
+                                        {t("cart.viewDetails")}
                                     </Link>
                                     <Link
                                         href="/checkout"
                                         onClick={onClose}
                                         className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-gradient-to-r from-primary to-emerald-500 text-white font-bold uppercase tracking-wider text-xs hover:shadow-lg hover:shadow-primary/25 transition-all group"
                                     >
-                                        Thanh toán
+                                        {t("common.checkout")}
                                         <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                                     </Link>
                                 </div>

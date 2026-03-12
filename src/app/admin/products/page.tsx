@@ -1,28 +1,38 @@
 "use client";
 
 /**
- * LIKEFOOD - Vietnamese Specialty Marketplace
- * Copyright (c) 2026 LIKEFOOD Team
- * Licensed under the MIT License
- * https://github.com/tranquocvu-3011/likefood
+ * LIKEFOOD - Premium Products Management Module
+ * Phase 2: Enhanced Catalog UX with Split Layout
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Edit, Eye, Loader2, Package, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { 
+  Edit, 
+  Eye, 
+  Loader2, 
+  Package, 
+  Plus, 
+  RefreshCw, 
+  Trash2,
+  Search,
+  Filter,
+  X,
+  Star,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle,
+  MoreHorizontal
+} from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import {
-  AdminCard,
-  AdminPageContainer,
-  AdminTableContainer,
-} from "@/components/admin/AdminPageContainer";
-import { AdminFilterBar } from "@/components/admin/AdminSearch";
-import { AdminPagination } from "@/components/admin/AdminPagination";
-import { useDebounce } from "@/hooks/useDebounce";
 import { formatPrice } from "@/lib/currency";
-import { ADMIN_CATEGORY_OPTIONS, getAdminCategoryLabel } from "@/lib/admin-catalog";
+
+interface AdminCategoryOption {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 interface Product {
   id: string;
@@ -38,16 +48,27 @@ interface Product {
   ratingCount?: number;
   image?: string | null;
   featured?: boolean;
+  isVisible?: boolean;
+  status?: string;
 }
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 15;
+
 const SORT_OPTIONS = [
-  { value: "newest", label: "Mới nhất" },
-  { value: "name", label: "Tên A-Z" },
-  { value: "price-asc", label: "Giá thấp-cao" },
-  { value: "price-desc", label: "Giá cao-thấp" },
-  { value: "best-selling", label: "Bán chạy" },
-  { value: "top-rated", label: "Đánh giá cao" },
+  { value: 'newest', label: 'Newest' },
+  { value: 'name', label: 'Name A-Z' },
+  { value: 'price-asc', label: 'Price Low-High' },
+  { value: 'price-desc', label: 'Price High-Low' },
+  { value: 'best-selling', label: 'Best Selling' },
+  { value: 'top-rated', label: 'Top Rated' },
+];
+
+const STATUS_CONFIG = [
+  { key: 'ALL', label: 'All', color: 'bg-zinc-500/10 text-zinc-400' },
+  { key: 'ACTIVE', label: 'Active', color: 'bg-emerald-500/10 text-emerald-400' },
+  { key: 'DRAFT', label: 'Draft', color: 'bg-zinc-500/10 text-zinc-400' },
+  { key: 'LOW_STOCK', label: 'Low Stock', color: 'bg-amber-500/10 text-amber-400' },
+  { key: 'OUT_OF_STOCK', label: 'Out of Stock', color: 'bg-red-500/10 text-red-400' },
 ];
 
 export default function AdminProductsPage() {
@@ -56,10 +77,27 @@ export default function AdminProductsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
+  const [stockFilter, setStockFilter] = useState("ALL");
+  const [visibilityFilter, setVisibilityFilter] = useState("ALL");
   const [sort, setSort] = useState("newest");
   const [isLoading, setIsLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const debouncedSearch = useDebounce(search, 300);
+  const [adminCategories, setAdminCategories] = useState<AdminCategoryOption[]>([]);
+  
+  // Selection & Drawer
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Fetch categories from admin API
+  useEffect(() => {
+    fetch("/api/admin/categories")
+      .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+      .then((data: unknown) => {
+        if (Array.isArray(data)) setAdminCategories(data as AdminCategoryOption[]);
+      })
+      .catch(() => {/* silent */});
+  }, []);
 
   const fetchProducts = useCallback(async () => {
     setIsLoading(true);
@@ -70,23 +108,25 @@ export default function AdminProductsPage() {
         sort,
       });
 
-      if (debouncedSearch) params.set("search", debouncedSearch);
+      if (search) params.set("search", search);
       if (category) params.set("category", category);
+      if (stockFilter !== "ALL") params.set("stock", stockFilter);
+      if (visibilityFilter !== "ALL") params.set("visibility", visibilityFilter);
 
-      const response = await fetch(`/api/products?${params.toString()}`);
+      // Use admin products API (shows hidden products too)
+      const response = await fetch(`/api/admin/products?${params.toString()}`);
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(data?.error || "Unable to load products.");
-      }
+      if (!response.ok) throw new Error(data?.error || "Failed to load products");
 
-      setProducts(Array.isArray(data.products) ? data.products : []);
+      const productList = Array.isArray(data.products) ? data.products : [];
+      setProducts(productList);
       setTotal(data.pagination?.total || 0);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to load products.");
+      toast.error(error instanceof Error ? error.message : "Failed to load products");
     } finally {
       setIsLoading(false);
     }
-  }, [category, debouncedSearch, page, sort]);
+  }, [page, search, category, sort, stockFilter, visibilityFilter]);
 
   useEffect(() => {
     void fetchProducts();
@@ -94,257 +134,389 @@ export default function AdminProductsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, category, sort]);
+  }, [search, category, sort, stockFilter, visibilityFilter]);
 
   const stats = useMemo(() => {
-    const lowStock = products.filter((product) => product.inventory > 0 && product.inventory < 10).length;
-    const outOfStock = products.filter((product) => product.inventory <= 0).length;
-    const featured = products.filter((product) => product.featured).length;
-    const topRated = products.filter((product) => (product.ratingAvg || 0) >= 4.5).length;
-    return { lowStock, outOfStock, featured, topRated };
+    const lowStock = products.filter(p => p.inventory > 0 && p.inventory < 10).length;
+    const outOfStock = products.filter(p => p.inventory <= 0).length;
+    const featured = products.filter(p => p.featured).length;
+    return { lowStock, outOfStock, featured, total: products.length };
   }, [products]);
 
   const handleDelete = async (productId: string) => {
-    if (!window.confirm("Đã xóa sản phẩm này?")) {
-      return;
-    }
-
+    if (!confirm("Delete this product?")) return;
     setDeleteId(productId);
     try {
       const response = await fetch(`/api/products?id=${productId}`, { method: "DELETE" });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(data?.error || "Unable to delete product.");
-      }
-
-      toast.success("Product removed.");
+      if (!response.ok) throw new Error(data?.error || "Failed to delete");
+      toast.success("Product deleted");
       await fetchProducts();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to delete product.");
+      toast.error(error instanceof Error ? error.message : "Failed to delete");
     } finally {
       setDeleteId(null);
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (!confirm(`Delete ${selectedProducts.size} selected products?`)) return;
+    const ids = Array.from(selectedProducts);
+    let failed = 0;
+    await Promise.all(ids.map(async (id) => {
+      try {
+        const res = await fetch(`/api/products?id=${id}`, { method: "DELETE" });
+        if (!res.ok) failed++;
+      } catch { failed++; }
+    }));
+    if (failed > 0) toast.error(`${failed} products failed to delete`);
+    else toast.success(`${ids.length} products deleted`);
+    setSelectedProducts(new Set());
+    await fetchProducts();
+  };
+
+  const handleBulkFeature = async () => {
+    const ids = Array.from(selectedProducts);
+    const targetProducts = products.filter(p => ids.includes(p.id) && p.slug);
+    let failed = 0;
+    await Promise.all(targetProducts.map(async (p) => {
+      try {
+        const res = await fetch(`/api/products/${p.slug}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ featured: true }),
+        });
+        if (!res.ok) failed++;
+      } catch { failed++; }
+    }));
+    if (failed > 0) toast.error(`${failed} products failed to update`);
+    else toast.success(`${ids.length} products set as featured`);
+    setSelectedProducts(new Set());
+    await fetchProducts();
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedProducts.size === products.length) {
+      setSelectedProducts(new Set());
+    } else {
+      setSelectedProducts(new Set(products.map(p => p.id)));
+    }
+  };
+
+  const toggleSelect = (productId: string) => {
+    const newSelected = new Set(selectedProducts);
+    if (newSelected.has(productId)) newSelected.delete(productId);
+    else newSelected.add(productId);
+    setSelectedProducts(newSelected);
+  };
+
+  const getStockStatus = (product: Product) => {
+    if (product.inventory <= 0) return { label: 'Out', color: 'bg-red-500/10 text-red-400' };
+    if (product.inventory < 10) return { label: 'Low', color: 'bg-amber-500/10 text-amber-400' };
+    return { label: 'In Stock', color: 'bg-emerald-500/10 text-emerald-400' };
+  };
+
   return (
-    <AdminPageContainer
-      title="Quản lý sản phẩm"
-      subtitle="Quản lý danh mục, giá cả, tồn kho và sản phẩm từ một bảng vận hành thân thiện."
-      action={
-        <>
-          <Button variant="outline" size="lg" onClick={() => void fetchProducts()} disabled={isLoading}>
-            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-            Làm mới
-          </Button>
-          <Link href="/admin/products/new">
-            <Button size="lg">
-              <Plus className="h-4 w-4" />
-              Tạo sản phẩm
-            </Button>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-zinc-100">Products</h1>
+          <p className="text-sm text-zinc-500 mt-0.5">Manage your product catalog</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => void fetchProducts()}
+            disabled={isLoading}
+            className="px-3.5 py-2 rounded-md border border-zinc-700 bg-zinc-900 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <Link 
+            href="/admin/products/new"
+            className="px-3.5 py-2 rounded-md bg-teal-600 text-sm font-medium text-white hover:bg-teal-500 transition-colors flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Product
           </Link>
-        </>
-      }
-    >
-      <div className="grid gap-4 lg:grid-cols-4">
-        <AdminCard className="p-5">
-          <Stat label="Tổng sản phẩm" value={`${total}`} tone="text-slate-950" />
-        </AdminCard>
-        <AdminCard className="p-5">
-          <Stat label="Sắp hết hàng" value={`${stats.lowStock}`} tone="text-amber-600" />
-        </AdminCard>
-        <AdminCard className="p-5">
-          <Stat label="Hết hàng" value={`${stats.outOfStock}`} tone="text-rose-600" />
-        </AdminCard>
-        <AdminCard className="p-5">
-          <Stat label="Nổi bật" value={`${stats.featured}`} tone="text-emerald-600" />
-        </AdminCard>
+        </div>
       </div>
 
-      <AdminFilterBar
-        searchQuery={search}
-        setSearchQuery={setSearch}
-        searchPlaceholder="Tìm theo tên, slug sản phẩm"
-      >
-        <select
-          value={category}
-          onChange={(event) => setCategory(event.target.value)}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 outline-none"
-        >
-          <option value="">Tất cả danh mục</option>
-          {ADMIN_CATEGORY_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={sort}
-          onChange={(event) => setSort(event.target.value)}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 outline-none"
-        >
-          {SORT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </AdminFilterBar>
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+          <p className="text-xs font-medium text-zinc-500 uppercase">Total Products</p>
+          <p className="text-2xl font-bold text-zinc-100 mt-1">{total}</p>
+        </div>
+        <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+          <p className="text-xs font-medium text-zinc-500 uppercase">Low Stock</p>
+          <p className="text-2xl font-bold text-amber-400 mt-1">{stats.lowStock}</p>
+        </div>
+        <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+          <p className="text-xs font-medium text-zinc-500 uppercase">Out of Stock</p>
+          <p className="text-2xl font-bold text-red-400 mt-1">{stats.outOfStock}</p>
+        </div>
+        <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+          <p className="text-xs font-medium text-zinc-500 uppercase">Featured</p>
+          <p className="text-2xl font-bold text-teal-400 mt-1">{stats.featured}</p>
+        </div>
+      </div>
 
-      <AdminTableContainer>
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-slate-200 bg-slate-50/80">
-              {["Sản phẩm", "Danh mục", "Giá", "Khối lượng", "Tồn kho", "Đánh giá", "Thao tác"].map((header) => (
-                <th
-                  key={header}
-                  className="px-6 py-4 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400"
-                >
-                  {header}
-                </th>
+      {/* Filter Bar */}
+      <div className="rounded-lg border border-zinc-800 bg-[#111113] p-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Search products by name or slug..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9 w-full rounded-md border border-zinc-700 bg-zinc-900 pl-9 pr-8 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-teal-500 focus:outline-none"
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="h-9 rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-100"
+            >
+              <option value="">Tất cả danh mục</option>
+              {adminCategories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {isLoading ? (
-              Array.from({ length: 6 }).map((_, index) => (
-                <tr key={index} className="animate-pulse">
-                  <td colSpan={7} className="px-6 py-5">
-                    <div className="h-4 w-3/4 rounded-full bg-slate-100" />
+            </select>
+            <select
+              value={visibilityFilter}
+              onChange={(e) => setVisibilityFilter(e.target.value)}
+              className="h-9 rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-100"
+            >
+              <option value="ALL">Tất cả (ẩn + hiện)</option>
+              <option value="VISIBLE">Đang hiển thị</option>
+              <option value="HIDDEN">Đã ẩn</option>
+            </select>
+            <select
+              value={stockFilter}
+              onChange={(e) => setStockFilter(e.target.value)}
+              className="h-9 rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-100"
+            >
+              {STATUS_CONFIG.map(opt => (
+                <option key={opt.key} value={opt.key}>{opt.label}</option>
+              ))}
+            </select>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="h-9 rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-100"
+            >
+              {SORT_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Bulk Actions */}
+      {selectedProducts.size > 0 && (
+        <div className="rounded-lg border border-teal-500/30 bg-teal-500/5 px-4 py-2.5 flex items-center justify-between">
+          <span className="text-sm font-medium text-teal-400">{selectedProducts.size} selected</span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => void handleBulkFeature()} className="h-8 px-3 rounded-md border border-zinc-700 bg-zinc-900 text-xs text-zinc-300 hover:bg-zinc-800">
+              Set Featured
+            </button>
+            <button disabled className="h-8 px-3 rounded-md border border-zinc-700 bg-zinc-900 text-xs text-zinc-500 cursor-not-allowed opacity-50">
+              Set Category
+            </button>
+            <button onClick={() => void handleBulkDelete()} className="h-8 px-3 rounded-md border border-red-600/30 bg-red-600/10 text-xs text-red-400 hover:bg-red-600/20">
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="rounded-lg border border-zinc-800 bg-[#111113] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-zinc-800 bg-zinc-900/50">
+                <th className="w-10 px-4 py-3">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedProducts.size === products.length && products.length > 0}
+                    onChange={toggleSelectAll}
+                    className="rounded border-zinc-600 bg-zinc-800 text-teal-500"
+                  />
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Product</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Category</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Price</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Stock</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Visibility</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Sales</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Rating</th>
+                <th className="w-20 px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800/50">
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="px-4 py-4"><div className="h-4 w-4 bg-zinc-800 rounded" /></td>
+                    <td className="px-4 py-4"><div className="h-12 w-48 bg-zinc-800 rounded" /></td>
+                    <td className="px-4 py-4"><div className="h-4 w-20 bg-zinc-800 rounded" /></td>
+                    <td className="px-4 py-4"><div className="h-4 w-16 bg-zinc-800 rounded" /></td>
+                    <td className="px-4 py-4"><div className="h-6 w-16 bg-zinc-800 rounded-full" /></td>
+                    <td className="px-4 py-4"><div className="h-6 w-16 bg-zinc-800 rounded-full" /></td>
+                    <td className="px-4 py-4"><div className="h-4 w-12 bg-zinc-800 rounded" /></td>
+                    <td className="px-4 py-4"><div className="h-4 w-12 bg-zinc-800 rounded" /></td>
+                    <td className="px-4 py-4"><div className="h-8 w-8 bg-zinc-800 rounded" /></td>
+                  </tr>
+                ))
+              ) : products.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-20 text-center">
+                    <Package className="mx-auto h-10 w-10 text-zinc-600" />
+                    <h3 className="mt-4 text-sm font-medium text-zinc-400">No products found</h3>
+                    <p className="mt-1 text-xs text-zinc-500">Try adjusting your filters</p>
                   </td>
                 </tr>
-              ))
-            ) : products.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-6 py-20 text-center">
-                  <Package className="mx-auto h-10 w-10 text-slate-200" />
-                  <h3 className="mt-4 text-lg font-black text-slate-950">Không tìm thấy sản phẩm</h3>
-                  <p className="mt-2 text-sm text-slate-500">Điều chỉnh bộ lọc hoặc tạo sản phẩm mới.</p>
-                </td>
-              </tr>
-            ) : (
-              products.map((product) => {
-                const deleting = deleteId === product.id;
-                const healthTone =
-                  product.inventory <= 0
-                    ? "bg-rose-100 text-rose-600"
-                    : product.inventory < 10
-                      ? "bg-amber-100 text-amber-600"
-                      : "bg-emerald-100 text-emerald-600";
-                const healthLabel = product.inventory <= 0 ? "Hết" : product.inventory < 10 ? "Thấp" : "Đủ";
-
-                return (
-                  <tr key={product.id} className="transition hover:bg-slate-50/70">
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-4">
-                                        <div className="relative h-14 w-14 overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200">
-                          {product.image ? (
-                            <Image
-                              src={product.image}
-                              alt={product.name}
-                              fill
-                              sizes="56px"
-                              className="object-cover"
-                              unoptimized
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-slate-300">
-                              <Package className="h-5 w-5" />
-                            </div>
-                          )}
+              ) : (
+                products.map((product) => {
+                  const stockStatus = getStockStatus(product);
+                  return (
+                    <tr key={product.id} className="transition-colors hover:bg-zinc-900/30">
+                      <td className="px-4 py-4">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedProducts.has(product.id)}
+                          onChange={() => toggleSelect(product.id)}
+                          className="rounded border-zinc-600 bg-zinc-800 text-teal-500"
+                        />
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-md bg-zinc-800 overflow-hidden flex items-center justify-center">
+                            {product.image ? (
+                              <Image src={product.image} alt={product.name} width={48} height={48} className="object-cover" />
+                            ) : (
+                              <Package className="h-5 w-5 text-zinc-600" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-zinc-200 max-w-[200px] truncate">{product.name}</p>
+                            <p className="text-xs text-zinc-500">{product.slug}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-black text-slate-950">{product.name}</p>
-                          <p className="mt-1 text-xs font-medium text-slate-400">/{product.slug || product.id}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-600">
-                        {getAdminCategoryLabel(product.category)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div>
-                        <p className="font-black text-slate-950">{formatPrice(product.price)}</p>
-                        {product.originalPrice && product.originalPrice > product.price ? (
-                          <p className="text-xs text-slate-400 line-through">{formatPrice(product.originalPrice)}</p>
-                        ) : null}
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-sm font-medium text-slate-600">{product.weight || "-"}</td>
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-2 text-sm font-bold">
-                        <span className="text-slate-950">{product.inventory}</span>
-                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${healthTone}`}>
-                          {healthLabel}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-zinc-400">
+                        {product.category}
+                      </td>
+                      <td className="px-4 py-4">
+                        <p className="text-sm font-semibold text-zinc-200">{formatPrice(product.price)}</p>
+                        {product.originalPrice && product.originalPrice > product.price && (
+                          <p className="text-xs text-zinc-500 line-through">{formatPrice(product.originalPrice)}</p>
+                        )}
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase ${stockStatus.color}`}>
+                          {product.inventory} - {stockStatus.label}
                         </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-sm font-medium text-slate-600">
-                      {product.ratingAvg ? `${product.ratingAvg.toFixed(1)} (${product.ratingCount || 0})` : "Chưa có đánh giá"}
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Link href={`/products/${product.slug || product.id}`} target="_blank">
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-4 w-4" />
-                            Xem
-                          </Button>
-                        </Link>
-                        <Link href={`/admin/products/${product.id}/edit`}>
-                          <Button variant="outline" size="sm">
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase ${product.isVisible !== false ? 'bg-emerald-500/10 text-emerald-400' : 'bg-zinc-700/50 text-zinc-500'}`}>
+                          {product.isVisible !== false ? 'Hiển thị' : 'Đã ẩn'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-zinc-400">
+                        {product.soldCount || 0}
+                      </td>
+                      <td className="px-4 py-4">
+                        {product.ratingAvg ? (
+                          <div className="flex items-center gap-1">
+                            <Star className="h-3.5 w-3.5 text-amber-400 fill-current" />
+                            <span className="text-sm text-zinc-300">{product.ratingAvg.toFixed(1)}</span>
+                            <span className="text-xs text-zinc-500">({product.ratingCount})</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-zinc-500">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-1">
+                          <Link 
+                            href={`/admin/products/${product.id}/edit`}
+                            className="p-2 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+                          >
                             <Edit className="h-4 w-4" />
-                            Sửa
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => void handleDelete(product.id)}
-                          disabled={deleting}
-                        >
-                          {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                          Xóa
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-        <AdminPagination page={page} setPage={setPage} pageSize={PAGE_SIZE} total={total} itemLabel="sản phẩm" />
-      </AdminTableContainer>
+                          </Link>
+                          <button 
+                            onClick={() => handleDelete(product.id)}
+                            disabled={deleteId === product.id}
+                            className="p-2 rounded-md text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors"
+                          >
+                            {deleteId === product.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <AdminCard className="p-5">
-          <Stat label="Top-rated products in view" value={`${stats.topRated}`} tone="text-sky-600" />
-          <p className="mt-3 text-sm leading-6 text-slate-500">
-            Use ratings to spot which product pages are ready for stronger promotion or featured placement.
-          </p>
-        </AdminCard>
-        <AdminCard className="p-5">
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Operator note</p>
-          <p className="mt-2 text-xl font-black text-slate-950">One place to add, fix, and retire products</p>
-          <p className="mt-3 text-sm leading-6 text-slate-500">
-            Creation, editing, pricing, variant updates, and removal now flow through the same admin structure so the catalog team can move faster with less guesswork.
-          </p>
-        </AdminCard>
+        {/* Pagination */}
+        {total > PAGE_SIZE && (
+          <div className="flex items-center justify-between border-t border-zinc-800 px-4 py-3">
+            <p className="text-xs text-zinc-500">
+              Showing {((page - 1) * PAGE_SIZE) + 1} to {Math.min(page * PAGE_SIZE, total)} of {total} products
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="h-8 w-8 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-300 disabled:opacity-40"
+              >
+                ←
+              </button>
+              {Array.from({ length: Math.min(5, Math.ceil(total / PAGE_SIZE)) }, (_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setPage(i + 1)}
+                  className={`h-8 w-8 rounded-md text-xs font-medium ${
+                    page === i + 1 
+                      ? 'bg-teal-600 text-white' 
+                      : 'border border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => setPage(p => Math.min(Math.ceil(total / PAGE_SIZE), p + 1))}
+                disabled={page >= Math.ceil(total / PAGE_SIZE)}
+                className="h-8 w-8 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-300 disabled:opacity-40"
+              >
+                →
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-    </AdminPageContainer>
-  );
-}
-
-function Stat({ label, value, tone }: { label: string; value: string; tone: string }) {
-  return (
-    <div>
-      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{label}</p>
-      <p className={`mt-2 text-3xl font-black ${tone}`}>{value}</p>
     </div>
   );
 }

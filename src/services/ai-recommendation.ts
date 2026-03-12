@@ -5,7 +5,7 @@
  * https://github.com/tranquocvu-3011/likefood
  */
 
-import { model } from "@/lib/gemini";
+import { getGeminiModel } from "@/lib/ai/gemini-runtime";
 
 interface Product {
     id: string;
@@ -24,6 +24,10 @@ export async function getAIRecommendations(baseProduct: Product, allProducts: Pr
   `;
 
     try {
+        const model = await getGeminiModel({ model: "gemini-2.0-flash", temperature: 0.6, maxOutputTokens: 700, topP: 0.9, topK: 32 });
+        if (!model) {
+            return allProducts.slice(0, 3);
+        }
         const result = await model.generateContent(prompt);
         const text = result.response.text();
         const ids = text.split(",").map(id => id.trim());

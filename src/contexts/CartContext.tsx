@@ -10,6 +10,18 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { tracking } from "@/lib/tracking";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+
+// Helper: đọc language từ localStorage (tương thích với i18n context)
+function getLanguage(): string {
+    if (typeof window === "undefined") return "vi";
+    try {
+        return localStorage.getItem("likefood-language") || "vi";
+    } catch {
+        return "vi";
+    }
+}
 
 interface CartItem {
     id: string; // Composite ID: productId_variantId (or just productId if no variant)
@@ -29,23 +41,29 @@ export type AddableProduct = Omit<CartItem, "id" | "quantity"> & {
     quantity?: number;
 };
 
-interface CartContextType {
+interface CartStateContextType {
     items: CartItem[];
-    addItem: (product: AddableProduct) => void;
-    removeItem: (id: string) => void;
-    updateQuantity: (id: string, quantity: number) => void;
-    clearCart: () => void;
     totalItems: number;
     totalPrice: number;
     lastAddedId: string | null;
-    clearLastAddedId: () => void;
     isCartOpen: boolean;
+}
+
+interface CartActionsContextType {
+    addItem: (product: AddableProduct) => boolean;
+    removeItem: (id: string) => void;
+    updateQuantity: (id: string, quantity: number) => void;
+    clearCart: () => void;
+    clearLastAddedId: () => void;
     setCartOpen: (isOpen: boolean) => void;
 }
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
+const CartStateContext = createContext<CartStateContextType | undefined>(undefined);
+const CartActionsContext = createContext<CartActionsContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+    const { data: session } = useSession();
+    const router = useRouter();
     const [items, setItems] = useState<CartItem[]>(() => {
         if (typeof window === "undefined") return [];
         const savedCart = window.localStorage.getItem("likefood-cart");
@@ -69,11 +87,56 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     const clearLastAddedId = React.useCallback(() => setLastAddedId(null), []);
 
-    const addItem = React.useCallback((product: AddableProduct) => {
-        const productQuantity = product.quantity || 1;
+    const addItem = React.useCallback((product: AddableProduct): boolean => {
+        // Yêu cầu đăng nhập để thêm vào giỏ hàng
+        if (!session?.user?.id) {
+            const lang = getLanguage();
+            const currentPath = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/";
+            toast.error(
+                lang === "vi" ? "Vui lòng đăng nhập để thêm vào giỏ hàng" : "Please login to add items to cart",
+                {
+                    description: lang === "vi" ? "Bạn cần đăng nhập trước khi mua hàng" : "You need to login before shopping",
+                    action: {
+                        label: lang === "vi" ? "Đăng nhập ngay" : "Login now",
+                        onClick: () => router.push(`/login?callbackUrl=${encodeURIComponent(currentPath)}`),
+                    },
+                    duration: 4000,
+                }
+            );
+            return false;
+        }
+
+    const productQuantity = product.quantity || 1;
         const cartItemId = product.variantId
             ? `${product.productId}_${product.variantId}`
             : product.productId;
+
+        // Kiểm tra tồn kho trước khi thêm vào giỏ
+        if (product.inventory !== undefined && product.inventory >= 0) {
+            const currentItem = items.find((item) => item.id === cartItemId);
+            const currentQty = currentItem?.quantity ?? 0;
+            const newQty = currentQty + productQuantity;
+            if (newQty > product.inventory) {
+                const lang = getLanguage();
+                const available = product.inventory - currentQty;
+                if (available <= 0) {
+                    toast.error(
+                        lang === "vi"
+                            ? `${product.name} đã hết hàng`
+                            : `${product.name} is out of stock`,
+                        { id: `cart-stock-${cartItemId}` }
+                    );
+                } else {
+                    toast.error(
+                        lang === "vi"
+                            ? `Chỉ còn ${product.inventory} "${product.name}" trong kho (bạn đã có ${currentQty} trong giỏ)`
+                            : `Only ${product.inventory} "${product.name}" in stock (${currentQty} already in cart)`,
+                        { id: `cart-stock-${cartItemId}` }
+                    );
+                }
+                return false;
+            }
+        }
 
         setLastAddedId(cartItemId);
         // Reset lastAddedId after animation duration
@@ -83,10 +146,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             const existing = current.find((item) => item.id === cartItemId);
             if (existing) {
                 const newQuantity = existing.quantity + productQuantity;
+                const lang = getLanguage();
                 toast.success(
-                    `Đã cập nhật ${product.name} (${newQuantity} sản phẩm)`,
+                    lang === "vi"
+                        ? `Đã cập nhật ${product.name} (${newQuantity} sản phẩm)`
+                        : `Updated ${product.name} (${newQuantity} items)`,
                     {
-                        description: "Sản phẩm đã có trong giỏ hàng",
+                        description: lang === "vi" ? "Sản phẩm đã có trong giỏ hàng" : "Product already in cart",
                         id: `cart-${cartItemId}`,
                     }
                 );
@@ -112,30 +178,43 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 setCartOpen(true);
             }
 
-            toast.success(`Đã thêm ${product.name} vào giỏ hàng`, {
-                description: "Sản phẩm đã được thêm thành công",
-                id: `cart-${cartItemId}`,
-                action: {
-                    label: "Hoàn tác",
-                    onClick: () => {
-                        setItems(current);
-                        toast.info(`Đã hoàn tác: ${product.name} đã được gỡ khỏi giỏ hàng`);
+            const lang = getLanguage();
+            toast.success(
+                lang === "vi" ? `Đã thêm ${product.name} vào giỏ hàng` : `Added ${product.name} to cart`,
+                {
+                    description: lang === "vi" ? "Sản phẩm đã được thêm thành công" : "Product added successfully",
+                    id: `cart-${cartItemId}`,
+                    action: {
+                        label: lang === "vi" ? "Hoàn tác" : "Undo",
+                        onClick: () => {
+                            setItems(current);
+                            toast.info(
+                                lang === "vi"
+                                    ? `Đã hoàn tác: ${product.name} đã được gỡ khỏi giỏ hàng`
+                                    : `Undone: ${product.name} removed from cart`
+                            );
+                        },
                     },
-                },
-            });
+                }
+            );
 
             return newItems;
         });
-    }, []);
+        return true;
+    }, [session, router, items]);
 
     const removeItem = React.useCallback((id: string) => {
         setItems((current) => {
             const item = current.find((item) => item.id === id);
             if (item) {
-                toast.success(`Đã xóa ${item.name} khỏi giỏ hàng`, {
-                    description: "Sản phẩm đã được gỡ bỏ",
-                    id: `cart-${item.id}`,
-                });
+                const lang = getLanguage();
+                toast.success(
+                    lang === "vi" ? `Đã xóa ${item.name} khỏi giỏ hàng` : `Removed ${item.name} from cart`,
+                    {
+                        description: lang === "vi" ? "Sản phẩm đã được gỡ bỏ" : "Product removed",
+                        id: `cart-${item.id}`,
+                    }
+                );
                 // Track remove from cart
                 tracking.removeFromCart(item.id, item.name, item.price, item.quantity);
             }
@@ -151,10 +230,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setItems((current) => {
             const item = current.find((item) => item.id === id);
             if (item && item.quantity !== quantity) {
+                const lang = getLanguage();
                 toast.success(
-                    `Đã cập nhật số lượng ${item.name} thành ${quantity}`,
+                    lang === "vi"
+                        ? `Đã cập nhật số lượng ${item.name} thành ${quantity}`
+                        : `Updated ${item.name} quantity to ${quantity}`,
                     {
-                        description: "Số lượng đã được cập nhật",
+                        description: lang === "vi" ? "Số lượng đã được cập nhật" : "Quantity updated",
                         id: `cart-qty-${item.id}`,
                     }
                 );
@@ -173,31 +255,53 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         items.reduce((sum, item) => sum + item.price * item.quantity, 0),
         [items]);
 
-    const value = React.useMemo(() => ({
+    const stateValue = React.useMemo(() => ({
         items,
+        totalItems,
+        totalPrice,
+        lastAddedId,
+        isCartOpen,
+    }), [items, totalItems, totalPrice, lastAddedId, isCartOpen]);
+
+    const actionsValue = React.useMemo(() => ({
         addItem,
         removeItem,
         updateQuantity,
         clearCart,
-        totalItems,
-        totalPrice,
-        lastAddedId,
         clearLastAddedId,
-        isCartOpen,
         setCartOpen,
-    }), [items, addItem, removeItem, updateQuantity, clearCart, totalItems, totalPrice, lastAddedId, clearLastAddedId, isCartOpen]);
+    }), [addItem, removeItem, updateQuantity, clearCart, clearLastAddedId]);
 
     return (
-        <CartContext.Provider value={value}>
-            {children}
-        </CartContext.Provider>
+        <CartStateContext.Provider value={stateValue}>
+            <CartActionsContext.Provider value={actionsValue}>
+                {children}
+            </CartActionsContext.Provider>
+        </CartStateContext.Provider>
     );
 }
 
 export function useCart() {
-    const context = useContext(CartContext);
-    if (context === undefined) {
+    const state = useContext(CartStateContext);
+    const actions = useContext(CartActionsContext);
+    if (state === undefined || actions === undefined) {
         throw new Error("useCart must be used within a CartProvider");
+    }
+    return { ...state, ...actions };
+}
+
+export function useCartActions() {
+    const context = useContext(CartActionsContext);
+    if (context === undefined) {
+        throw new Error("useCartActions must be used within a CartProvider");
+    }
+    return context;
+}
+
+export function useCartState() {
+    const context = useContext(CartStateContext);
+    if (context === undefined) {
+        throw new Error("useCartState must be used within a CartProvider");
     }
     return context;
 }

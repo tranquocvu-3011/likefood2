@@ -7,7 +7,7 @@
  * https://github.com/tranquocvu-3011/likefood
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getGeminiModel } from "@/lib/ai/gemini-runtime";
 
 interface SalesData {
   date: string;
@@ -60,22 +60,6 @@ interface CustomerSegment {
   avgOrderValue: number;
 }
 
-function getGeminiModel() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
-
-  const genAI = new GoogleGenerativeAI(apiKey);
-  return genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    generationConfig: {
-      temperature: 0.6,
-      maxOutputTokens: 1600,
-      topP: 0.9,
-      topK: 40,
-    },
-  });
-}
-
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -106,7 +90,7 @@ function getTopicFallback(topic: string): string {
 }
 
 async function askGemini(prompt: string, fallback: string): Promise<string> {
-  const model = getGeminiModel();
+  const model = await getGeminiModel({ model: "gemini-2.0-flash", temperature: 0.6, maxOutputTokens: 1600, topP: 0.9, topK: 40 });
   if (!model) return fallback;
 
   try {

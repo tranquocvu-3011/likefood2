@@ -6,7 +6,7 @@
  * Copyright (c) 2026 LIKEFOOD Team
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getGeminiModel } from "@/lib/ai/gemini-runtime";
 import { classifyIntent, type Intent, type IntentResult } from "./intent-classifier";
 import { addMessage, getConversationHistory, getContextSummary, isNewSession, updateEntities, getContext, updatePreferences } from "./context-manager";
 import { getActivePromotions, getCategories, getFlashSaleProducts, getShippingInfo, getTrendingProducts, searchProducts, getProduct } from "./product-service";
@@ -53,24 +53,6 @@ interface ContextSummary {
   language?: "vi" | "en";
   categories?: string[];
   entities?: Record<string, string>;
-}
-
-function getGeminiModel() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return null;
-  }
-
-  const genAI = new GoogleGenerativeAI(apiKey);
-  return genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    generationConfig: {
-      temperature: 0.55,
-      maxOutputTokens: 800,
-      topP: 0.9,
-      topK: 32,
-    },
-  });
 }
 
 function detectLanguage(text: string): "vi" | "en" {
@@ -275,7 +257,7 @@ function getIntentGuidance(intent: Intent, lang: "vi" | "en"): string {
 }
 
 async function generateResponse(prompt: string): Promise<string | null> {
-  const model = getGeminiModel();
+  const model = await getGeminiModel({ model: "gemini-2.0-flash", temperature: 0.55, maxOutputTokens: 800, topP: 0.9, topK: 32 });
   if (!model) {
     return null;
   }

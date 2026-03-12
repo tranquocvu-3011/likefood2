@@ -210,7 +210,16 @@ UPSTASH_REDIS_REST_TOKEN="..."
 ALLOWED_ORIGIN="http://localhost:3000"
 NEXT_PUBLIC_TURNSTILE_SITE_KEY="..."
 TURNSTILE_SECRET_KEY="..."
+
+# Optional fallback (DB setting in admin has priority)
+CAPTCHA_ENABLED="ON"
 ```
+
+### CAPTCHA (Cloudflare Turnstile)
+
+- **Frontend**: `src/components/auth/CaptchaField.tsx` (reusable field)
+- **Server verify**: `src/lib/captcha.ts` (`verifyTurnstileToken`, `verifyTurnstileTokenFromHeaders`)
+- **Bật/tắt CAPTCHA**: Admin → `Kiểm soát hệ thống` → tab `Bảo mật` → `CAPTCHA (Cloudflare Turnstile)`
 
 ---
 

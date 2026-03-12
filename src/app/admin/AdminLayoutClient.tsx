@@ -9,9 +9,9 @@
 
 import AdminSidebar from "@/components/shared/AdminSidebar";
 import AdminBreadcrumbs from "@/components/shared/AdminBreadcrumbs";
+import { CommandPalette, useCommandPalette } from "@/components/admin/CommandPalette";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
 
 export default function AdminLayoutClient({
     children,
@@ -25,6 +25,7 @@ export default function AdminLayoutClient({
     const isLoginPage = pathname === "/admin/login";
     const isVerifyPage = pathname === "/admin/verify";
     const isBypassPage = isLoginPage || isVerifyPage;
+    const { open, setOpen } = useCommandPalette();
 
     useEffect(() => {
         if (isBypassPage) {
@@ -68,9 +69,9 @@ export default function AdminLayoutClient({
 
     if (isChecking2FA) {
         return (
-            <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
-                <Loader2 className="w-10 h-10 animate-spin text-primary" />
-                <p className="font-bold text-slate-400 uppercase tracking-widest text-xs">Đang kiểm tra bảo mật...</p>
+            <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#0A0A0B] gap-4">
+                <div className="w-10 h-10 border-2 border-teal-500/20 border-t-teal-500 rounded-full animate-spin" />
+                <p className="font-semibold text-zinc-500 uppercase tracking-widest text-xs">Verifying...</p>
             </div>
         );
     }
@@ -80,14 +81,15 @@ export default function AdminLayoutClient({
     }
 
     return (
-        <div className="flex min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/80">
+        <div className="flex min-h-screen bg-[#0A0A0B]">
             <AdminSidebar />
-            <main className="flex-1 lg:ml-64 p-3 lg:p-4 transition-all duration-200">
-                <AdminBreadcrumbs />
-                <div className="mt-2">
+            <main className="flex-1 lg:ml-56 p-4 lg:p-6 transition-all duration-200">
+                <div className="max-w-[1600px] mx-auto">
+                    <AdminBreadcrumbs />
                     {children}
                 </div>
             </main>
+            <CommandPalette open={open} onOpenChange={setOpen} />
         </div>
     );
 }

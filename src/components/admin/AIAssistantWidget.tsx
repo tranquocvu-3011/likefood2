@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * LIKEFOOD - Vietnamese Specialty Marketplace
@@ -161,9 +161,9 @@ export default function AIAssistantWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.98 }}
             transition={{ duration: 0.2 }}
-            className="pointer-events-auto w-[calc(100vw-2rem)] max-w-[430px] overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.22)]"
+            className="pointer-events-auto w-[calc(100vw-2rem)] max-w-[430px] overflow-hidden rounded-[2rem] border border-zinc-800 bg-[#111113] shadow-[0_28px_90px_rgba(0,0,0,0.5)]"
           >
-            <div className="border-b border-slate-200 bg-[linear-gradient(135deg,#0f172a_0%,#0f766e_45%,#1d4ed8_100%)] px-5 py-5 text-white">
+            <div className="border-b border-zinc-800 bg-[linear-gradient(135deg,#0f172a_0%,#0f766e_45%,#1d4ed8_100%)] px-5 py-5 text-white">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-[1.25rem] bg-white/12 ring-1 ring-white/15 backdrop-blur">
@@ -201,16 +201,16 @@ export default function AIAssistantWidget() {
 
             {isMinimized ? (
               <div className="flex items-center justify-between gap-3 px-5 py-4">
-                <p className="text-sm text-slate-600">Trợ lý quản trị sẵn sàng khi bạn cần ra quyết định tiếp theo.</p>
+                <p className="text-sm text-zinc-400">Trợ lý quản trị sẵn sàng khi bạn cần ra quyết định tiếp theo.</p>
                 <Button size="sm" onClick={() => setIsMinimized(false)}>Mở rộng</Button>
               </div>
             ) : (
               <>
-                <div className="space-y-4 border-b border-slate-200 bg-slate-50 px-5 py-4">
+                <div className="space-y-4 border-b border-zinc-800 bg-zinc-900/50 px-5 py-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Dữ liệu quản trị trực tiếp</p>
-                      <p className="mt-1 text-sm text-slate-500">Lấy từ các endpoint dashboard và tóm tắt AI.</p>
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-zinc-500">Dữ liệu quản trị trực tiếp</p>
+                      <p className="mt-1 text-sm text-zinc-400">Lấy từ các endpoint dashboard và tóm tắt AI.</p>
                     </div>
                     <Button variant="outline" size="icon" onClick={() => void loadSnapshot()} disabled={isLoadingSnapshot}>
                       {isLoadingSnapshot ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -221,21 +221,21 @@ export default function AIAssistantWidget() {
                     <Metric label="Đơn hàng" value={`${snapshot.orders}`} icon={Sparkles} />
                     <Metric label="Khách hàng" value={`${snapshot.customers}`} icon={Users} />
                   </div>
-                  <div className="rounded-[1.4rem] border border-slate-200 bg-white p-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Tóm tắt AI</p>
-                    <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">{summaryPreview}</p>
-                    {snapshot.topProduct ? <p className="mt-3 text-xs font-semibold text-slate-500">Sản phẩm bán chạy hiện tại: {snapshot.topProduct}</p> : null}
+                  <div className="rounded-[1.4rem] border border-zinc-800 bg-zinc-900/50 p-4">
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-zinc-500">Tóm tắt AI</p>
+                    <p className="mt-2 whitespace-pre-line text-sm leading-6 text-zinc-300">{summaryPreview}</p>
+                    {snapshot.topProduct ? <p className="mt-3 text-xs font-semibold text-zinc-500">Sản phẩm bán chạy hiện tại: {snapshot.topProduct}</p> : null}
                   </div>
                 </div>
 
-                <div className="border-b border-slate-100 px-5 py-4">
+                <div className="border-b border-zinc-800 px-5 py-4">
                   <div className="flex flex-wrap gap-2">
                     {QUICK_PROMPTS.map((prompt) => (
                       <button
                         key={prompt}
                         type="button"
                         onClick={() => void sendMessage(prompt)}
-                        className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 transition hover:border-slate-300 hover:text-slate-900"
+                        className="rounded-full border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.12em] text-zinc-400 transition hover:border-zinc-600 hover:text-zinc-100"
                       >
                         {prompt}
                       </button>
@@ -243,14 +243,14 @@ export default function AIAssistantWidget() {
                   </div>
                 </div>
 
-                <div ref={scrollRef} className="max-h-[340px] space-y-4 overflow-y-auto bg-white px-5 py-5">
+                <div ref={scrollRef} className="max-h-[340px] space-y-4 overflow-y-auto bg-[#0A0A0B] px-5 py-5">
                   {messages.map((message) => {
                     const isAssistant = message.role === "assistant";
                     return (
                       <div key={message.id} className={`flex ${isAssistant ? "justify-start" : "justify-end"}`}>
-                        <div className={`max-w-[88%] rounded-[1.5rem] px-4 py-3 text-sm leading-6 shadow-sm ${isAssistant ? "border border-slate-200 bg-slate-50 text-slate-700" : "bg-slate-950 text-white"}`}>
+                        <div className={`max-w-[88%] rounded-[1.5rem] px-4 py-3 text-sm leading-6 ${isAssistant ? "border border-zinc-700 bg-zinc-800/50 text-zinc-200" : "bg-teal-600 text-white"}`}>
                           <p className="whitespace-pre-wrap">{message.content}</p>
-                          <p className={`mt-2 text-[11px] font-black uppercase tracking-[0.16em] ${isAssistant ? "text-slate-400" : "text-white/55"}`}>
+                          <p className={`mt-2 text-[11px] font-black uppercase tracking-[0.16em] ${isAssistant ? "text-zinc-500" : "text-white/55"}`}>
                             {isAssistant ? "AI" : "Bạn"} · {message.timestamp.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
                           </p>
                         </div>
@@ -259,7 +259,7 @@ export default function AIAssistantWidget() {
                   })}
                   {isSending ? (
                     <div className="flex justify-start">
-                      <div className="flex items-center gap-2 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                      <div className="flex items-center gap-2 rounded-[1.5rem] border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-sm text-zinc-400">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Đang phân tích dữ liệu cửa hàng...
                       </div>
@@ -267,14 +267,14 @@ export default function AIAssistantWidget() {
                   ) : null}
                 </div>
 
-                <div className="border-t border-slate-200 bg-white px-5 py-4">
-                  <div className="rounded-[1.6rem] border border-slate-200 bg-slate-50 p-3">
+                <div className="border-t border-zinc-800 bg-[#111113] px-5 py-4">
+                  <div className="rounded-[1.6rem] border border-zinc-800 bg-zinc-900/50 p-3">
                     <textarea
                       value={input}
                       onChange={(event) => setInput(event.target.value)}
                       rows={4}
                       placeholder="Hỏi nên ưu tiên gì tiếp theo, điều gì đang cản trở tăng trưởng, hoặc khu vực quản trị nào cần chú ý."
-                      className="min-h-[110px] w-full resize-none border-0 bg-transparent text-sm leading-6 text-slate-700 outline-none placeholder:text-slate-400"
+                      className="min-h-[110px] w-full resize-none border-0 bg-transparent text-sm leading-6 text-zinc-200 outline-none placeholder:text-zinc-500"
                     />
                     <div className="mt-3 flex items-center justify-between gap-3">
                       <p className="text-xs text-slate-400">Dựa trên số liệu quản trị hiện tại khi có sẵn.</p>
@@ -299,7 +299,7 @@ export default function AIAssistantWidget() {
           setIsOpen(true);
           setIsMinimized(false);
         }}
-        className="pointer-events-auto overflow-hidden rounded-[1.9rem] border border-slate-200 bg-[linear-gradient(135deg,#111827_0%,#0f766e_45%,#1d4ed8_100%)] px-5 py-4 text-left text-white shadow-[0_18px_60px_rgba(15,23,42,0.24)]"
+        className="pointer-events-auto overflow-hidden rounded-[1.9rem] border border-zinc-800 bg-[linear-gradient(135deg,#111827_0%,#0f766e_45%,#1d4ed8_100%)] px-5 py-4 text-left text-white shadow-[0_18px_60px_rgba(0,0,0,0.5)]"
       >
         <div className="flex items-center gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-[1.2rem] bg-white/12 ring-1 ring-white/15 backdrop-blur">

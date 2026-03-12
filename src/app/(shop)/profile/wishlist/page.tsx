@@ -17,6 +17,9 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
+import LoadingState from "@/components/ui/loading-state";
+import EmptyState from "@/components/ui/empty-state";
+import { formatPrice } from "@/lib/currency";
 
 interface WishlistProduct {
     id: string;
@@ -99,30 +102,24 @@ export default function WishlistPage() {
     };
 
     if (sessionStatus === "loading" || isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center pt-24">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-        );
+        return <LoadingState fullPage text="Đang tải danh sách yêu thích..." />;
     }
 
     if (products.length === 0) {
         return (
-            <div className="page-container-wide py-20 text-center">
-                <div className="bg-muted w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner shadow-black/5">
-                    <Heart className="w-12 h-12 text-muted-foreground" />
-                </div>
-                <h1 className="text-4xl font-black uppercase tracking-tighter mb-4">
-                    Chưa có sản phẩm yêu thích
-                </h1>
-                <p className="text-xl text-muted-foreground mb-12 max-w-lg mx-auto leading-relaxed">
-                    Hãy thêm sản phẩm bạn thích vào danh sách yêu thích để dễ dàng tìm lại sau nhé!
-                </p>
-                <Link href="/products" prefetch={true}>
-                    <Button className="bg-primary text-white px-10 py-5 rounded-full font-black uppercase tracking-widest shadow-2xl shadow-primary/30 hover:bg-primary/90 transition-all transform hover:scale-105 active:scale-95">
-                        Khám phá sản phẩm
-                    </Button>
-                </Link>
+            <div className="page-container-wide py-20">
+                <EmptyState
+                    icon={Heart}
+                    title="Chưa có sản phẩm yêu thích"
+                    description="Hãy thêm sản phẩm bạn thích vào danh sách yêu thích để dễ dàng tìm lại sau nhé!"
+                    action={
+                        <Link href="/products" prefetch={true}>
+                            <Button className="bg-primary text-white px-10 py-5 rounded-full font-black uppercase tracking-widest shadow-2xl shadow-primary/30 hover:bg-primary/90 transition-all transform hover:scale-105 active:scale-95">
+                                Khám phá sản phẩm
+                            </Button>
+                        </Link>
+                    }
+                />
             </div>
         );
     }
@@ -134,7 +131,7 @@ export default function WishlistPage() {
             </Link>
 
             <div className="flex items-center justify-between mb-8">
-                <h1 className="text-5xl font-black uppercase tracking-tighter">
+                <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tighter">
                     Danh sách yêu thích <span className="text-primary">({products.length})</span>
                 </h1>
             </div>
@@ -143,10 +140,10 @@ export default function WishlistPage() {
                 {products.map((product) => (
                     <div
                         key={product.id}
-                        className="bg-white rounded-3xl border border-slate-100 shadow-lg shadow-slate-100/50 overflow-hidden group hover:shadow-2xl transition-all duration-300"
+                        className="bg-white rounded-xl border border-slate-100 shadow-md shadow-slate-100/50 overflow-hidden group hover:shadow-xl transition-all duration-300"
                     >
                         <Link href={`/products/${product.slug || product.id}`} prefetch={true}>
-                            <div className="relative aspect-square bg-slate-100 overflow-hidden">
+                            <div className="relative aspect-[4/3] bg-slate-100 overflow-hidden">
                                 {product.image ? (
                                     <Image
                                         src={product.image}
@@ -177,11 +174,11 @@ export default function WishlistPage() {
 
                             <div className="flex items-baseline gap-2 mb-4">
                                 <span className="text-xl font-black text-primary">
-                                    ${(product.salePrice || product.price).toFixed(2)}
+                                    {formatPrice(product.salePrice || product.price)}
                                 </span>
                                 {product.originalPrice && product.originalPrice > (product.salePrice || product.price) && (
                                     <span className="text-sm text-slate-400 line-through">
-                                        ${product.originalPrice.toFixed(2)}
+                                        {formatPrice(product.originalPrice)}
                                     </span>
                                 )}
                             </div>
@@ -200,6 +197,7 @@ export default function WishlistPage() {
                                     size="icon"
                                     onClick={() => handleRemoveFromWishlist(product.id)}
                                     disabled={removingId === product.id}
+                                    aria-label="Xóa khỏi danh sách yêu thích"
                                     className="h-11 w-11 rounded-full border-2 border-slate-200 hover:border-red-500 hover:bg-red-50 hover:text-red-500 transition-all"
                                 >
                                     {removingId === product.id ? (

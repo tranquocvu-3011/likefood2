@@ -52,7 +52,7 @@ export default function AdminBrandsPage() {
             setBrands(data.brands || []);
             setTotal(data.brands?.length || 0);
         } catch (err) {
-            console.error("Fetch brands error:", err);
+            toast.error("Không tải được danh sách thương hiệu");
         } finally {
             setIsLoading(false);
         }

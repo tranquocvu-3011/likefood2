@@ -7,9 +7,9 @@
  * https://github.com/tranquocvu-3011/likefood
  */
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ShoppingCart, Check } from "lucide-react";
-import { useCart } from "@/contexts/CartContext";
+import { useCartActions } from "@/contexts/CartContext";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface QuickAddButtonProps {
@@ -24,8 +24,15 @@ interface QuickAddButtonProps {
 }
 
 export default function QuickAddButton({ product }: QuickAddButtonProps) {
-    const { addItem } = useCart();
+    const { addItem } = useCartActions();
     const [isAdded, setIsAdded] = useState(false);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+        };
+    }, []);
 
     const handleQuickAdd = async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -43,19 +50,21 @@ export default function QuickAddButton({ product }: QuickAddButtonProps) {
         });
 
         setIsAdded(true);
-        setTimeout(() => setIsAdded(false), 2000);
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => setIsAdded(false), 2000);
     };
 
     return (
         <motion.button
             onClick={handleQuickAdd}
             disabled={product.inventory <= 0}
+            aria-label={isAdded ? "Đã thêm vào giỏ hàng" : "Thêm vào giỏ hàng"}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className={`
-                relative flex items-center justify-center p-3 sm:p-3 rounded-2xl sm:rounded-2xl
+                relative flex items-center justify-center p-2 rounded-xl
                 transition-all duration-300 shadow-sm hover:shadow-md overflow-hidden group/add
-                w-12 h-12
+                w-9 h-9
                 ${product.inventory <= 0
                     ? "bg-slate-100 text-slate-400 cursor-not-allowed"
                     : isAdded
@@ -73,7 +82,7 @@ export default function QuickAddButton({ product }: QuickAddButtonProps) {
                         exit={{ opacity: 0, scale: 0.5, rotate: 45 }}
                         className="flex items-center justify-center"
                     >
-                        <Check className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <Check className="w-3.5 h-3.5" />
                     </motion.span>
                 ) : (
                     <motion.span
@@ -83,7 +92,7 @@ export default function QuickAddButton({ product }: QuickAddButtonProps) {
                         exit={{ opacity: 0, scale: 0.5 }}
                         className="flex items-center justify-center"
                     >
-                        <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 group-hover/add:scale-110 transition-transform duration-300" />
+                        <ShoppingCart className="w-3.5 h-3.5 group-hover/add:scale-110 transition-transform duration-300" />
                     </motion.span>
                 )}
             </AnimatePresence>

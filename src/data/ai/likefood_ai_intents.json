@@ -1,0 +1,36 @@
+{
+  "total": 2696,
+  "intents": {
+    "PRODUCT_DETAILS": 1221,
+    "PRODUCT_STORAGE": 222,
+    "PRODUCT_USAGE": 113,
+    "RECOMMENDATION_REQUEST": 115,
+    "PRODUCT_BENEFITS": 444,
+    "GIFT_IDEA": 114,
+    "PRODUCT_ORIGIN": 111,
+    "GENERAL_QUESTION": 9,
+    "SHIPPING_INQUIRY": 1,
+    "PRODUCT_SEARCH": 4,
+    "COOKING_HELP": 3,
+    "COMPARISON": 3,
+    "PROMOTION_INQUIRY": 1,
+    "DIET_SPECIFIC": 2,
+    "ORDER_PLACING": 333
+  },
+  "categories": [
+    "product",
+    "storage",
+    "usage",
+    "nutrition",
+    "gift",
+    "origin",
+    "general",
+    "shipping",
+    "bulk",
+    "promotion"
+  ],
+  "languages": {
+    "vi": 2359,
+    "en": 337
+  }
+}

@@ -8,6 +8,7 @@
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { Prisma } from "@/generated/client";
 import { applyRateLimit, apiRateLimit, getRateLimitIdentifier } from "@/lib/ratelimit";
 
 export async function GET(req: NextRequest) {
@@ -27,26 +28,32 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ hints: [] });
         }
 
-        const products = await prisma.product.findMany({
-            where: {
-                OR: [
-                    { name: { contains: q } },
-                    { category: { contains: q } },
-                ],
-                inventory: { gt: 0 }
-            },
-            select: {
-                id: true,
-                name: true,
-                category: true,
-                price: true,
-                image: true,
-                slug: true,
-            },
-            take: 6,
-        });
+        // Use COLLATE utf8mb4_bin for accent-sensitive matching
+        // (default utf8mb4_unicode_ci strips Vietnamese diacritics, causing false positives)
+        const like = `%${q}%`;
+        const products = await prisma.$queryRaw<Array<{
+            id: string;
+            name: string;
+            category: string | null;
+            price: number;
+            image: string | null;
+            slug: string | null;
+        }>>(Prisma.sql`
+            SELECT id, name, category, price, image, slug
+            FROM product
+            WHERE (
+                name     COLLATE utf8mb4_bin LIKE ${like}
+                OR category COLLATE utf8mb4_bin LIKE ${like}
+            )
+            AND inventory > 0
+            AND isDeleted = 0
+            AND isVisible = 1
+            LIMIT 6
+        `);
 
-        return NextResponse.json({ hints: products });
+        const res = NextResponse.json({ hints: products });
+        res.headers.set("Cache-Control", "no-store");
+        return res;
     } catch {
         return NextResponse.json({ hints: [] });
     }

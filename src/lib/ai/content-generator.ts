@@ -7,7 +7,7 @@
  * https://github.com/tranquocvu-3011/likefood
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getGeminiModel } from "@/lib/ai/gemini-runtime";
 
 interface GenerateDescriptionInput {
   name: string;
@@ -33,35 +33,6 @@ export interface GeneratedProductContent {
   seoTitle: string;
   seoDescription: string;
   tags: string[];
-}
-
-function getGeminiModel() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
-  const genAI = new GoogleGenerativeAI(apiKey);
-  return genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 1800,
-      topP: 0.9,
-      topK: 32,
-    },
-  });
-}
-
-function getGeminiModelWithSearch() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
-  const genAI = new GoogleGenerativeAI(apiKey);
-  return genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    tools: [{ googleSearchRetrieval: {} }],
-    generationConfig: {
-      temperature: 0.65,
-      maxOutputTokens: 1800,
-    },
-  });
 }
 
 function buildFallbackProductContent(input: { name: string; category: string }): GeneratedProductContent {
@@ -91,7 +62,14 @@ function extractJson(text: string): string {
 }
 
 async function askGemini(prompt: string, fallback: string, useSearch = false): Promise<string> {
-  const model = useSearch ? getGeminiModelWithSearch() : getGeminiModel();
+  const model = await getGeminiModel({
+    model: "gemini-2.0-flash",
+    temperature: useSearch ? 0.65 : 0.7,
+    maxOutputTokens: 1800,
+    topP: 0.9,
+    topK: 32,
+    useSearch,
+  });
   if (!model) return fallback;
 
   try {

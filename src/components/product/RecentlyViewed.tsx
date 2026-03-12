@@ -12,6 +12,8 @@ import { Clock, X, ShoppingBag, Flame } from "lucide-react";
 import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import Link from "next/link";
 import { logger } from "@/lib/logger";
+import { useLanguage } from "@/lib/i18n/context";
+import PriceDisplay from "@/components/ui/price-display";
 
 type ViewedProduct = {
     id: string;
@@ -30,6 +32,7 @@ type ViewedProduct = {
 };
 
 export default function RecentlyViewed() {
+    const { t } = useLanguage();
     const [products, setProducts] = useState<ViewedProduct[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -92,8 +95,6 @@ export default function RecentlyViewed() {
 
     if (loading || products.length === 0) return null;
 
-    const formatPrice = (val: number) => `$${Math.round(val).toLocaleString("en-US")}`;
-
     return (
         <section className="py-5 border-t border-slate-100">
             <div className="w-full mx-auto px-6 sm:px-10 lg:px-[8%]">
@@ -103,7 +104,7 @@ export default function RecentlyViewed() {
                         <div className="w-6 h-6 rounded-lg bg-violet-50 flex items-center justify-center">
                             <Clock className="w-3.5 h-3.5 text-violet-500" />
                         </div>
-                        <span className="text-xs font-black uppercase tracking-widest text-slate-600">Đã xem gần đây</span>
+                        <span className="text-xs font-black uppercase tracking-widest text-slate-600">{t("shop.recentlyViewed")}</span>
                         <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">
                             {products.length}
                         </span>
@@ -113,7 +114,7 @@ export default function RecentlyViewed() {
                         className="flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-rose-500 transition-colors px-2 py-1 rounded-lg hover:bg-rose-50"
                     >
                         <X className="w-3 h-3" />
-                        Xóa lịch sử
+                        {t("shop.clearHistory")}
                     </button>
                 </div>
 
@@ -183,20 +184,17 @@ export default function RecentlyViewed() {
                                         <p className="text-[11px] font-bold text-slate-800 line-clamp-2 leading-tight mb-1.5 min-h-[2.5em]">
                                             {product.name}
                                         </p>
-                                        {hasDiscount ? (
-                                            <div>
-                                                <p className="text-[9px] text-slate-400 line-through leading-none mb-0.5">
-                                                    {formatPrice(basePrice)}
-                                                </p>
-                                                <p className="text-xs font-black bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent leading-tight">
-                                                    {formatPrice(currentPrice)}
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            <p className="text-xs font-black text-slate-900 leading-tight">
-                                                {formatPrice(currentPrice)}
-                                            </p>
-                                        )}
+                                        <div className="mt-auto">
+                                            <PriceDisplay
+                                                currentPrice={product.price}
+                                                originalPrice={product.originalPrice}
+                                                salePrice={product.salePrice}
+                                                isOnSale={product.onSale || product.isOnSale}
+                                                size="sm"
+                                                showDiscountBadge={false}
+                                                className="!gap-1.5"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </Link>

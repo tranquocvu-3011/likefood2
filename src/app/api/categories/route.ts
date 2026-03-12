@@ -15,43 +15,107 @@ export async function GET(req: NextRequest) {
     if (!rl.success) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
 
     try {
-        // Get distinct categories from products with inventory
-        const products = await prisma.product.findMany({
+        const categories = await prisma.category.findMany({
             where: {
-                inventory: { gt: 0 }
+                isActive: true,
+                isVisible: true,
             },
-            select: {
-                category: true
+            include: {
+                children: {
+                    where: { isActive: true, isVisible: true },
+                    orderBy: { position: 'asc' },
+                    select: {
+                        id: true,
+                        name: true,
+                        slug: true,
+                        description: true,
+                        imageUrl: true,
+                        parentId: true,
+                        position: true,
+                        isVisible: true,
+                        isActive: true,
+                    },
+                },
             },
-            distinct: ['category']
+            orderBy: { position: 'asc' },
         });
 
-        // Map to category list with counts
-        const categoriesWithCounts = await Promise.all(
-            products.map(async (p) => {
-                const count = await prisma.product.count({
-                    where: {
-                        category: p.category,
-                        inventory: { gt: 0 }
-                    }
-                });
-                return {
-                    name: p.category,
-                    slug: p.category?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'unknown',
-                    productCount: count
-                };
-            })
-        );
+        const counts = await prisma.product.groupBy({
+            by: ['categoryId'],
+            where: {
+                isDeleted: false,
+                isVisible: true,
+                categoryId: { not: null },
+            },
+            _count: { _all: true },
+        });
+        const countByCategoryId = new Map<string, number>();
+        for (const row of counts) {
+            if (row.categoryId) countByCategoryId.set(row.categoryId, row._count._all);
+        }
 
-        // Sort by product count descending
-        categoriesWithCounts.sort((a, b) => b.productCount - a.productCount);
+        // Also count legacy products (categoryId=null but category string set)
+        // Match by category name → Category.name to include them in the count
+        const legacyCounts = await prisma.product.groupBy({
+            by: ['category'],
+            where: {
+                isDeleted: false,
+                isVisible: true,
+                categoryId: null,
+            },
+            _count: { _all: true },
+        });
 
-        const res = NextResponse.json(categoriesWithCounts);
-        // Categories thay đổi ít → cache 10 phút
-        res.headers.set(
-            "Cache-Control",
-            "public, s-maxage=600, stale-while-revalidate=1200"
-        );
+        // Build a flat name→id map across all categories (including children)
+        const catNameToId = new Map<string, string>();
+        for (const c of categories) {
+            catNameToId.set(c.name, c.id);
+            for (const ch of ((c as { children?: { name: string; id: string }[] }).children ?? [])) {
+                catNameToId.set(ch.name, ch.id);
+            }
+        }
+
+        for (const row of legacyCounts) {
+            if (!row.category) continue;
+            const count = (row._count as { _all?: number } | undefined)?._all ?? 0;
+            if (count === 0) continue;
+            const catId = catNameToId.get(row.category);
+            if (catId) {
+                countByCategoryId.set(catId, (countByCategoryId.get(catId) ?? 0) + count);
+            }
+        }
+
+        // Return a flattened shape similar to legacy, but richer.
+        const payload = categories
+            .filter((c) => c.name !== "Khác" && c.slug !== "khac")
+            .map((c) => ({
+                id: c.id,
+                name: c.name,
+                slug: c.slug,
+                description: c.description,
+                imageUrl: c.imageUrl,
+                parentId: c.parentId,
+                position: c.position,
+                isVisible: c.isVisible,
+                isActive: c.isActive,
+                productCount: countByCategoryId.get(c.id) ?? 0,
+                children: ((c as any).children ?? []).filter((ch: any) => ch.name !== "Khác" && ch.slug !== "khac").map((ch: any) => ({
+                    id: ch.id,
+                    name: ch.name,
+                    slug: ch.slug,
+                    description: ch.description,
+                    imageUrl: ch.imageUrl,
+                    parentId: ch.parentId,
+                    position: ch.position,
+                    isVisible: ch.isVisible,
+                    isActive: ch.isActive,
+                    productCount: countByCategoryId.get(ch.id) ?? 0,
+                })),
+            }));
+
+        const res = NextResponse.json(payload);
+        // Realtime storefront: do not cache categories
+        res.headers.set("Cache-Control", "no-store");
         return res;
     } catch (error) {
         console.error('Failed to fetch categories:', error);

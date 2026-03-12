@@ -570,6 +570,7 @@ async function main() {
     try {
       await prisma.aiKnowledge.create({
         data: {
+          id: crypto.randomUUID(),
           category: qa.category,
           question: qa.question,
           answer: qa.answer,
@@ -577,6 +578,7 @@ async function main() {
           language: qa.language,
           priority: qa.priority,
           isActive: true,
+          updatedAt: new Date(),
         },
       });
       successCount++;

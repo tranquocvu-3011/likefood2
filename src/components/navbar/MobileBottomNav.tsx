@@ -15,12 +15,14 @@ import { useCart } from "@/contexts/CartContext";
 import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/lib/i18n/context";
+import { useWishlistCount } from "@/hooks/useWishlistCount";
 
 export default function MobileBottomNav() {
     const pathname = usePathname();
     const { totalItems } = useCart();
     const { data: session } = useSession();
     const { t } = useLanguage();
+    const wishlistCount = useWishlistCount();
     const [isMounted, setIsMounted] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
@@ -29,7 +31,7 @@ export default function MobileBottomNav() {
         { icon: Home, label: t("mobileNav.home"), href: "/" },
         { icon: Search, label: t("mobileNav.products"), href: "/products" },
         { icon: ShoppingBag, label: t("mobileNav.cart"), href: "/cart", hasBadge: true },
-        { icon: Heart, label: t("mobileNav.wishlist"), href: "/profile/wishlist" },
+        { icon: Heart, label: t("mobileNav.wishlist"), href: "/profile/wishlist", hasWishlistBadge: true },
         { icon: User, label: t("mobileNav.account"), href: "/profile" },
     ];
 
@@ -68,9 +70,19 @@ export default function MobileBottomNav() {
             <div className="pb-safe">
                 <div className="flex items-center justify-around h-16 px-2">
                     {navItems.map((item) => {
-                        const isActive = pathname === item.href ||
-                            (item.href !== "/" && pathname.startsWith(item.href));
-                        const userHref = item.href === "/profile" && !session ? "/login" : item.href;
+                        // More precise route matching: exact match for root, startsWith for others but with exclusions
+                        const isExactMatch = pathname === item.href;
+                        const isSubRoute = item.href !== "/" && 
+                            (pathname.startsWith(item.href + "/") || 
+                             (item.href === "/profile" && pathname.startsWith("/profile")));
+                        const isActive = isExactMatch || (item.href !== "/" && isSubRoute);
+                        
+                        // Redirect to login for protected routes when not authenticated
+                        let userHref = item.href;
+                        const isProtectedRoute = item.href === "/profile" || item.href === "/profile/wishlist";
+                        if (isProtectedRoute && !session) {
+                            userHref = "/login";
+                        }
 
                         return (
                             <Link
@@ -124,11 +136,21 @@ export default function MobileBottomNav() {
                                                 {totalItems > 99 ? "99+" : totalItems}
                                             </motion.span>
                                         )}
+                                        {/* Badge for Wishlist */}
+                                        {item.hasWishlistBadge && isMounted && wishlistCount > 0 && (
+                                            <motion.span
+                                                initial={{ scale: 0 }}
+                                                animate={{ scale: 1 }}
+                                                className="absolute -top-2 -right-2 min-w-[18px] h-[18px] bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 border-2 border-white shadow-lg"
+                                            >
+                                                {wishlistCount > 99 ? "99+" : wishlistCount}
+                                            </motion.span>
+                                        )}
                                     </motion.div>
 
                                     {/* Label */}
                                     <span
-                                        className={`text-[9px] font-bold mt-1 transition-colors ${isActive ? "text-primary" : "text-slate-400"
+                                        className={`text-[10px] font-bold mt-1 transition-colors ${isActive ? "text-primary" : "text-slate-400"
                                             }`}
                                     >
                                         {item.label}

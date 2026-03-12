@@ -13,6 +13,7 @@ import { isValidEmailFormat, isDisposableEmail, isStrongPassword } from "@/lib/v
 import { hasMXRecord } from "@/lib/validation-server";
 import { registerRateLimit, getRateLimitIdentifier, applyRateLimit } from "@/lib/ratelimit";
 import { logger } from "@/lib/logger";
+import { verifyTurnstileToken } from "@/lib/captcha";
 
 export async function POST(req: Request) {
     try {
@@ -31,30 +32,9 @@ export async function POST(req: Request) {
             );
         }
 
-        // --- VALIDATE TURNSTILE ---
-        const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
-        const secretKey = process.env.TURNSTILE_SECRET_KEY;
-        if (siteKey && secretKey) {
-            if (!turnstileToken) {
-                return NextResponse.json(
-                    { error: "Vui lòng xác thực CAPTCHA." },
-                    { status: 400 }
-                );
-            }
-
-            const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: `secret=${secretKey}&response=${turnstileToken}`,
-            });
-
-            const verifyData = await verifyRes.json();
-            if (!verifyData.success) {
-                return NextResponse.json(
-                    { error: "Xác thực CAPTCHA thất bại. Vui lòng thử lại." },
-                    { status: 400 }
-                );
-            }
+        const captcha = await verifyTurnstileToken({ req, token: turnstileToken, action: "auth_register" });
+        if (!captcha.ok) {
+            return NextResponse.json({ error: captcha.message }, { status: 400 });
         }
 
         // --- NEW VALIDATION ---
@@ -154,11 +134,11 @@ export async function POST(req: Request) {
         const emailResult = await sendVerificationEmail(email, otp, "VERIFY", undefined, verifyUrl);
 
         if (!emailResult.success) {
-            logger.error("[MAIL] Failed to send verification email", {
-                context: "auth-register",
-                email,
-                error: emailResult.error,
-            });
+            logger.error(
+                "[MAIL] Failed to send verification email",
+                new Error(emailResult.error || "Unknown mail error"),
+                { context: "auth-register", email }
+            );
             return NextResponse.json(
                 { error: "Không thể gửi email xác thực. Vui lòng kiểm tra cấu hình SMTP." },
                 { status: 500 }

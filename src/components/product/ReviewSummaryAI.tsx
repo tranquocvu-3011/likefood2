@@ -45,7 +45,7 @@ export default function ReviewSummaryAI({ productId }: ReviewSummaryAIProps) {
         return (
             <div className="p-8 rounded-[2rem] bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-4">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                <p className="text-sm font-black uppercase tracking-widest text-slate-400">Đang phân tích đánh giá bằng AI...</p>
+                <p className="text-sm font-black uppercase tracking-widest text-slate-400">Đang phân tích đánh giá...</p>
             </div>
         );
     }
@@ -68,7 +68,7 @@ export default function ReviewSummaryAI({ productId }: ReviewSummaryAIProps) {
                         <Sparkles className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                        <h3 className="font-black uppercase tracking-tighter text-sm">Tóm tắt bằng AI</h3>
+                        <h3 className="font-black uppercase tracking-tighter text-sm">Tóm tắt đánh giá</h3>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dựa trên các đánh giá thực tế</p>
                     </div>
                 </div>

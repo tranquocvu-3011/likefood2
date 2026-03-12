@@ -219,6 +219,13 @@ const products = [
 async function main() {
     console.log("🌱 Seeding database...");
 
+    // Default system settings (safe for local/dev; admin can override in UI)
+    await prisma.systemsetting.upsert({
+        where: { key: "security_captcha_enabled" },
+        update: {},
+        create: { key: "security_captcha_enabled", value: "ON" },
+    });
+
     // Create products
     for (const product of products) {
         const existing = await prisma.product.findUnique({

@@ -30,14 +30,17 @@ const EMPTY_PRODUCT = {
   originalPrice: "",
   salePrice: "",
   category: "",
+  categoryId: "",
   weight: "",
   inventory: "0",
+  inStock: false,
   image: "",
   images: [] as string[],
   featured: false,
   badgeText: "",
   tags: "",
   isOnSale: false,
+  isVisible: true,
 };
 
 export default function EditProductPage() {
@@ -61,6 +64,7 @@ export default function EditProductPage() {
           throw new Error(productData?.error || "Không thể tải sản phẩm.");
         }
 
+        const inventoryNum = productData.inventory ?? 0;
         setProduct({
           name: productData.name || "",
           description: productData.description || "",
@@ -68,8 +72,10 @@ export default function EditProductPage() {
           originalPrice: productData.originalPrice?.toString?.() || "",
           salePrice: productData.salePrice?.toString?.() || "",
           category: productData.category || "",
+          categoryId: productData.categoryId || "",
           weight: productData.weight || "",
-          inventory: String(productData.inventory ?? 0),
+          inventory: String(inventoryNum),
+          inStock: inventoryNum > 0,
           image: productData.image || "",
           images: Array.isArray(productData.images)
             ? productData.images
@@ -82,6 +88,7 @@ export default function EditProductPage() {
           badgeText: productData.badgeText || "",
           tags: productData.tags || "",
           isOnSale: Boolean(productData.isOnSale),
+          isVisible: productData.isVisible !== false,
         });
 
         if (variantResponse.ok) {

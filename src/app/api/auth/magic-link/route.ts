@@ -10,11 +10,13 @@ import prisma from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/mail";
 import crypto from "crypto";
 import { loginRateLimit, getRateLimitIdentifier, applyRateLimit } from "@/lib/ratelimit";
+import { verifyTurnstileToken } from "@/lib/captcha";
+import { logger } from "@/lib/logger";
 
 // POST /api/auth/magic-link — Gửi Magic Link đăng nhập
 export async function POST(req: NextRequest) {
     try {
-        const { email } = await req.json();
+        const { email, turnstileToken } = await req.json();
 
         if (!email || typeof email !== "string") {
             return NextResponse.json({ error: "Email không hợp lệ" }, { status: 400 });
@@ -25,6 +27,11 @@ export async function POST(req: NextRequest) {
         const rateResult = await applyRateLimit(identifier, loginRateLimit);
         if (!rateResult.success && rateResult.error) {
             return rateResult.error;
+        }
+
+        const captcha = await verifyTurnstileToken({ req, token: turnstileToken, action: "auth_magic_link" });
+        if (!captcha.ok) {
+            return NextResponse.json({ error: captcha.message }, { status: 400 });
         }
 
         const user = await prisma.user.findUnique({

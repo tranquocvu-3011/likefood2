@@ -67,7 +67,7 @@ export default function RecentPosts() {
     if (posts.length === 0) return null;
 
     return (
-        <section className="relative py-12 md:py-16 bg-gradient-to-b from-slate-50/60 via-white to-slate-50/60 overflow-hidden">
+        <section className="relative py-8 md:py-12 bg-gradient-to-b from-slate-50/60 via-white to-slate-50/60 overflow-hidden">
             {/* Ambient glows */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute top-10 left-1/4 w-[400px] h-[300px] bg-orange-50/40 rounded-full blur-3xl" />

@@ -27,6 +27,39 @@ const ALLOWED_SETTING_KEYS = new Set([
     "payment_paypal_enabled", "payment_stripe_enabled", "zalo_pay_enabled",
     "bank_name", "bank_account_name", "bank_account_number",
     "bank_qr_image_url", "momo_qr_image_url", "paypal_client_id", "zalo_pay_qr_url",
+    // Security
+    "security_captcha_enabled",
+    "turnstile_site_key",
+    "turnstile_secret_key",
+    // ===== CONNECTIONS / INTEGRATIONS =====
+    // Database (Docker)
+    "db_host", "db_port", "db_name", "db_user", "db_password",
+    // Redis
+    "redis_url", "redis_password",
+    // Rate Limiting (Upstash)
+    "upstash_redis_rest_url", "upstash_redis_rest_token",
+    // AI / Gemini
+    "gemini_api_key",
+    // Telegram
+    "telegram_bot_token", "telegram_chat_id",
+    // Stripe
+    "stripe_secret_key", "stripe_webhook_secret", "stripe_publishable_key",
+    // PayPal
+    "paypal_client_id", "paypal_client_secret",
+    // MoMo
+    "momo_partner_code", "momo_access_key", "momo_secret_key",
+    // Sentry
+    "sentry_org", "sentry_project", "sentry_auth_token", "sentry_dsn",
+    // Cloudflare
+    "cloudflare_api_token", "cloudflare_zone_id",
+    // Google OAuth
+    "google_client_id", "google_client_secret",
+    // AWS S3
+    "aws_s3_bucket", "aws_access_key_id", "aws_secret_access_key", "aws_region",
+    // Analytics
+    "ga_tracking_id", "fb_pixel_id", "gtm_id",
+    // Health check
+    "health_secret",
 ]);
 
 export async function GET() {

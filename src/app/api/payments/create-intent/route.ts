@@ -9,8 +9,21 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
 import { logger } from "@/lib/logger";
+import Stripe from "stripe";
+import { getSystemSettingTrimmed } from "@/lib/system-settings";
+
+async function getStripeClient(): Promise<Stripe | null> {
+    const secret =
+        (await getSystemSettingTrimmed("stripe_secret_key")) ||
+        process.env.STRIPE_SECRET_KEY ||
+        "";
+    if (!secret) return null;
+    return new Stripe(secret, {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        apiVersion: "2024-11-20" as any,
+    });
+}
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
@@ -19,11 +32,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!process.env.STRIPE_SECRET_KEY) {
-        return NextResponse.json(
-            { error: "Stripe is not configured on the server" },
-            { status: 500 }
-        );
+    const stripe = await getStripeClient();
+    if (!stripe) {
+        return NextResponse.json({ error: "Stripe is not configured on the server" }, { status: 500 });
     }
 
     try {

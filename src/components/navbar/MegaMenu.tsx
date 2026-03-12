@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * LIKEFOOD - Vietnamese Specialty Marketplace
@@ -9,80 +9,66 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { ChevronRight, Sparkles, Fish, Shell, Apple, Coffee, Flame, Gift, Zap, ArrowRight } from "lucide-react";
+import Image from "next/image";
+import { ChevronRight, ArrowRight, Package } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/context";
+import { useState, useEffect } from "react";
+import { formatPrice } from "@/lib/currency";
 
 interface MegaMenuProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
-const categories = [
-    {
-        name: "Cá khô",
-        slug: "ca-kho",
-        icon: Fish,
-        color: "from-blue-500 to-cyan-400",
-        bg: "bg-blue-50",
-        textColor: "text-blue-600",
-        items: ["Cá lóc khô", "Cá chỉ vàng", "Cá basa khô", "Cá sặc rằn", "Cá kèo khô"],
-        featured: { name: "Khô cá lóc Châu Đốc", discount: "20%" }
-    },
-    {
-        name: "Tôm & Mực khô",
-        slug: "tom-muc-kho",
-        icon: Shell,
-        color: "from-orange-500 to-amber-400",
-        bg: "bg-orange-50",
-        textColor: "text-orange-600",
-        items: ["Tôm khô Cà Mau", "Mực khô Phan Thiết", "Tép khô", "Mực rim me"],
-        featured: { name: "Tôm khô size lớn", discount: "15%" }
-    },
-    {
-        name: "Trái cây sấy",
-        slug: "trai-cay-say",
-        icon: Apple,
-        color: "from-emerald-500 to-green-400",
-        bg: "bg-emerald-50",
-        textColor: "text-emerald-600",
-        items: ["Xoài sấy dẻo", "Chuối sấy giòn", "Mít sấy", "Thanh long sấy", "Khoai lang sấy"],
-        featured: { name: "Combo trái cây sấy", discount: "25%" }
-    },
-    {
-        name: "Trà & Bánh mứt",
-        slug: "tra-banh-mut",
-        icon: Coffee,
-        color: "from-amber-500 to-yellow-400",
-        bg: "bg-amber-50",
-        textColor: "text-amber-600",
-        items: ["Trà sen Huế", "Trà atiso", "Mứt gừng", "Bánh tráng", "Kẹo dừa"],
-        featured: null
-    },
-    {
-        name: "Gia vị Việt",
-        slug: "gia-vi-viet",
-        icon: Flame,
-        color: "from-red-500 to-rose-400",
-        bg: "bg-red-50",
-        textColor: "text-red-600",
-        items: ["Nước mắm Phú Quốc", "Muối tôm Tây Ninh", "Sa tế", "Tương ớt", "Mắm ruốc"],
-        featured: null
-    },
-    {
-        name: "Quà tặng",
-        slug: "qua-tang",
-        icon: Gift,
-        color: "from-violet-500 to-purple-400",
-        bg: "bg-violet-50",
-        textColor: "text-violet-600",
-        items: ["Set quà Tết", "Combo gia đình", "Hộp quà cao cấp", "Túi quà xinh"],
-        featured: { name: "Set quà Tết 2026", discount: "30%" }
-    }
+interface MenuProduct {
+    id: string;
+    slug: string;
+    name: string;
+    price: number;
+    salePrice: number | null;
+    image: string | null;
+}
+
+interface MenuCategory {
+    id: string;
+    name: string;
+    slug: string;
+    products: MenuProduct[];
+}
+
+const ACCENT_COLORS = [
+    { accent: "bg-blue-500",    textAccent: "text-blue-600",   border: "border-blue-100",   bg: "bg-blue-50" },
+    { accent: "bg-orange-500",  textAccent: "text-orange-600", border: "border-orange-100", bg: "bg-orange-50" },
+    { accent: "bg-emerald-500", textAccent: "text-emerald-600",border: "border-emerald-100",bg: "bg-emerald-50" },
+    { accent: "bg-amber-500",   textAccent: "text-amber-600",  border: "border-amber-100",  bg: "bg-amber-50" },
+    { accent: "bg-red-500",     textAccent: "text-red-600",    border: "border-red-100",    bg: "bg-red-50" },
+    { accent: "bg-violet-500",  textAccent: "text-violet-600", border: "border-violet-100", bg: "bg-violet-50" },
+    { accent: "bg-cyan-500",    textAccent: "text-cyan-600",   border: "border-cyan-100",   bg: "bg-cyan-50" },
+    { accent: "bg-pink-500",    textAccent: "text-pink-600",   border: "border-pink-100",   bg: "bg-pink-50" },
 ];
 
 export default function MegaMenu({ isOpen, onClose }: MegaMenuProps) {
+    const { t } = useLanguage();
+    const [categories, setCategories] = useState<MenuCategory[]>([]);
+    const [activeIdx, setActiveIdx] = useState(0);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        fetch("/api/categories/menu")
+            .then((r) => r.ok ? r.json() : { categories: [] })
+            .then((data: { categories: MenuCategory[] }) => {
+                if (Array.isArray(data.categories) && data.categories.length > 0) {
+                    setCategories(data.categories);
+                    setActiveIdx(0);
+                }
+            })
+            .catch(() => {});
+    }, [isOpen]);
+
+    const activeCategory = categories[activeIdx];
+
     return (
         <>
-            {/* Invisible click-outside catcher — không mờ, không blur */}
             {isOpen && (
                 <div
                     className="fixed inset-0 z-[60]"
@@ -91,133 +77,161 @@ export default function MegaMenu({ isOpen, onClose }: MegaMenuProps) {
                 />
             )}
 
-            {/* Panel */}
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: -6 }}
+                        initial={{ opacity: 0, y: -8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                        className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[1500px] max-w-[calc(100vw-24px)] bg-white border border-slate-200 rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.10),0_2px_8px_rgba(0,0,0,0.05)] z-[70] overflow-hidden"
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+                        className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-[900px] max-w-[calc(100vw-32px)] bg-white border border-slate-200/80 rounded-2xl shadow-[0_12px_48px_rgba(0,0,0,0.12)] z-[70] overflow-hidden"
                     >
-                        {/* Accent strip */}
-                        <div className="h-[3px] w-full bg-gradient-to-r from-emerald-400 via-primary to-teal-400" />
+                        {/* Accent line */}
+                        <div className="h-[2px] w-full bg-gradient-to-r from-emerald-400 via-primary to-teal-400" />
 
                         <div className="flex">
-                            {/* ── Categories ── */}
-                            <div className="flex-1 p-8">
-                                {/* Header */}
-                                <div className="flex items-center justify-between mb-5">
-                                    <div className="flex items-center gap-2">
-                                        <Sparkles className="w-5 h-5 text-primary" />
-                                        <span className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-400">
-                                            Danh mục sản phẩm
-                                        </span>
-                                    </div>
+                            {/* ── Left: Category list ── */}
+                            <aside className="w-[190px] flex-shrink-0 bg-slate-50/80 border-r border-slate-100 py-4">
+                                <p className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-slate-400 px-5 mb-3">
+                                    {t("navbar.categoriesSummary")}
+                                </p>
+                                <ul className="space-y-0.5">
+                                    {categories.map((cat, i) => {
+                                        const color = ACCENT_COLORS[i % ACCENT_COLORS.length];
+                                        const isActive = i === activeIdx;
+                                        return (
+                                            <li key={cat.id}>
+                                                <button
+                                                    type="button"
+                                                    onMouseEnter={() => setActiveIdx(i)}
+                                                    onClick={() => setActiveIdx(i)}
+                                                    className={`w-full flex items-center gap-2.5 px-5 py-2.5 text-left transition-all ${
+                                                        isActive
+                                                            ? "bg-white text-slate-900 font-bold shadow-sm"
+                                                            : "text-slate-600 hover:bg-white/70 hover:text-slate-800"
+                                                    }`}
+                                                >
+                                                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${color.accent}`} />
+                                                    <span className="text-[12px] leading-snug">{cat.name}</span>
+                                                    {isActive && <ChevronRight className="w-3 h-3 ml-auto flex-shrink-0 text-slate-400" />}
+                                                </button>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+
+                                <div className="px-5 mt-4">
                                     <Link
                                         href="/products"
                                         onClick={onClose}
-                                        className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary/80 transition-colors"
+                                        className="text-[11px] font-bold text-primary hover:text-primary/75 flex items-center gap-1 transition-colors"
                                     >
-                                        Xem tất cả <ChevronRight className="w-4 h-4" />
+                                        {t("common.viewAll")} <ChevronRight className="w-3 h-3" />
                                     </Link>
                                 </div>
+                            </aside>
 
-                                {/* Grid 3 × 2 */}
-                                <div className="grid grid-cols-3 gap-2.5">
-                                    {categories.map((cat) => (
-                                        <Link
-                                            key={cat.name}
-                                            href={`/products?category=${encodeURIComponent(cat.name)}`}
-                                            onClick={onClose}
-                                            className="group flex items-start gap-4 p-5 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200/70 transition-all duration-150"
-                                        >
-                                            {/* Icon */}
-                                            <div className={`mt-0.5 w-12 h-12 rounded-lg bg-gradient-to-br ${cat.color} flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform duration-150 flex-shrink-0`}>
-                                                <cat.icon className="w-6 h-6 text-white" />
+                            {/* ── Right: Products grid ── */}
+                            <div className="flex-1 p-5 min-h-[280px]">
+                                {activeCategory ? (
+                                    <motion.div
+                                        key={activeCategory.id}
+                                        initial={{ opacity: 0, x: 8 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ duration: 0.15 }}
+                                    >
+                                        {/* Category header */}
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div>
+                                                <h3 className="text-[13px] font-extrabold text-slate-900 tracking-tight">
+                                                    {activeCategory.name}
+                                                </h3>
+                                                <p className="text-[11px] text-slate-400 mt-0.5">
+                                                    {activeCategory.products.length} sản phẩm nổi bật
+                                                </p>
                                             </div>
+                                            <Link
+                                                href={`/products?category=${encodeURIComponent(activeCategory.slug)}`}
+                                                onClick={onClose}
+                                                className="text-[11px] font-bold text-primary hover:text-primary/75 flex items-center gap-1 transition-colors"
+                                            >
+                                                Xem tất cả <ArrowRight className="w-3 h-3" />
+                                            </Link>
+                                        </div>
 
-                                            {/* Text */}
-                                            <div className="min-w-0">
-                                                <h4 className={`text-sm font-bold text-slate-800 group-hover:${cat.textColor} transition-colors leading-snug mb-2`}>
-                                                    {cat.name}
-                                                </h4>
-                                                <div className="space-y-0.5">
-                                                    {cat.items.slice(0, 3).map((item) => (
-                                                        <p key={item} className="text-xs text-slate-400 group-hover:text-slate-500 truncate transition-colors">
-                                                            {item}
-                                                        </p>
-                                                    ))}
-                                                    {cat.items.length > 3 && (
-                                                        <p className="text-[11px] font-semibold text-primary/60 group-hover:text-primary transition-colors">
-                                                            +{cat.items.length - 3} sản phẩm
-                                                        </p>
-                                                    )}
+                                        {/* 4-product grid */}
+                                        <div className="grid grid-cols-4 gap-3">
+                                            {activeCategory.products.map((product) => {
+                                                const displayPrice = product.salePrice ?? product.price;
+                                                return (
+                                                    <Link
+                                                        key={product.id}
+                                                        href={`/products/${product.slug}`}
+                                                        onClick={onClose}
+                                                        className="group flex flex-col rounded-xl border border-slate-100 bg-slate-50/70 hover:bg-white hover:border-slate-200 hover:shadow-md transition-all duration-200 overflow-hidden"
+                                                    >
+                                                        {/* Product image */}
+                                                        <div className="relative aspect-square bg-white overflow-hidden">
+                                                            {product.image ? (
+                                                                <Image
+                                                                    src={product.image}
+                                                                    alt={product.name}
+                                                                    fill
+                                                                    sizes="150px"
+                                                                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center bg-slate-100">
+                                                                    <Package className="w-8 h-8 text-slate-300" />
+                                                                </div>
+                                                            )}
+                                                            {product.salePrice && (
+                                                                <span className="absolute top-1.5 left-1.5 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                                                                    SALE
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Product info */}
+                                                        <div className="p-2">
+                                                            <p className="text-[11px] font-semibold text-slate-800 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                                                                {product.name}
+                                                            </p>
+                                                            <p className="text-[11px] font-bold text-primary mt-1">
+                                                                {formatPrice(displayPrice)}
+                                                            </p>
+                                                        </div>
+                                                    </Link>
+                                                );
+                                            })}
+                                        </div>
+                                    </motion.div>
+                                ) : (
+                                    /* Loading skeleton */
+                                    <div className="grid grid-cols-4 gap-3">
+                                        {[...Array(4)].map((_, i) => (
+                                            <div key={i} className="rounded-xl border border-slate-100 bg-slate-50 overflow-hidden animate-pulse">
+                                                <div className="aspect-square bg-slate-200" />
+                                                <div className="p-2 space-y-1.5">
+                                                    <div className="h-3 bg-slate-200 rounded w-3/4" />
+                                                    <div className="h-3 bg-slate-200 rounded w-1/2" />
                                                 </div>
                                             </div>
-                                        </Link>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                )}
 
                                 {/* Footer CTA */}
-                                <div className="mt-6 pt-6 border-t border-slate-100">
+                                <div className="mt-5 pt-4 border-t border-slate-100">
                                     <Link
                                         href="/products"
                                         onClick={onClose}
-                                        className="group flex items-center justify-center gap-2.5 py-3 bg-primary hover:bg-primary/90 text-white rounded-xl text-sm font-bold tracking-wide transition-colors shadow-sm hover:shadow-md hover:shadow-primary/25"
+                                        className="group flex items-center justify-center gap-2 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-[12px] font-bold tracking-wide transition-all shadow-sm hover:shadow-md hover:shadow-primary/20"
                                     >
-                                        Khám phá toàn bộ sản phẩm
+                                        {t("navbar.exploreAllProducts")}
                                         <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                                     </Link>
                                 </div>
-                            </div>
-
-                            {/* ── Sidebar: Ưu đãi nổi bật ── */}
-                            <div className="w-[330px] flex-shrink-0 bg-slate-50/70 border-l border-slate-100 p-6 flex flex-col gap-5">
-                                {/* Sidebar header */}
-                                <div className="flex items-center gap-2.5">
-                                    <div className="w-7 h-7 rounded-md bg-gradient-to-br from-red-500 to-rose-400 flex items-center justify-center">
-                                        <Zap className="w-4 h-4 text-white" />
-                                    </div>
-                                    <span className="text-xs font-extrabold uppercase tracking-[0.12em] text-slate-500">
-                                        Ưu đãi nổi bật
-                                    </span>
-                                </div>
-
-                                {/* Deal cards */}
-                                <div className="space-y-3 flex-1">
-                                    {categories.filter(c => c.featured).map((cat) => (
-                                        <Link
-                                            key={cat.name}
-                                            href={`/products?category=${encodeURIComponent(cat.name)}`}
-                                            onClick={onClose}
-                                            className="group flex items-center gap-3 p-3.5 bg-white rounded-xl border border-slate-100 hover:border-primary/25 hover:shadow-sm transition-all duration-150"
-                                        >
-                                            <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${cat.color} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}>
-                                                <cat.icon className="w-5 h-5 text-white" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-xs font-bold text-slate-700 group-hover:text-primary transition-colors truncate leading-tight">
-                                                    {cat.featured?.name}
-                                                </p>
-                                                <p className="text-[11px] text-slate-400 mt-0.5">Ưu đãi có hạn</p>
-                                            </div>
-                                            <span className="text-[10px] font-black text-white bg-red-500 px-2 py-1 rounded-md flex-shrink-0">
-                                                -{cat.featured?.discount}
-                                            </span>
-                                        </Link>
-                                    ))}
-                                </div>
-
-                                {/* Flash Sale CTA */}
-                                <Link
-                                    href="/flash-sale"
-                                    onClick={onClose}
-                                    className="flex items-center justify-center gap-2 py-2.5 text-slate-600 hover:text-primary hover:bg-primary/5 text-xs font-bold rounded-xl transition-all border border-slate-100 hover:border-primary/20"
-                                >
-                                    Flash Sale
-                                </Link>
                             </div>
                         </div>
                     </motion.div>

@@ -1,0 +1,10 @@
+﻿src/lib/ai/knowledge-base-generator.ts(1381,11): error TS1005: ',' expected.
+src/lib/ai/knowledge-base-generator.ts(1383,7): error TS1135: Argument expression expected.
+src/lib/ai/knowledge-base-generator.ts(1383,8): error TS1472: 'catch' or 'finally' expected.
+src/lib/ai/knowledge-base-generator.ts(1389,7): error TS1005: 'try' expected.
+src/lib/ai/knowledge-base-generator.ts(1405,1): error TS1128: Declaration or statement expected.
+src/scripts/seed-knowledge-base.ts(582,11): error TS1005: ',' expected.
+src/scripts/seed-knowledge-base.ts(584,7): error TS1135: Argument expression expected.
+src/scripts/seed-knowledge-base.ts(584,8): error TS1472: 'catch' or 'finally' expected.
+src/scripts/seed-knowledge-base.ts(586,7): error TS1005: 'try' expected.
+src/scripts/seed-knowledge-base.ts(597,1): error TS1128: Declaration or statement expected.

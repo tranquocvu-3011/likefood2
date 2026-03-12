@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * LIKEFOOD - Vietnamese Specialty Marketplace
- * Copyright (c) 2026 LIKEFOOD Team
- * Licensed under the MIT License
- * https://github.com/tranquocvu-3011/likefood
+ * LIKEFOOD - Premium Admin Pagination
+ * Dark Gray Enterprise Dashboard Style - 2026 Edition
  */
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -22,7 +20,7 @@ export function AdminPagination({
   setPage,
   pageSize,
   total,
-  itemLabel = "mục",
+  itemLabel = "items",
 }: AdminPaginationProps) {
   const totalPages = Math.ceil(total / pageSize);
   if (totalPages <= 1) return null;
@@ -35,9 +33,9 @@ export function AdminPagination({
   );
 
   return (
-    <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-xs font-medium text-slate-500">
-        Hiển thị <span className="font-semibold text-slate-700">{start}</span> đến <span className="font-semibold text-slate-700">{end}</span> trong tổng <span className="font-semibold text-slate-700">{total}</span> {itemLabel}
+    <div className="flex flex-col gap-3 border-t border-zinc-800 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-xs font-medium text-zinc-500">
+        Showing <span className="font-semibold text-zinc-300">{start}</span> to <span className="font-semibold text-zinc-300">{end}</span> of <span className="font-semibold text-zinc-300">{total}</span> {itemLabel}
       </p>
 
       <div className="flex items-center gap-1">
@@ -45,10 +43,10 @@ export function AdminPagination({
           type="button"
           onClick={() => setPage(Math.max(1, page - 1))}
           disabled={page === 1}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-          aria-label="Trang trước"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Previous page"
         >
-          <ChevronLeft className="h-3.5 w-3.5" />
+          <ChevronLeft className="h-4 w-4" />
         </button>
 
         {pages.map((value) => (
@@ -56,10 +54,10 @@ export function AdminPagination({
             key={value}
             type="button"
             onClick={() => setPage(value)}
-            className={`h-7 min-w-7 rounded-md px-2 text-xs font-semibold transition ${
+            className={`h-8 min-w-8 rounded-md px-2.5 text-xs font-semibold transition ${
               value === page
-                ? "bg-slate-900 text-white"
-                : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-800"
+                ? "bg-teal-600 text-white"
+                : "border border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
             }`}
           >
             {value}
@@ -70,10 +68,10 @@ export function AdminPagination({
           type="button"
           onClick={() => setPage(Math.min(totalPages, page + 1))}
           disabled={page === totalPages}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-          aria-label="Trang sau"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Next page"
         >
-          <ChevronRight className="h-3.5 w-3.5" />
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
     </div>

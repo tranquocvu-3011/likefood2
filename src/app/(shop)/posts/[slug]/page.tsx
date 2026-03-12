@@ -43,10 +43,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         return {
             title: post.title,
             description: post.summary || `Đọc bài viết "${post.title}" trên LIKEFOOD Blog`,
+            alternates: {
+                canonical: `/posts/${slug}`,
+            },
             openGraph: {
                 title: post.title,
                 description: post.summary || `${post.title} - LIKEFOOD Blog`,
                 type: "article",
+                url: `/posts/${slug}`,
                 images: post.image ? [{ url: post.image, width: 1200, height: 630 }] : [],
                 authors: post.authorName ? [post.authorName] : ["LIKEFOOD"],
             },

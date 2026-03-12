@@ -1,294 +1,468 @@
 "use client";
 
 /**
- * LIKEFOOD - Vietnamese Specialty Marketplace
- * Copyright (c) 2026 LIKEFOOD Team
- * Licensed under the MIT License
- * https://github.com/tranquocvu-3011/likefood
+ * LIKEFOOD - Premium Inventory Management Module
+ * Phase 3: Low-Stock-First Workflow, Risk Emphasis
  */
 
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { PackageSearch, Package, AlertTriangle, RefreshCw, Sparkles, Loader2, TrendingDown } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { 
+  AlertTriangle, 
+  ArrowUpRight, 
+  Clock, 
+  Download, 
+  Loader2, 
+  Package, 
+  RefreshCw, 
+  Search, 
+  TrendingDown, 
+  TrendingUp,
+  X,
+  Plus,
+  Minus,
+  History,
+} from "lucide-react";
 import { toast } from "sonner";
+import { formatPrice } from "@/lib/currency";
 
 interface InventoryProduct {
-    id: string;
-    name: string;
-    category: string;
-    inventory: number;
-    soldCount: number;
+  id: string;
+  name: string;
+  slug?: string;
+  sku?: string;
+  category: string;
+  price: number;
+  inventory: number;
+  soldCount: number;
+  lastRestocked?: string;
+  reorderPoint?: number;
 }
 
-interface InventoryForecast {
-    productId: string;
-    productName: string;
-    currentStock: number;
-    daysUntilStockout: number;
-    recommendedRestock: number;
-    confidence: number;
-}
+const LOW_STOCK_THRESHOLD = 10;
+const CRITICAL_STOCK_THRESHOLD = 5;
 
 export default function AdminInventoryPage() {
-    const [products, setProducts] = useState<InventoryProduct[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [onlyLowStock, setOnlyLowStock] = useState(false);
-    const [forecasts, setForecasts] = useState<InventoryForecast[]>([]);
-    const [isLoadingForecast, setIsLoadingForecast] = useState(false);
-    const [showForecast, setShowForecast] = useState(false);
+  const [products, setProducts] = useState<InventoryProduct[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [stockFilter, setStockFilter] = useState("ALL");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState<InventoryProduct | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [adjustingId, setAdjustingId] = useState<string | null>(null);
 
-    useEffect(() => {
-        loadInventory();
-    }, []);
+  const fetchProducts = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/admin/inventory?sort=name");
+      if (!res.ok) throw new Error("Failed to load inventory");
+      const data = await res.json();
+      const items: InventoryProduct[] = (data.products || []).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        sku: p.sku,
+        category: p.category,
+        price: p.price,
+        inventory: p.inventory ?? 0,
+        soldCount: p.soldCount ?? 0,
+        lastRestocked: p.lastRestocked,
+        reorderPoint: p.reorderPoint,
+      }));
+      setProducts(items);
+    } catch (error) {
+      toast.error("Failed to load inventory");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-    const loadInventory = async () => {
-        try {
-            setIsLoading(true);
-            const res = await fetch("/api/products?limit=500&sort=name");
-            if (!res.ok) {
-                toast.error("Không thể tải danh sách kho hàng");
-                return;
-            }
-            const data = await res.json();
-            const items: InventoryProduct[] = (data.products || []).map((p: any) => ({
-                id: p.id,
-                name: p.name,
-                category: p.category,
-                inventory: p.inventory ?? 0,
-                soldCount: p.soldCount ?? 0,
-            }));
-            setProducts(items);
-        } catch {
-            toast.error("Lỗi kết nối tới server");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+  useEffect(() => {
+    void fetchProducts();
+  }, [fetchProducts]);
 
-    const loadForecast = async () => {
-        setIsLoadingForecast(true);
-        try {
-            const res = await fetch("/api/ai/admin?type=inventory");
-            if (res.ok) {
-                const data = await res.json();
-                setForecasts(data.forecasts || []);
-                setShowForecast(true);
-            }
-        } catch (error) {
-            console.error("Forecast error:", error);
-            toast.error("Không thể tải dự báo AI");
-        } finally {
-            setIsLoadingForecast(false);
-        }
-    };
+  const filteredProducts = useMemo(() => {
+    let result = products;
+    
+    // Search filter
+    if (search) {
+      const searchLower = search.toLowerCase();
+      result = result.filter(p => 
+        p.name.toLowerCase().includes(searchLower) ||
+        p.sku?.toLowerCase().includes(searchLower) ||
+        p.category.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Stock filter
+    if (stockFilter === "CRITICAL") {
+      result = result.filter(p => p.inventory <= CRITICAL_STOCK_THRESHOLD);
+    } else if (stockFilter === "LOW") {
+      result = result.filter(p => p.inventory > CRITICAL_STOCK_THRESHOLD && p.inventory < LOW_STOCK_THRESHOLD);
+    } else if (stockFilter === "OUT") {
+      result = result.filter(p => p.inventory <= 0);
+    } else if (stockFilter === "IN_STOCK") {
+      result = result.filter(p => p.inventory >= LOW_STOCK_THRESHOLD);
+    }
+    
+    // Category filter
+    if (categoryFilter) {
+      result = result.filter(p => p.category === categoryFilter);
+    }
+    
+    return result;
+  }, [products, search, stockFilter, categoryFilter]);
 
-    const lowStockThreshold = 10;
+  const stats = useMemo(() => {
+    const total = products.length;
+    const outOfStock = products.filter(p => p.inventory <= 0).length;
+    const critical = products.filter(p => p.inventory > 0 && p.inventory <= CRITICAL_STOCK_THRESHOLD).length;
+    const low = products.filter(p => p.inventory > CRITICAL_STOCK_THRESHOLD && p.inventory < LOW_STOCK_THRESHOLD).length;
+    const inStock = products.filter(p => p.inventory >= LOW_STOCK_THRESHOLD).length;
+    return { total, outOfStock, critical, low, inStock };
+  }, [products]);
 
-    const filtered = products.filter((p) =>
-        onlyLowStock ? p.inventory <= lowStockThreshold : true
-    );
+  const categories = useMemo(() => {
+    const cats = new Set(products.map(p => p.category));
+    return Array.from(cats).sort();
+  }, [products]);
 
-    const totalInventory = products.reduce((sum, p) => sum + p.inventory, 0);
-    const totalSold = products.reduce((sum, p) => sum + p.soldCount, 0);
-    const lowStockCount = products.filter((p) => p.inventory <= lowStockThreshold).length;
+  const quickAdjust = async (productId: string, delta: number) => {
+    setAdjustingId(productId);
+    try {
+      const res = await fetch("/api/admin/inventory", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, delta }),
+      });
+      if (!res.ok) throw new Error("Failed to adjust inventory");
+      toast.success(`Inventory adjusted by ${delta > 0 ? '+' : ''}${delta}`);
+      await fetchProducts();
+    } catch {
+      toast.error("Failed to adjust inventory");
+    } finally {
+      setAdjustingId(null);
+    }
+  };
 
-    return (
-        <div className="p-6 lg:p-10 space-y-8 max-w-6xl mx-auto">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div>
-                    <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase">Quản lý kho</h1>
-                    <p className="text-slate-500 font-medium text-sm">
-                        Xem nhanh số lượng tồn kho, sản phẩm bán chạy và cảnh báo gần hết hàng.
-                    </p>
-                </div>
-                <Button
-                    variant="outline"
-                    onClick={loadInventory}
-                    disabled={isLoading}
-                    className="rounded-2xl text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2"
-                >
-                    <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-                    Làm mới dữ liệu
-                </Button>
-            </div>
+  const getStockStatus = (inventory: number) => {
+    if (inventory <= 0) return { label: "Out of Stock", color: "bg-red-500/10 text-red-400", priority: 1 };
+    if (inventory <= CRITICAL_STOCK_THRESHOLD) return { label: "Critical", color: "bg-red-500/10 text-red-400", priority: 2 };
+    if (inventory < LOW_STOCK_THRESHOLD) return { label: "Low", color: "bg-amber-500/10 text-amber-400", priority: 3 };
+    return { label: "In Stock", color: "bg-emerald-500/10 text-emerald-400", priority: 4 };
+  };
 
-            {/* AI Forecast Section */}
-            <div className="bg-gradient-to-r from-violet-50 to-indigo-50 rounded-[2rem] p-6 border border-violet-100">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-2xl bg-violet-500 text-white shadow-lg">
-                            <Sparkles className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-black uppercase tracking-tight">AI Dự báo tồn kho</h3>
-                            <p className="text-xs text-violet-600 font-medium">Dự đoán sản phẩm cần nhập thêm</p>
-                        </div>
-                    </div>
-                    <Button
-                        variant="outline"
-                        onClick={loadForecast}
-                        disabled={isLoadingForecast}
-                        className="rounded-xl border-violet-200 text-violet-700 hover:bg-violet-100"
-                    >
-                        {isLoadingForecast ? (
-                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        ) : (
-                            <Sparkles className="w-4 h-4 mr-2" />
-                        )}
-                        {showForecast ? "Làm mới" : "Xem dự báo"}
-                    </Button>
-                </div>
+  const openDrawer = (product: InventoryProduct) => {
+    setSelectedProduct(product);
+    setDrawerOpen(true);
+  };
 
-                {showForecast && forecasts.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {forecasts.slice(0, 6).map((item, i) => (
-                            <div key={i} className="bg-white rounded-xl p-4 border border-violet-100 shadow-sm">
-                                <div className="flex items-start justify-between mb-2">
-                                    <h4 className="font-bold text-slate-800 text-sm line-clamp-1">{item.productName}</h4>
-                                    <span className={`text-xs font-black px-2 py-1 rounded-full ${
-                                        item.daysUntilStockout < 7 ? 'bg-red-100 text-red-700' :
-                                        item.daysUntilStockout < 14 ? 'bg-orange-100 text-orange-700' :
-                                        'bg-green-100 text-green-700'
-                                    }`}>
-                                        {item.daysUntilStockout} ngày
-                                    </span>
-                                </div>
-                                <div className="space-y-1 text-xs text-slate-500">
-                                    <p>Tồn kho: <span className="font-bold text-slate-700">{item.currentStock}</span></p>
-                                    <p>Đề xuất nhập: <span className="font-bold text-violet-600">{item.recommendedRestock}</span></p>
-                                    <p>Độ tin cậy: <span className="font-bold">{Math.round(item.confidence * 100)}%</span></p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {showForecast && forecasts.length === 0 && (
-                    <div className="text-center py-6 text-slate-500">
-                        <TrendingDown className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                        <p>Không có dữ liệu dự báo</p>
-                    </div>
-                )}
-            </div>
-
-            {/* Summary cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="rounded-2xl border-slate-100 shadow-sm">
-                    <CardHeader className="p-4 pb-2">
-                        <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
-                            Tổng tồn kho
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                        <p className="text-2xl font-black text-slate-900">{totalInventory}</p>
-                    </CardContent>
-                </Card>
-                <Card className="rounded-2xl border-slate-100 shadow-sm">
-                    <CardHeader className="p-4 pb-2">
-                        <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
-                            Tổng đã bán
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                        <p className="text-2xl font-black text-slate-900">{totalSold}</p>
-                    </CardContent>
-                </Card>
-                <Card className="rounded-2xl border-slate-100 shadow-sm">
-                    <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between">
-                        <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
-                            Gần hết hàng (&lt;= {lowStockThreshold})
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                        <p className="text-2xl font-black text-amber-600 flex items-center gap-2">
-                            <AlertTriangle className="w-5 h-5" /> {lowStockCount}
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Table */}
-            <Card className="rounded-[2rem] border-slate-100 shadow-sm">
-                <CardHeader className="p-6 border-b border-slate-100 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <Package className="w-5 h-5 text-slate-500" />
-                        <div>
-                            <CardTitle className="text-xs font-black uppercase tracking-[0.2em]">
-                                Danh sách sản phẩm trong kho
-                            </CardTitle>
-                            <CardDescription className="text-xs text-slate-500">
-                                Bật chế độ lọc để xem nhanh các sản phẩm sắp hết hàng.
-                            </CardDescription>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => setOnlyLowStock((v) => !v)}
-                        className={`px-4 py-2 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] flex items-center gap-2 border ${onlyLowStock
-                            ? "bg-amber-50 text-amber-700 border-amber-200"
-                            : "bg-white text-slate-500 border-slate-200"
-                            }`}
-                    >
-                        <AlertTriangle className="w-3.5 h-3.5" />
-                        Chỉ xem gần hết hàng
-                    </button>
-                </CardHeader>
-                <CardContent className="p-0">
-                    {isLoading ? (
-                        <div className="py-10 flex items-center justify-center gap-3 text-slate-400 text-sm">
-                            <PackageSearch className="w-4 h-4 animate-pulse" />
-                            Đang tải dữ liệu kho...
-                        </div>
-                    ) : filtered.length === 0 ? (
-                        <div className="py-10 flex flex-col items-center justify-center text-slate-400 text-sm gap-2">
-                            <PackageSearch className="w-6 h-6" />
-                            Không có sản phẩm nào trong bộ lọc hiện tại.
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead className="bg-slate-50">
-                                    <tr className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
-                                        <th className="px-4 py-2 text-left font-black">Sản phẩm</th>
-                                        <th className="px-4 py-2 text-left font-black">Danh mục</th>
-                                        <th className="px-4 py-2 text-right font-black">Tồn kho</th>
-                                        <th className="px-4 py-2 text-right font-black">Đã bán</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filtered.map((p) => (
-                                        <tr
-                                            key={p.id}
-                                            className={`border-t border-slate-100 ${p.inventory <= lowStockThreshold ? "bg-amber-50/40" : "hover:bg-slate-50"
-                                                }`}
-                                        >
-                                            <td className="px-4 py-2">
-                                                <span className="font-semibold text-slate-900 line-clamp-1">
-                                                    {p.name}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-2">
-                                                <span className="text-xs text-slate-500">{p.category}</span>
-                                            </td>
-                                            <td className="px-4 py-2 text-right">
-                                                <span className={`font-bold ${p.inventory <= lowStockThreshold ? "text-amber-700" : "text-slate-800"
-                                                    }`}>
-                                                    {p.inventory}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-2 text-right">
-                                                <span className="font-medium text-slate-600">{p.soldCount}</span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-zinc-100">Inventory</h1>
+          <p className="text-sm text-zinc-500 mt-0.5">Stock management & low stock alerts</p>
         </div>
-    );
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => void fetchProducts()}
+            disabled={isLoading}
+            className="px-3.5 py-2 rounded-md border border-zinc-700 bg-zinc-900 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <button className="px-3.5 py-2 rounded-md border border-zinc-700 bg-zinc-900 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Export
+          </button>
+        </div>
+      </div>
+
+      {/* Risk Alert Banner */}
+      {(stats.critical > 0 || stats.outOfStock > 0) && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-semibold text-red-400">Attention Required</h3>
+              <p className="text-xs text-zinc-400 mt-1">
+                {stats.outOfStock > 0 && `${stats.outOfStock} products out of stock. `}
+                {stats.critical > 0 && `${stats.critical} products at critical level (<${CRITICAL_STOCK_THRESHOLD} units).`}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+          <p className="text-xs font-medium text-zinc-500 uppercase">Total Products</p>
+          <p className="text-2xl font-bold text-zinc-100 mt-1">{stats.total}</p>
+        </div>
+        <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+          <p className="text-xs font-medium text-zinc-500 uppercase">In Stock</p>
+          <p className="text-2xl font-bold text-emerald-400 mt-1">{stats.inStock}</p>
+        </div>
+        <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+          <p className="text-xs font-medium text-zinc-500 uppercase">Low Stock</p>
+          <p className="text-2xl font-bold text-amber-400 mt-1">{stats.low}</p>
+        </div>
+        <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+          <p className="text-xs font-medium text-zinc-500 uppercase">Critical</p>
+          <p className="text-2xl font-bold text-orange-400 mt-1">{stats.critical}</p>
+        </div>
+        <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+          <p className="text-xs font-medium text-zinc-500 uppercase">Out of Stock</p>
+          <p className="text-2xl font-bold text-red-400 mt-1">{stats.outOfStock}</p>
+        </div>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="rounded-lg border border-zinc-800 bg-[#111113] p-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Search by name, SKU, category..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9 w-full rounded-md border border-zinc-700 bg-zinc-900 pl-9 pr-8 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-teal-500 focus:outline-none"
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <select
+              value={stockFilter}
+              onChange={(e) => setStockFilter(e.target.value)}
+              className="h-9 rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-100"
+            >
+              <option value="ALL">All Stock</option>
+              <option value="IN_STOCK">In Stock</option>
+              <option value="LOW">Low Stock</option>
+              <option value="CRITICAL">Critical</option>
+              <option value="OUT">Out of Stock</option>
+            </select>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="h-9 rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-100"
+            >
+              <option value="">All Categories</option>
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Stock Adjustment */}
+      <div className="rounded-lg border border-zinc-800 bg-[#111113] overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-zinc-800 bg-zinc-900/50">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Product</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">SKU</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Category</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Price</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Stock</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">Quick Adj</th>
+              <th className="w-10 px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-zinc-800/50">
+            {isLoading ? (
+              Array.from({ length: 8 }).map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  <td className="px-4 py-4"><div className="h-4 w-48 bg-zinc-800 rounded" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-20 bg-zinc-800 rounded" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-24 bg-zinc-800 rounded" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-16 bg-zinc-800 rounded" /></td>
+                  <td className="px-4 py-4"><div className="h-6 w-16 bg-zinc-800 rounded-full" /></td>
+                  <td className="px-4 py-4"><div className="h-6 w-20 bg-zinc-800 rounded-full" /></td>
+                  <td className="px-4 py-4"><div className="h-8 w-24 bg-zinc-800 rounded" /></td>
+                  <td className="px-4 py-4"><div className="h-8 w-8 bg-zinc-800 rounded" /></td>
+                </tr>
+              ))
+            ) : filteredProducts.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-4 py-20 text-center">
+                  <Package className="mx-auto h-10 w-10 text-zinc-600" />
+                  <h3 className="mt-4 text-sm font-medium text-zinc-400">No products found</h3>
+                </td>
+              </tr>
+            ) : (
+              filteredProducts.map((product) => {
+                const status = getStockStatus(product.inventory);
+                return (
+                  <tr key={product.id} className="transition-colors hover:bg-zinc-900/30">
+                    <td className="px-4 py-4">
+                      <div>
+                        <p className="text-sm font-medium text-zinc-200">{product.name}</p>
+                        <p className="text-xs text-zinc-500">{product.soldCount} sold</p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-zinc-400 font-mono">
+                      {product.sku || '-'}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-zinc-400">
+                      {product.category}
+                    </td>
+                    <td className="px-4 py-4 text-sm font-semibold text-zinc-200">
+                      {formatPrice(product.price)}
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="text-sm font-bold text-zinc-200">{product.inventory}</span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase ${status.color}`}>
+                        {status.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => quickAdjust(product.id, -1)}
+                          disabled={adjustingId === product.id || product.inventory <= 0}
+                          className="p-1.5 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-red-400 hover:border-red-500/50 disabled:opacity-40"
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => quickAdjust(product.id, 1)}
+                          disabled={adjustingId === product.id}
+                          className="p-1.5 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/50 disabled:opacity-40"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => openDrawer(product)}
+                          className="p-1.5 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600"
+                        >
+                          <History className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <button 
+                        onClick={() => openDrawer(product)}
+                        className="p-2 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+                      >
+                        <ArrowUpRight className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Detail Drawer */}
+      <InventoryDrawer 
+        product={selectedProduct}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        onAdjust={quickAdjust}
+      />
+    </div>
+  );
 }
 
+// Inventory Detail Drawer
+function InventoryDrawer({ product, open, onClose, onAdjust }: { product: InventoryProduct | null; open: boolean; onClose: () => void; onAdjust: (id: string, delta: number) => Promise<void> }) {
+  if (!open) return null;
+
+  const status = product ? getStockStatus(product.inventory) : null;
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed right-0 top-0 z-50 h-screen w-full max-w-md border-l border-zinc-800 bg-[#0A0A0B] shadow-xl overflow-y-auto">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-[#0A0A0B] px-4 py-4">
+          <div>
+            <h2 className="text-lg font-semibold text-zinc-100">Inventory Details</h2>
+            <p className="text-xs text-zinc-500 mt-0.5">{product?.name}</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {product && (
+          <div className="p-4 space-y-4">
+            {/* Status Card */}
+            <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+              <div className="flex items-center justify-between">
+                <span className={`inline-flex rounded-full px-3 py-1.5 text-xs font-semibold uppercase ${status?.color}`}>
+                  {status?.label}
+                </span>
+                <span className="text-2xl font-bold text-zinc-100">{product.inventory}</span>
+              </div>
+              <p className="text-xs text-zinc-500 mt-2">Current stock level</p>
+            </div>
+
+            {/* Product Info */}
+            <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4 space-y-3">
+              <div className="flex justify-between">
+                <span className="text-xs text-zinc-500">SKU</span>
+                <span className="text-sm font-mono text-zinc-300">{product.sku || '-'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-xs text-zinc-500">Category</span>
+                <span className="text-sm text-zinc-300">{product.category}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-xs text-zinc-500">Price</span>
+                <span className="text-sm font-semibold text-zinc-200">{formatPrice(product.price)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-xs text-zinc-500">Total Sold</span>
+                <span className="text-sm text-zinc-300">{product.soldCount}</span>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">Quick Actions</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => void onAdjust(product.id, 10)} className="px-3 py-2 rounded-md border border-zinc-700 bg-zinc-900 text-xs text-zinc-300 hover:bg-zinc-800">
+                  +10 Stock
+                </button>
+                <button onClick={() => void onAdjust(product.id, 50)} className="px-3 py-2 rounded-md border border-zinc-700 bg-zinc-900 text-xs text-zinc-300 hover:bg-zinc-800">
+                  +50 Stock
+                </button>
+                <button disabled className="px-3 py-2 rounded-md border border-zinc-700 bg-zinc-900 text-xs text-zinc-500 cursor-not-allowed opacity-50">
+                  Reorder
+                </button>
+                <Link href={`/admin/products/${product.id}/edit`} onClick={onClose} className="px-3 py-2 rounded-md border border-zinc-700 bg-zinc-900 text-xs text-zinc-300 hover:bg-zinc-800 text-center">
+                  View Product
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function getStockStatus(inventory: number) {
+  if (inventory <= 0) return { label: "Out of Stock", color: "bg-red-500/10 text-red-400", priority: 1 };
+  if (inventory <= CRITICAL_STOCK_THRESHOLD) return { label: "Critical", color: "bg-red-500/10 text-red-400", priority: 2 };
+  if (inventory < LOW_STOCK_THRESHOLD) return { label: "Low", color: "bg-amber-500/10 text-amber-400", priority: 3 };
+  return { label: "In Stock", color: "bg-emerald-500/10 text-emerald-400", priority: 4 };
+}

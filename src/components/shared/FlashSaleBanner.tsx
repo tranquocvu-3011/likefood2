@@ -18,10 +18,14 @@ export default function FlashSaleBanner() {
     const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
 
     useEffect(() => {
-        let timer: NodeJS.Timeout;
         const DURATION = 24 * 60 * 60 * 1000;
+        let timer: NodeJS.Timeout | undefined;
+        let isCleanupCalled = false;
 
         const startFallbackTimer = () => {
+            // Prevent multiple timer starts
+            if (timer) return;
+            
             const calculateTimeLeft = (endTime: number) => {
                 const now = Date.now();
                 const diff = endTime - now;
@@ -58,9 +62,11 @@ export default function FlashSaleBanner() {
         };
 
         const fetchFlashSale = async () => {
+            if (isCleanupCalled) return;
+            
             try {
                 const res = await fetch("/api/products/flash-sale");
-                if (res.ok) {
+                if (res.ok && !isCleanupCalled) {
                     const data = await res.json();
                     if (data.countdown) {
                         const endTime = new Date(data.countdown).getTime();
@@ -80,23 +86,28 @@ export default function FlashSaleBanner() {
 
                         setTimeLeft(calculateTimeLeft());
 
+                        // Clear any existing timer before creating new one
+                        if (timer) clearInterval(timer);
                         timer = setInterval(() => {
                             setTimeLeft(calculateTimeLeft());
                         }, 1000);
-                        return; // Thêm return để ngắt fallback nếu gọi API thành công có Countdown thực
+                        return;
                     }
                 }
             } catch (error) {
                 console.error("Failed to sync flash sale banner:", error);
             }
 
-            // Kích hoạt Fallback 24h nếu như API trả về rỗng
-            startFallbackTimer();
+            // Only start fallback if not cleaned up
+            if (!isCleanupCalled) {
+                startFallbackTimer();
+            }
         };
 
         fetchFlashSale();
 
         return () => {
+            isCleanupCalled = true;
             if (timer) clearInterval(timer);
         };
     }, []);

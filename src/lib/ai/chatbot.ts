@@ -7,7 +7,7 @@
  * https://github.com/tranquocvu-3011/likefood
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getGeminiModel } from "@/lib/ai/gemini-runtime";
 
 interface ChatMessage {
     role: "user" | "assistant" | "system";
@@ -41,24 +41,6 @@ Quy tắc phản hồi:
 
 function detectEnglish(text: string) {
     return /^[\x00-\x7F\s.,!?"'():;\-/$%&]+$/.test(text) && /[a-z]/i.test(text);
-}
-
-function getGeminiModel() {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-        return null;
-    }
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-    return genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
-        generationConfig: {
-            temperature: 0.6,
-            maxOutputTokens: 700,
-            topP: 0.9,
-            topK: 32,
-        },
-    });
 }
 
 function buildPrompt(input: ChatRequest) {
@@ -133,7 +115,7 @@ function getQuickAnswer(message: string) {
 }
 
 export async function handleChatRequest(input: ChatRequest): Promise<{ reply: string; sources?: string[] }> {
-    const model = getGeminiModel();
+    const model = await getGeminiModel({ model: "gemini-2.0-flash", temperature: 0.6, maxOutputTokens: 700, topP: 0.9, topK: 32 });
 
     if (!model) {
         return { reply: getQuickAnswer(input.message) };

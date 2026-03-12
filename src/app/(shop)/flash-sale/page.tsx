@@ -16,6 +16,9 @@ import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 import { useLanguage } from "@/lib/i18n/context";
+import { formatPrice } from "@/lib/currency";
+import LoadingState from "@/components/ui/loading-state";
+import EmptyState from "@/components/ui/empty-state";
 
 interface FlashProduct {
     id: string;
@@ -163,7 +166,7 @@ export default function FlashSalePage() {
             inventory: product.inventory,
             category: product.category || undefined,
         });
-        toast.success(language === "vi" ? `Đã thêm ${product.name} vào giỏ hàng!` : `Added ${product.name} to cart!`);
+        // toast handled by CartContext
     };
 
     const sortedProducts = [...products].sort((a, b) => {
@@ -181,6 +184,17 @@ export default function FlashSalePage() {
 
     return (
         <div className="min-h-screen bg-slate-50">
+            {/* Breadcrumb */}
+            <div className="page-container-wide pt-4 pb-2">
+                <div className="flex items-center gap-2 text-sm">
+                    <Link href="/" className="text-slate-400 hover:text-primary transition-colors">
+                        {language === "vi" ? "Trang chủ" : "Home"}
+                    </Link>
+                    <span className="text-slate-300">/</span>
+                    <span className="text-slate-900 font-bold">Flash Sale</span>
+                </div>
+            </div>
+
             {/* Hero Section */}
             <section className="relative overflow-hidden">
                 <div className="absolute inset-0 bg-rose-50" />
@@ -296,27 +310,25 @@ export default function FlashSalePage() {
 
                 {/* Loading State */}
                 {loading && (
-                    <div className="flex flex-col items-center justify-center py-20">
-                        <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-                        <p className="text-slate-500 font-medium">{language === "vi" ? "Đang tải sản phẩm Flash Sale..." : "Loading Flash Sale products..."}</p>
-                    </div>
+                    <LoadingState text={language === "vi" ? "Đang tải sản phẩm Flash Sale..." : "Loading Flash Sale products..."} />
                 )}
 
                 {/* Empty State */}
                 {!loading && products.length === 0 && (
-                    <div className="text-center py-20 bg-white rounded-[3rem] shadow-xl shadow-slate-100 border border-slate-100">
-                        <Zap className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                        <h3 className="text-xl font-bold text-slate-700 mb-2">{language === "vi" ? "Chưa có sản phẩm Flash Sale" : "No Flash Sale products yet"}</h3>
-                        <p className="text-slate-500 mb-6">
-                            {language === "vi" ? "Hãy quay lại sau để xem các ưu đãi sốc nhất!" : "Come back later for the best deals!"}
-                        </p>
-                        <Link
-                            href="/products"
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-bold"
-                        >
-                            {language === "vi" ? "Xem tất cả sản phẩm" : "View all products"}
-                        </Link>
-                    </div>
+                    <EmptyState
+                        icon={Zap}
+                        title={language === "vi" ? "Chưa có sản phẩm Flash Sale" : "No Flash Sale products yet"}
+                        description={language === "vi" ? "Hãy quay lại sau để xem các ưu đãi sốc nhất!" : "Come back later for the best deals!"}
+                        action={
+                            <Link
+                                href="/products"
+                                className="inline-flex items-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-full font-black uppercase tracking-widest shadow-xl hover:shadow-2xl hover:bg-slate-800 transition-all"
+                            >
+                                <Sparkles className="w-4 h-4" />
+                                {language === "vi" ? "Xem tất cả sản phẩm" : "View all products"}
+                            </Link>
+                        }
+                    />
                 )}
 
                 {/* Products Grid */}
@@ -336,7 +348,7 @@ export default function FlashSalePage() {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.05 }}
-                                    className={`group bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-100/50 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 overflow-hidden ${viewMode === "list" ? "flex" : ""
+                                    className={`group bg-white rounded-xl border border-slate-100 shadow-md shadow-slate-100/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden ${viewMode === "list" ? "flex" : ""
                                         }`}
                                 >
                                     {/* Image */}
@@ -344,7 +356,7 @@ export default function FlashSalePage() {
                                         href={`/products/${product.slug}`}
                                         className={viewMode === "list" ? "w-56 flex-shrink-0" : "block"}
                                     >
-                                        <div className={`relative bg-gradient-to-br from-slate-100 to-slate-50 overflow-hidden ${viewMode === "list" ? "h-full" : "aspect-square"
+                                        <div className={`relative bg-gradient-to-br from-slate-100 to-slate-50 overflow-hidden ${viewMode === "list" ? "h-full" : "aspect-[4/3]"
                                             }`}>
                                             {product.image ? (
                                                 <Image
@@ -393,7 +405,7 @@ export default function FlashSalePage() {
                                     <div className={`p-6 ${viewMode === "list" ? "flex-1 flex flex-col justify-between" : ""}`}>
                                         <div>
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="px-2 py-1 bg-slate-100 text-slate-600 text-[9px] font-black uppercase tracking-widest rounded-full">
+                                                <span className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-full">
                                                     {product.category}
                                                 </span>
                                             </div>
@@ -406,8 +418,8 @@ export default function FlashSalePage() {
 
                                             {/* Price */}
                                             <div className="flex items-center gap-3 mb-4">
-                                                <span className="text-2xl font-black text-red-500">${product.salePrice.toFixed(2)}</span>
-                                                <span className="text-sm font-medium text-slate-400 line-through">${product.originalPrice.toFixed(2)}</span>
+                                                <span className="text-2xl font-black text-red-500">{formatPrice(product.salePrice)}</span>
+                                                <span className="text-sm font-medium text-slate-400 line-through">{formatPrice(product.originalPrice)}</span>
                                             </div>
 
                                             {/* Stock Progress */}

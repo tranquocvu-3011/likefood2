@@ -58,7 +58,7 @@ export function CompareContent() {
             slug: product.slug,
             inventory: product.inventory,
         });
-        toast.success(language === "vi" ? `Đã thêm ${product.name} vào giỏ` : `Added ${product.name} to cart`);
+        // toast handled by CartContext
     };
 
     return (

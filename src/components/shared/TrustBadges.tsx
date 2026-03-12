@@ -7,52 +7,56 @@
 
 import { ShieldCheck, Truck, RefreshCw, CreditCard } from "lucide-react";
 
-const badges = [
+const BADGES = [
     {
         icon: ShieldCheck,
         title: "100% Chính Hãng",
-        description: "Cam kết nguồn gốc",
-        gradient: "from-blue-400 to-blue-600",
-        bg: "bg-blue-50",
+        desc: "Nguồn gốc rõ ràng",
+        color: "text-emerald-600",
+        bg: "bg-emerald-50 hover:bg-emerald-100",
+        border: "border-emerald-100",
     },
     {
         icon: Truck,
         title: "Miễn Phí Vận Chuyển",
-        description: "Đơn từ 500$",
-        gradient: "from-emerald-400 to-emerald-600",
-        bg: "bg-emerald-50",
+        desc: "Đơn từ 399K trở lên",
+        color: "text-sky-600",
+        bg: "bg-sky-50 hover:bg-sky-100",
+        border: "border-sky-100",
     },
     {
         icon: RefreshCw,
-        title: "Đổi Trả 30 Ngày",
-        description: "Không cần lý do",
-        gradient: "from-amber-400 to-amber-600",
-        bg: "bg-amber-50",
+        title: "Đổi Trả Dễ Dàng",
+        desc: "Hỗ trợ trong 30 ngày",
+        color: "text-amber-600",
+        bg: "bg-amber-50 hover:bg-amber-100",
+        border: "border-amber-100",
     },
     {
         icon: CreditCard,
         title: "Thanh Toán An Toàn",
-        description: "SSL Encryption",
-        gradient: "from-purple-400 to-purple-600",
-        bg: "bg-purple-50",
+        desc: "Bảo mật SSL & đối tác uy tín",
+        color: "text-violet-600",
+        bg: "bg-violet-50 hover:bg-violet-100",
+        border: "border-violet-100",
     },
 ];
 
 export default function TrustBadges() {
     return (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 py-12">
-            {badges.map((badge, idx) => (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 py-6">
+            {BADGES.map((badge) => (
                 <div
-                    key={idx}
-                    className={`flex flex-col items-center text-center p-6 rounded-2xl ${badge.bg} hover:bg-white hover:shadow-md transition-all group cursor-pointer`}
+                    key={badge.title}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-200 cursor-default group ${badge.bg} ${badge.border}`}
                 >
-                    <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${badge.gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
-                        <badge.icon className="w-7 h-7 text-white" />
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                        <badge.icon className={`w-4 h-4 ${badge.color}`} />
                     </div>
-                    <h4 className="font-bold text-sm text-slate-900 mb-1">
-                        {badge.title}
-                    </h4>
-                    <p className="text-xs text-slate-500">{badge.description}</p>
+                    <div className="min-w-0">
+                        <p className="text-[12px] font-semibold text-slate-800 leading-tight">{badge.title}</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">{badge.desc}</p>
+                    </div>
                 </div>
             ))}
         </div>

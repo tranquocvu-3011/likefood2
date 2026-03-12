@@ -243,6 +243,7 @@ class UserSegmenter {
 
     await prisma.userSegment.createMany({
       data: segments.map((segment) => ({
+        id: crypto.randomUUID(),
         userId: segment.userId,
         segment: segment.segment,
         score: segment.score,

@@ -73,10 +73,11 @@ export async function trackEvent(event: Omit<BehaviorEvent, "id" | "createdAt">)
   try {
     const createdEvent = await prisma.behaviorEvent.create({
       data: {
+        id: crypto.randomUUID(),
         userId: event.userId,
         sessionId: event.sessionId,
         eventType: event.eventType,
-        eventData: toInputJsonObject(event.eventData),
+        eventData: JSON.stringify(event.eventData),
         url: event.url,
         referrer: event.referrer,
         deviceType: event.deviceType,

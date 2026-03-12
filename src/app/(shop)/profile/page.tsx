@@ -122,8 +122,8 @@ export default function ProfilePage() {
                     image: data.image || "",
                 });
             }
-        } catch (error) {
-            console.error("Failed to fetch profile", error);
+        } catch {
+            // profile fetch failed silently - defaults remain
         }
     };
 
@@ -134,8 +134,8 @@ export default function ProfilePage() {
                 const data = await res.json();
                 setAddresses(data);
             }
-        } catch (error) {
-            console.error("Failed to fetch addresses", error);
+        } catch {
+            // addresses fetch failed silently
         }
     };
 
@@ -146,8 +146,8 @@ export default function ProfilePage() {
                 const data = await res.json();
                 setPriceAlerts(data.alerts || []);
             }
-        } catch (error) {
-            console.error("Failed to fetch price alerts", error);
+        } catch {
+            // price alerts fetch failed silently
         }
     };
 
@@ -158,8 +158,8 @@ export default function ProfilePage() {
                 const data = await res.json();
                 setUserPoints(data.points || 0);
             }
-        } catch (error) {
-            console.error("Failed to fetch points", error);
+        } catch {
+            // points fetch failed silently
         }
     };
 
@@ -234,8 +234,7 @@ export default function ProfilePage() {
                 const err = await res.json().catch(() => ({}));
                 toast.error(err.error || (language === "vi" ? "Cập nhật thất bại" : "Failed to update profile"));
             }
-        } catch (error) {
-            console.error("Failed to update profile", error);
+        } catch {
             toast.error(language === "vi" ? "Lỗi kết nối" : "Connection error");
         } finally {
             setIsLoading(false);
@@ -267,8 +266,8 @@ export default function ProfilePage() {
                 setEditingAddress(null);
                 await fetchAddresses();
             }
-        } catch (error) {
-            console.error("Failed to save address", error);
+        } catch {
+            toast.error(language === "vi" ? "Lỗi lưu địa chỉ" : "Failed to save address");
         } finally {
             setIsLoading(false);
         }
@@ -285,8 +284,8 @@ export default function ProfilePage() {
             if (res.ok) {
                 await fetchAddresses();
             }
-        } catch (error) {
-            console.error("Failed to delete address", error);
+        } catch {
+            toast.error(language === "vi" ? "Lỗi xóa địa chỉ" : "Failed to delete address");
         }
     };
 

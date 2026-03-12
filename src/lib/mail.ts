@@ -7,6 +7,7 @@
 
 import nodemailer from "nodemailer";
 import { logger } from "./logger";
+import { getSystemSettingTrimmed } from "@/lib/system-settings";
 
 /** Escape HTML special chars to prevent XSS/injection in email templates */
 function escapeHtml(text: string): string {
@@ -20,15 +21,31 @@ function escapeHtml(text: string): string {
     return String(text).replace(/[&<>"']/g, (c) => map[c]);
 }
 
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: parseInt(process.env.SMTP_PORT || "587"),
-    secure: process.env.SMTP_PORT === "465",
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-});
+async function getMailTransporter() {
+    const host = (await getSystemSettingTrimmed("smtp_host")) || process.env.SMTP_HOST || "smtp.gmail.com";
+    const portRaw = (await getSystemSettingTrimmed("smtp_port")) || process.env.SMTP_PORT || "587";
+    const user = (await getSystemSettingTrimmed("smtp_user")) || process.env.SMTP_USER || "";
+    const pass = (await getSystemSettingTrimmed("smtp_pass")) || process.env.SMTP_PASS || "";
+    const port = Number.parseInt(portRaw, 10);
+    const safePort = Number.isFinite(port) ? port : 587;
+
+    return nodemailer.createTransport({
+        host,
+        port: safePort,
+        secure: String(safePort) === "465",
+        auth: user && pass ? { user, pass } : undefined,
+    });
+}
+
+async function getMailFrom(): Promise<string | undefined> {
+    const from = (await getSystemSettingTrimmed("smtp_from")) || process.env.SMTP_FROM;
+    return from || undefined;
+}
+
+async function getContactInbox(): Promise<string | undefined> {
+    const inbox = (await getSystemSettingTrimmed("contact_inbox")) || process.env.CONTACT_INBOX;
+    return inbox || undefined;
+}
 
 export const sendVerificationEmail = async (
     email: string,
@@ -38,6 +55,7 @@ export const sendVerificationEmail = async (
     verifyUrl?: string
 ) => {
     logger.info(`[MAIL SEND] Attempting to send ${type} to ${email}`);
+    const transporter = await getMailTransporter();
 
     const isReset = type === "PASSWORD_RESET";
     const isMagicLink = type === "MAGIC_LINK";
@@ -72,7 +90,7 @@ export const sendVerificationEmail = async (
             : otpBlock;
 
     const mailOptions = {
-        from: process.env.SMTP_FROM,
+        from: await getMailFrom(),
         to: email,
         subject,
         html: `
@@ -99,7 +117,7 @@ export const sendVerificationEmail = async (
         return { success: true };
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "Unknown mail error";
-        logger.error(`[MAIL ERROR] ${message}`, { error: error as Error, email, smtpHost: process.env.SMTP_HOST });
+        logger.error(`[MAIL ERROR] ${message}`, error as Error, { email, smtpHost: process.env.SMTP_HOST });
         return { success: false, error: message };
     }
 };
@@ -116,10 +134,11 @@ export const sendContactEmail = async (payload: ContactPayload) => {
     const { name, email, phone, subject, message } = payload;
 
     logger.info(`[MAIL SEND] Contact message from ${email}`);
+    const transporter = await getMailTransporter();
 
     const mailOptions = {
-        from: process.env.SMTP_FROM,
-        to: process.env.CONTACT_INBOX || process.env.SMTP_FROM || email,
+        from: await getMailFrom(),
+        to: (await getContactInbox()) || (await getMailFrom()) || email,
         replyTo: email,
         subject: `[LIKEFOOD Contact] ${escapeHtml(subject)}`,
         html: `
@@ -185,11 +204,12 @@ export const sendOrderConfirmationEmail = async (payload: OrderSummaryPayload) =
     const { orderId, toEmail, total, status, createdAt } = payload;
 
     logger.info(`[MAIL SEND] Order confirmation for ${orderId} -> ${toEmail}`);
+    const transporter = await getMailTransporter();
 
     const subject = `Xác nhận đơn hàng LIKEFOOD #${orderId.slice(-8).toUpperCase()}`;
 
     const mailOptions = {
-        from: process.env.SMTP_FROM,
+        from: await getMailFrom(),
         to: toEmail,
         subject,
         html: `
@@ -244,9 +264,10 @@ export const sendOrderConfirmationEmail = async (payload: OrderSummaryPayload) =
 
 export const sendSuspiciousLoginEmail = async (email: string, ip: string, userAgent: string, time: string) => {
     logger.info(`[MAIL SEND] Suspicious login alert to ${email} (IP: ${ip})`);
+    const transporter = await getMailTransporter();
 
     const mailOptions = {
-        from: process.env.SMTP_FROM,
+        from: await getMailFrom(),
         to: email,
         subject: "🚨 CẢNH BÁO BẢO MẬT: Đăng nhập từ thiết bị lạ",
         html: `
@@ -286,6 +307,102 @@ export const sendSuspiciousLoginEmail = async (email: string, ip: string, userAg
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "Unknown mail error";
         logger.error(`[MAIL ERROR][SUSPICIOUS_LOGIN] ${message}`);
+        return { success: false, error: message };
+    }
+};
+
+export const sendNewsletterWelcomeEmail = async (email: string) => {
+    logger.info(`[MAIL SEND] Newsletter welcome to ${email}`);
+    const transporter = await getMailTransporter();
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+    const mailOptions = {
+        from: await getMailFrom(),
+        to: email,
+        subject: "🎉 Chào mừng bạn đến với LIKEFOOD – Ưu đãi độc quyền đang chờ!",
+        html: `
+<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:'Helvetica Neue',Arial,sans-serif;">
+<div style="max-width:600px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,#059669 0%,#10b981 50%,#34d399 100%);padding:40px 32px;text-align:center;">
+    <h1 style="margin:0;font-size:28px;font-weight:900;color:#fff;letter-spacing:-0.5px;">LIKEFOOD</h1>
+    <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:13px;font-weight:500;">Tinh hoa đặc sản Việt Nam</p>
+  </div>
+
+  <!-- Hero message -->
+  <div style="padding:36px 32px 24px;text-align:center;">
+    <div style="font-size:40px;margin-bottom:12px;">🎊</div>
+    <h2 style="margin:0 0 10px;font-size:22px;font-weight:800;color:#111827;">
+      Cảm ơn bạn đã đăng ký nhận tin!
+    </h2>
+    <p style="margin:0;color:#6b7280;font-size:14px;line-height:1.7;max-width:420px;margin:0 auto;">
+      Bạn vừa gia nhập cộng đồng <strong style="color:#059669;">LIKEFOOD</strong> —
+      nơi hội tụ những tín đồ ẩm thực yêu thích đặc sản Việt Nam.
+      Từ đây, bạn sẽ là người đầu tiên nhận được:
+    </p>
+  </div>
+
+  <!-- Benefits -->
+  <div style="padding:0 32px 28px;">
+    <div style="display:grid;gap:12px;">
+      ${[
+        ["🏷️", "Mã giảm giá độc quyền", "Voucher ưu đãi chỉ dành riêng cho thành viên newsletter"],
+        ["🔥", "Flash Sale sớm nhất", "Thông báo trước 24h khi có chương trình giảm giá lớn"],
+        ["🍤", "Món ngon mỗi tuần", "Công thức chế biến và câu chuyện về đặc sản từng vùng miền"],
+        ["🚚", "Ưu tiên miễn phí ship", "Đơn hàng đặc biệt từ cộng đồng newsletter sẽ được ưu tiên"],
+      ].map(([icon, title, desc]) => `
+        <div style="display:flex;align-items:flex-start;gap:14px;background:#f9fafb;border-radius:10px;padding:14px 16px;border:1px solid #f0fdf4;">
+          <span style="font-size:20px;flex-shrink:0;margin-top:1px;">${icon}</span>
+          <div>
+            <p style="margin:0 0 2px;font-size:13px;font-weight:700;color:#111827;">${title}</p>
+            <p style="margin:0;font-size:12px;color:#6b7280;">${desc}</p>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div style="padding:0 32px 32px;text-align:center;">
+    <a href="${appUrl}/products"
+       style="display:inline-block;background:linear-gradient(135deg,#059669,#10b981);color:#fff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 36px;border-radius:50px;box-shadow:0 4px 14px rgba(16,185,129,0.35);">
+      🛒 Khám phá đặc sản ngay
+    </a>
+    <p style="margin:16px 0 0;font-size:11px;color:#9ca3af;">
+      Hoặc xem các chương trình khuyến mãi tại
+      <a href="${appUrl}/products?sale=true" style="color:#059669;text-decoration:underline;">trang Flash Sale</a>
+    </p>
+  </div>
+
+  <!-- Divider -->
+  <div style="height:1px;background:#f0f0f0;margin:0 32px;"></div>
+
+  <!-- Footer -->
+  <div style="padding:20px 32px;text-align:center;">
+    <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.7;">
+      Bạn nhận được email này vì đã đăng ký nhận bản tin tại <strong>likefood.shop</strong>.<br/>
+      Để hủy đăng ký, vui lòng liên hệ qua trang <a href="${appUrl}/contact" style="color:#059669;">Liên hệ</a>.<br/>
+      &copy; 2026 LIKEFOOD Team. All rights reserved.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>
+        `,
+    };
+
+    try {
+        const info = await transporter.sendMail(mailOptions);
+        logger.info(`[MAIL SUCCESS] Newsletter welcome ID: ${info.messageId} - To: ${email}`);
+        return { success: true };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Unknown mail error";
+        logger.error(`[MAIL ERROR][NEWSLETTER_WELCOME] ${message}`, error as Error, { email });
         return { success: false, error: message };
     }
 };

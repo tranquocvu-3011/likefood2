@@ -2,13 +2,11 @@
 
 /**
  * LIKEFOOD - Vietnamese Specialty Marketplace
- * Copyright (c) 2026 LIKEFOOD Team
- * Licensed under the MIT License
- * https://github.com/tranquocvu-3011/likefood
+ * VoucherPickerModal – Lựa chọn voucher & Nhập mã thủ công
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { X, Ticket, Check, AlertCircle } from "lucide-react";
+import { X, Ticket, Check, AlertCircle, Search, ArrowRight, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
@@ -27,10 +25,6 @@ interface Voucher {
     canUse?: boolean;
     reason?: string;
     expiresAt?: Date | null;
-    usageLimit?: number | null;
-    usedCount?: number;
-    type?: "PERCENTAGE" | "FIXED" | "SHIPPING";
-    value?: number;
 }
 
 interface VoucherPickerModalProps {
@@ -49,8 +43,10 @@ export default function VoucherPickerModal({
     onSelectVoucher,
 }: VoucherPickerModalProps) {
     const [vouchers, setVouchers] = useState<Voucher[]>([]);
+    const [manualCode, setManualCode] = useState("");
     const [loading, setLoading] = useState(true);
-    const { t } = useLanguage();
+    const [isValidating, setIsValidating] = useState(false);
+    const { language, t } = useLanguage();
     const trapRef = useFocusTrap(isOpen);
 
     const fetchVouchers = useCallback(async () => {
@@ -63,7 +59,6 @@ export default function VoucherPickerModal({
             }
         } catch (error) {
             logger.error("Failed to fetch vouchers", error as Error, { context: 'voucher-picker-modal' });
-            toast.error(t("voucherModal.fetchError"));
         } finally {
             setLoading(false);
         }
@@ -77,18 +72,39 @@ export default function VoucherPickerModal({
 
     const handleSelect = (voucher: Voucher) => {
         if (!voucher.canUse) {
-            toast.error(voucher.reason);
+            toast.error(voucher.reason || (language === "vi" ? "Voucher không đủ điều kiện" : "Voucher not applicable"));
             return;
         }
         onSelectVoucher(voucher);
-        toast.success(`${t("voucherModal.applied")} ${voucher.code}`);
+        toast.success(`${language === "vi" ? "Đã áp dụng mã:" : "Applied code:"} ${voucher.code}`);
         onClose();
     };
 
-    const handleRemove = () => {
-        onSelectVoucher(null);
-        toast.success(t("voucherModal.removed"));
-        onClose();
+    const handleApplyManual = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (!manualCode.trim()) return;
+
+        try {
+            setIsValidating(true);
+            const res = await fetch(`/api/vouchers/validate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: manualCode, orderTotal }),
+            });
+            const data = await res.json();
+
+            if (res.ok && data.voucher) {
+                onSelectVoucher(data.voucher);
+                toast.success(`${language === "vi" ? "Đã áp dụng mã:" : "Applied code:"} ${data.voucher.code}`);
+                onClose();
+            } else {
+                toast.error(data.error || (language === "vi" ? "Mã voucher không hợp lệ" : "Invalid voucher code"));
+            }
+        } catch (error) {
+            toast.error(language === "vi" ? "Lỗi hệ thống" : "System error");
+        } finally {
+            setIsValidating(false);
+        }
     };
 
     const formatDiscount = (voucher: Voucher) => {
@@ -100,144 +116,200 @@ export default function VoucherPickerModal({
 
     const getCategoryColor = (category?: string) => {
         switch (category) {
-            case "shipping": return "from-blue-500 to-cyan-500";
-            case "flash": return "from-orange-500 to-red-500";
-            case "new": return "from-emerald-500 to-teal-500";
-            default: return "from-primary to-emerald-500";
+            case "shipping": return "from-blue-500 to-indigo-500";
+            case "flash": return "from-amber-500 to-orange-600";
+            case "new": return "from-emerald-500 to-teal-600";
+            default: return "from-primary to-slate-900";
         }
     };
 
     return (
         <AnimatePresence>
-            {isOpen && <div
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="voucher-modal-title"
-            >
-                <motion.div
-                    ref={trapRef}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-white rounded-[3rem] p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-                >
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 id="voucher-modal-title" className="text-2xl font-black uppercase tracking-tighter">{t("voucherModal.title")}</h2>
-                        <button
-                            onClick={onClose}
-                            aria-label={t("voucherModal.closeLabel")}
-                            className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
+            {isOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={onClose}
+                        className="absolute inset-0 bg-slate-950/40 backdrop-blur-xl"
+                    />
+                    
+                    <motion.div
+                        ref={trapRef}
+                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 50, scale: 0.9 }}
+                        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                        className="bg-white rounded-[3.5rem] shadow-[0_30px_100px_-20px_rgba(0,0,0,0.3)] w-full max-w-xl relative z-10 overflow-hidden flex flex-col max-h-[85vh]"
+                    >
+                        {/* Header */}
+                        <div className="px-10 py-8 border-b border-slate-100 flex items-center justify-between bg-white/50 backdrop-blur shadow-sm sticky top-0 z-20">
+                            <div>
+                                <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-900">
+                                    {language === "vi" ? "Ưu đãi của bạn" : "Your Vouchers"}
+                                </h2>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mt-1">
+                                    {language === "vi" ? "Chọn mã để được giảm giá" : "Select a code to save money"}
+                                </p>
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-900 transition-all active:scale-90"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
 
-                    {selectedVoucher && (
-                        <div className="mb-6 p-4 bg-green-50 border-2 border-green-200 rounded-2xl">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-black uppercase tracking-widest text-green-600 mb-1">
-                                        {t("voucherModal.activeVoucher")}
-                                    </p>
-                                    <p className="text-lg font-black text-green-900">{selectedVoucher.code}</p>
-                                    <p className="text-sm text-green-700">
-                                        {t("voucherModal.discount")} {formatDiscount(selectedVoucher)} - {t("voucherModal.save")} ${selectedVoucher.discountAmount?.toFixed(2) ?? selectedVoucher.discountValue.toFixed(2)}
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={handleRemove}
-                                    className="px-4 py-2 bg-red-500 text-white rounded-full text-sm font-bold hover:bg-red-600 transition-colors"
+                        <div className="flex-1 overflow-y-auto p-10 space-y-8">
+                            {/* Manual Entry */}
+                            <div>
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 block">
+                                    {language === "vi" ? "Nhập mã thủ công" : "Enter Manual Code"}
+                                </label>
+                                <form onSubmit={handleApplyManual} className="relative group">
+                                    <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-colors">
+                                        <Ticket className="w-5 h-5" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={manualCode}
+                                        onChange={(e) => setManualCode(e.target.value.toUpperCase())}
+                                        placeholder={language === "vi" ? "Mã giảm giá..." : "Discount code..."}
+                                        className="w-full bg-slate-50 border-2 border-transparent rounded-2xl pl-16 pr-24 py-5 font-black text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-primary/20 transition-all outline-none"
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={!manualCode.trim() || isValidating}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 bg-black text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary transition-all active:scale-95 disabled:opacity-30"
+                                    >
+                                        {isValidating ? (
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        ) : (
+                                            language === "vi" ? "Áp dụng" : "Apply"
+                                        )}
+                                    </button>
+                                </form>
+                            </div>
+
+                            {/* Applied Voucher Status */}
+                            {selectedVoucher && (
+                                <motion.div
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="p-6 bg-emerald-50 border-2 border-emerald-100 rounded-3xl flex items-center justify-between gap-4"
                                 >
-                                    {t("voucherModal.remove")}
-                                </button>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-2xl bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                                            <Check className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-0.5">
+                                                {language === "vi" ? "Đang áp dụng" : "Currently Applied"}
+                                            </p>
+                                            <p className="font-black text-lg text-emerald-900 leading-none">{selectedVoucher.code}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => onSelectVoucher(null)}
+                                        className="px-4 py-2 text-xs font-black uppercase tracking-widest text-red-500 hover:text-red-600 transition-colors"
+                                    >
+                                        {language === "vi" ? "Gỡ bỏ" : "Remove"}
+                                    </button>
+                                </motion.div>
+                            )}
+
+                            {/* Available Vouchers List */}
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block flex items-center gap-2">
+                                    <span className="w-4 h-[1px] bg-slate-200" />
+                                    {language === "vi" ? "Voucher sẵn có" : "Available For You"}
+                                </label>
+                                
+                                {loading ? (
+                                    <div className="space-y-3">
+                                        {[1, 2, 3].map(i => (
+                                            <div key={i} className="h-28 bg-slate-50 animate-pulse rounded-[2rem]" />
+                                        ))}
+                                    </div>
+                                ) : vouchers.length === 0 ? (
+                                    <div className="py-12 text-center bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-100">
+                                        <Ticket className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                                        <p className="text-sm font-bold text-slate-400">
+                                            {language === "vi" ? "Hiện chưa có voucher nào khác" : "No other vouchers available"}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {vouchers.map((voucher) => (
+                                            <motion.button
+                                                key={voucher.id}
+                                                layout
+                                                onClick={() => handleSelect(voucher)}
+                                                disabled={!voucher.canUse}
+                                                className={`w-full group relative text-left transition-all ${
+                                                    selectedVoucher?.id === voucher.id ? "scale-[0.98]" : "hover:scale-[1.01]"
+                                                }`}
+                                            >
+                                                <div className={`p-6 rounded-[2rem] border-2 transition-all flex items-center gap-5 ${
+                                                    selectedVoucher?.id === voucher.id
+                                                        ? "border-primary bg-primary/5 shadow-inner"
+                                                        : voucher.canUse
+                                                            ? "border-slate-100 hover:border-slate-300 bg-white shadow-sm"
+                                                            : "border-slate-50 bg-slate-50/50 opacity-60 grayscale cursor-not-allowed"
+                                                }`}>
+                                                    <div className={`w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br ${getCategoryColor(voucher.category)} flex items-center justify-center text-white shadow-xl group-hover:rotate-6 transition-transform duration-500`}>
+                                                        <Sparkles className="w-7 h-7" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="font-black text-lg text-slate-900">{voucher.code}</p>
+                                                            {selectedVoucher?.id === voucher.id && (
+                                                                <span className="bg-primary text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase">
+                                                                    Selected
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-3 mt-1">
+                                                            <span className="text-xl font-black text-primary">{formatDiscount(voucher)} OFF</span>
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                                                Min. ${voucher.minOrderValue?.toFixed(0) || "0"}
+                                                            </span>
+                                                        </div>
+                                                        {!voucher.canUse && voucher.reason && (
+                                                            <p className="text-[10px] text-red-500 font-bold mt-2 flex items-center gap-1.5">
+                                                                <AlertCircle className="w-3 h-3" /> {voucher.reason}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    {voucher.canUse && (
+                                                        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${selectedVoucher?.id === voucher.id ? "border-primary bg-primary text-white" : "border-slate-200 text-transparent"}`}>
+                                                            <Check className="w-4 h-4" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {/* Left/Right Dot Design */}
+                                                <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 w-4 h-4 rounded-full bg-white border-r-2 border-slate-100 z-20 group-hover:scale-125 transition-transform" />
+                                                <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 w-4 h-4 rounded-full bg-white border-l-2 border-slate-100 z-20 group-hover:scale-125 transition-transform" />
+                                            </motion.button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    )}
 
-                    {loading ? (
-                        <div className="text-center py-12">
-                            <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4" />
-                            <p className="text-slate-500">{t("voucherModal.loading")}</p>
+                        {/* Footer */}
+                        <div className="px-10 py-6 bg-slate-50 border-t border-slate-100 flex items-center justify-center">
+                            <button
+                                onClick={onClose}
+                                className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors"
+                            >
+                                {language === "vi" ? "Xem thêm Voucher trong ví" : "View all available coupons"}
+                            </button>
                         </div>
-                    ) : vouchers.length === 0 ? (
-                        <div className="text-center py-12">
-                            <Ticket className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                            <p className="text-slate-500 font-medium">{t("voucherModal.noVouchers")}</p>
-                            <p className="text-sm text-slate-400 mt-2">{t("voucherModal.noVouchersDesc")}</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {vouchers.map((voucher) => (
-                                <button
-                                    key={voucher.id}
-                                    onClick={() => handleSelect(voucher)}
-                                    disabled={!voucher.canUse}
-                                    className={`w-full p-4 rounded-2xl border-2 transition-all text-left ${selectedVoucher?.id === voucher.id
-                                            ? "border-primary bg-primary/5"
-                                            : voucher.canUse
-                                                ? "border-slate-200 hover:border-primary/50 bg-white"
-                                                : "border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed"
-                                        }`}
-                                >
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${getCategoryColor(voucher.category)} flex items-center justify-center`}>
-                                                    <Ticket className="w-5 h-5 text-white" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-black text-lg text-slate-900">{voucher.code}</p>
-                                                    <p className="text-xs text-slate-500">
-                                                        {voucher.category === "shipping" ? t("voucherModal.categoryShipping") :
-                                                            voucher.category === "flash" ? t("voucherModal.categoryFlash") :
-                                                                voucher.category === "new" ? t("voucherModal.categoryNew") : t("voucherModal.categoryAll")}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-2xl font-black text-primary">
-                                                    {formatDiscount(voucher)}
-                                                </span>
-                                                {voucher.maxDiscount && (
-                                                    <span className="text-xs text-slate-400">
-                                                        ({t("voucherModal.maxDiscount")} ${voucher.maxDiscount.toFixed(2)})
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {voucher.minOrderValue && (
-                                                <p className="text-xs text-slate-500">
-                                                    {t("voucherModal.minOrder")} ${voucher.minOrderValue.toFixed(2)}
-                                                </p>
-                                            )}
-                                            {!voucher.canUse && voucher.reason && (
-                                                <div className="flex items-center gap-2 mt-2 text-xs text-red-600">
-                                                    <AlertCircle className="w-4 h-4" />
-                                                    <span>{voucher.reason}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        {selectedVoucher?.id === voucher.id && (
-                                            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                                                <Check className="w-5 h-5 text-white" />
-                                            </div>
-                                        )}
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    )}
-
-                    <div className="mt-6 pt-6 border-t border-slate-200">
-                        <a
-                            href="/vouchers"
-                            className="block text-center text-sm font-bold text-primary hover:underline"
-                        >
-                            {t("voucherModal.viewMore")}
-                        </a>
-                    </div>
-                </motion.div>
-            </div>}
+                    </motion.div>
+                </div>
+            )}
         </AnimatePresence>
     );
 }

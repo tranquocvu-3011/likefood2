@@ -30,10 +30,6 @@ export default function ImageGallery({ images, productName }: ImageGalleryProps)
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [direction, setDirection] = useState(0);
 
-    // Touch/Swipe support
-    const touchStartX = useRef(0);
-    const touchEndX = useRef(0);
-
     const sortedImages = [...images].sort((a, b) => {
         if (a.isPrimary) return -1;
         if (b.isPrimary) return 1;
@@ -58,40 +54,41 @@ export default function ImageGallery({ images, productName }: ImageGalleryProps)
         if (e.key === "Escape") setIsLightboxOpen(false);
     };
 
-    const handleTouchStart = (e: React.TouchEvent) => {
-        touchStartX.current = e.touches[0].clientX;
-    };
-
-    const handleTouchMove = (e: React.TouchEvent) => {
-        touchEndX.current = e.touches[0].clientX;
-    };
-
-    const handleTouchEnd = () => {
-        const diff = touchStartX.current - touchEndX.current;
-        const threshold = 50;
-        if (Math.abs(diff) > threshold) {
-            if (diff > 0) handleNext();
-            else handlePrevious();
-        }
-    };
-
-    const slideVariants = {
-        enter: (direction: number) => ({ x: direction > 0 ? 300 : -300, opacity: 0 }),
-        center: { x: 0, opacity: 1 },
-        exit: (direction: number) => ({ x: direction > 0 ? -300 : 300, opacity: 0 }),
+    const slideVariants: any = {
+        enter: (direction: number) => ({
+            x: direction > 0 ? "100%" : "-100%",
+            opacity: 0,
+            scale: 0.95
+        }),
+        center: {
+            x: 0,
+            opacity: 1,
+            scale: 1,
+            transition: {
+                x: { type: "spring" as const, stiffness: 300, damping: 30 },
+                opacity: { duration: 0.2 },
+                scale: { duration: 0.3 }
+            }
+        },
+        exit: (direction: number) => ({
+            x: direction > 0 ? "-100%" : "100%",
+            opacity: 0,
+            scale: 0.95,
+            transition: {
+                x: { type: "spring" as const, stiffness: 300, damping: 30 },
+                opacity: { duration: 0.2 }
+            }
+        }),
     };
 
     return (
         <div className="space-y-3">
             {/* Main Image */}
             <div
-                className="aspect-square rounded-2xl overflow-hidden bg-gradient-to-b from-slate-50 to-white border border-slate-100/80 shadow-lg relative group cursor-zoom-in"
+                className="aspect-square rounded-2xl overflow-hidden bg-gradient-to-b from-slate-50 to-white border border-slate-100/80 shadow-lg relative group cursor-zoom-in touch-none"
                 onClick={() => setIsLightboxOpen(true)}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
             >
-                <AnimatePresence mode="wait" custom={direction}>
+                <AnimatePresence mode="popLayout" custom={direction}>
                     {currentImage && (
                         <motion.div
                             key={selectedIndex}
@@ -100,14 +97,20 @@ export default function ImageGallery({ images, productName }: ImageGalleryProps)
                             initial="enter"
                             animate="center"
                             exit="exit"
-                            transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-                            className="absolute inset-0"
+                            drag="x"
+                            dragConstraints={{ left: 0, right: 0 }}
+                            dragElastic={0.7}
+                            onDragEnd={(_, info) => {
+                                if (info.offset.x > 100) handlePrevious();
+                                else if (info.offset.x < -100) handleNext();
+                            }}
+                            className="absolute inset-0 flex items-center justify-center"
                         >
                             <ImageWithFallback
                                 src={currentImage.imageUrl}
                                 alt={currentImage.altText || productName}
                                 fill
-                                className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                                className="object-cover transition-transform duration-700 group-hover:scale-[1.03] select-none"
                                 priority
                                 sizes="(max-width: 768px) 100vw, 420px"
                             />
@@ -186,9 +189,6 @@ export default function ImageGallery({ images, productName }: ImageGalleryProps)
                         onKeyDown={handleKeyDown}
                         tabIndex={0}
                         className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4"
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
                     >
                         {/* Close */}
                         <button

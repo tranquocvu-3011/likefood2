@@ -19,6 +19,8 @@ import { useLanguage } from "@/lib/i18n/context";
 import { CartItemList, CartSummary, CouponSection, SavedItemsList } from "@/components/cart";
 import { CartItem } from "@/components/cart/CartItemList";
 import { SavedItem } from "@/components/cart/SavedItemsList";
+import EmptyState from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
 
 export default function CartPage() {
     const { items, removeItem, updateQuantity, addItem } = useCart();
@@ -34,15 +36,16 @@ export default function CartPage() {
         setSelectedIds(prev => new Set([...prev].filter(id => items.some(i => i.id === id))));
     }, [items]);
 
-    const [savedForLater, setSavedForLater] = useState<typeof items>(() => {
-        if (typeof window === "undefined") return [];
-        const saved = localStorage.getItem('savedForLater');
-        if (!saved) return [];
-        try { return JSON.parse(saved); } catch { return []; }
-    });
+    const [savedForLater, setSavedForLater] = useState<typeof items>([]);
     const [showSavedTab, setShowSavedTab] = useState(false);
 
-    // Load savedForLater from localStorage on mount — handled via lazy useState initializer above
+    // Load savedForLater from localStorage after hydration (avoids SSR mismatch)
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('savedForLater');
+            if (saved) setSavedForLater(JSON.parse(saved));
+        } catch { /* ignore */ }
+    }, []);
 
     // Persist savedForLater to localStorage whenever it changes
     useEffect(() => {
@@ -62,6 +65,12 @@ export default function CartPage() {
     const selectedCount = useMemo(() => {
         return items.filter(item => selectedIds.has(item.id)).reduce((sum, item) => sum + item.quantity, 0);
     }, [items, selectedIds]);
+
+    // Memoize to prevent RelatedProductsSection from refetching on every render
+    const relatedCategories = useMemo(() =>
+        [...new Set(items.map(i => i.category || 'all'))],
+        [items]
+    );
 
     const toggleSelect = (id: string) => {
         setSelectedIds(prev => {
@@ -119,60 +128,52 @@ export default function CartPage() {
             { label: language === "vi" ? "Quà tặng" : "Gift Sets", href: "/products?tag=gift" },
         ];
         return (
-            <div className="page-container-wide py-24 text-center">
-                {/* Illustration */}
-                <div className="relative w-40 h-40 mx-auto mb-10">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-emerald-100 rounded-[3rem] rotate-6" />
-                    <div className="absolute inset-0 bg-white rounded-[3rem] flex items-center justify-center shadow-xl shadow-primary/10">
-                        <ShoppingBag className="w-16 h-16 text-primary/60" />
-                    </div>
-                    {/* Floating dots for decoration */}
-                    <div className="absolute -top-2 -right-2 w-5 h-5 bg-primary rounded-full opacity-40" />
-                    <div className="absolute -bottom-3 -left-2 w-8 h-8 bg-emerald-200 rounded-full opacity-60" />
-                </div>
+            <div className="page-container-wide py-8">
+                <EmptyState
+                    icon={ShoppingBag}
+                    title={t("cart.emptyCart")}
+                    description={t("cart.emptyCartDesc")}
+                    action={
+                        <div className="flex flex-col items-center gap-8">
+                            <Link href="/products" prefetch={true}>
+                                <Button size="lg" className="rounded-full px-10 py-7 font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
+                                    {t("cart.shopNow")}
+                                </Button>
+                            </Link>
 
-                <h1 className="text-4xl font-black uppercase tracking-tighter mb-4">{t("cart.emptyCart")}</h1>
-                <p className="text-xl text-muted-foreground mb-10 max-w-lg mx-auto leading-relaxed">
-                    {t("cart.emptyCartDesc")}
-                </p>
-
-                <Link href="/products" prefetch={true}>
-                    <button className="bg-primary text-white px-10 py-5 rounded-full font-black uppercase tracking-widest shadow-2xl shadow-primary/30 hover:bg-primary/90 transition-all transform hover:scale-105 active:scale-95 mb-12">
-                        {t("cart.shopNow")}
-                    </button>
-                </Link>
-
-                {/* Category quick-links */}
-                <div className="mt-2 flex flex-wrap justify-center gap-3">
-                    {quickLinks.map((link) => (
-                        <Link
-                            key={link.href}
-                            href={link.href}
-                            prefetch={true}
-                            className="px-5 py-2.5 rounded-full border-2 border-slate-200 text-sm font-bold text-slate-600 hover:border-primary hover:text-primary transition-colors"
-                        >
-                            {link.label}
-                        </Link>
-                    ))}
-                </div>
+                            <div className="mt-2 flex flex-wrap justify-center gap-3">
+                                {quickLinks.map((link) => (
+                                    <Link
+                                        key={link.href}
+                                        href={link.href}
+                                        prefetch={true}
+                                        className="px-5 py-2.5 rounded-full border-2 border-slate-200 text-sm font-bold text-slate-600 hover:border-primary hover:text-primary transition-colors bg-white shadow-sm"
+                                    >
+                                        {link.label}
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    }
+                />
             </div>
         );
     }
 
     return (
-        <div className="page-container-wide py-20 bg-gradient-to-b from-slate-50 via-white to-slate-50 min-h-screen">
-            <Link href="/products" prefetch={true} className="inline-flex items-center text-sm font-black uppercase tracking-widest text-slate-400 hover:text-primary mb-12 transition-colors group">
+        <div className="page-container-wide py-8 bg-gradient-to-b from-slate-50 via-white to-slate-50 min-h-screen">
+            <Link href="/products" prefetch={true} className="inline-flex items-center text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-primary mb-6 transition-colors group">
                 <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" /> {t("shop.continueShopping")}
             </Link>
 
-            <div className="flex items-center justify-between mb-8">
-                <h1 className="text-5xl font-black uppercase tracking-tighter">
+            <div className="flex items-center justify-between mb-5">
+                <h1 className="text-2xl font-black uppercase tracking-tighter">
                     {t("cart.yourCart")} <span className="text-primary">({items.length})</span>
                 </h1>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                     <button
                         onClick={() => setShowSavedTab(false)}
-                        className={`px-6 py-3 rounded-full font-bold text-sm transition-all ${!showSavedTab
+                        className={`px-4 py-2 rounded-xl font-bold text-xs transition-all ${!showSavedTab
                             ? "bg-primary text-white shadow-lg"
                             : "bg-white text-slate-600 border border-slate-200"
                             }`}
@@ -181,18 +182,18 @@ export default function CartPage() {
                     </button>
                     <button
                         onClick={() => setShowSavedTab(true)}
-                        className={`px-6 py-3 rounded-full font-bold text-sm transition-all ${showSavedTab
+                        className={`px-4 py-2 rounded-xl font-bold text-xs transition-all ${showSavedTab
                             ? "bg-primary text-white shadow-lg"
                             : "bg-white text-slate-600 border border-slate-200"
                             }`}
                     >
-                        <Bookmark className="w-4 h-4 inline mr-1" />
+                        <Bookmark className="w-3.5 h-3.5 inline mr-1" />
                         {language === "vi" ? "Đã lưu" : "Saved"} ({savedForLater.length})
                     </button>
                 </div>
             </div>
 
-            <div className="lg:grid lg:grid-cols-12 lg:gap-16">
+            <div className="lg:grid lg:grid-cols-12 lg:gap-8">
                 <div className="lg:col-span-8">
                     {showSavedTab ? (
                         <SavedItemsList
@@ -216,7 +217,7 @@ export default function CartPage() {
                     )}
                 </div>
 
-                <div className="lg:col-span-4 mt-16 lg:mt-0 space-y-6 lg:sticky lg:top-28 lg:self-start">
+                <div className="lg:col-span-4 mt-6 lg:mt-0 space-y-4 lg:sticky lg:top-20 lg:self-start">
                     <CouponSection
                         couponCode={couponCode}
                         setCouponCode={setCouponCode}
@@ -240,9 +241,9 @@ export default function CartPage() {
 
             {/* Related Products Suggestions */}
             {items.length > 0 && (
-                <div className="mt-20">
-                    <h2 className="text-3xl font-black uppercase tracking-tighter mb-8">{language === "vi" ? "Có thể bạn cũng thích" : "You may also like"}</h2>
-                    <RelatedProductsSection categories={[...new Set(items.map(i => i.category || 'all'))]} />
+                <div className="mt-10">
+                    <h2 className="text-xl font-black uppercase tracking-tighter mb-5">{language === "vi" ? "Có thể bạn cũng thích" : "You may also like"}</h2>
+                    <RelatedProductsSection categories={relatedCategories} />
                 </div>
             )}
         </div>

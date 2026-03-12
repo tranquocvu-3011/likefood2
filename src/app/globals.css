@@ -22,6 +22,11 @@
   --color-accent: hsl(var(--accent));
   --color-accent-foreground: hsl(var(--accent-foreground));
 
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+
   --color-popover: hsl(var(--popover));
   --color-popover-foreground: hsl(var(--popover-foreground));
 
@@ -52,13 +57,14 @@
   body {
     font-family: Arial, Helvetica, sans-serif;
   }
+  /* ── Unified container system ── */
   .page-container-wide {
     width: 100%;
-    max-width: 90rem;
+    max-width: 82rem; /* 1312px — tighter than 90rem */
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
   @media (min-width: 640px) {
     .page-container-wide {
@@ -72,6 +78,53 @@
       padding-right: 2rem;
     }
   }
+  /* Standard section spacing — compact */
+  .section-gap {
+    padding-top: 1.75rem;
+    padding-bottom: 1.75rem;
+  }
+  @media (min-width: 768px) {
+    .section-gap {
+      padding-top: 2.25rem;
+      padding-bottom: 2.25rem;
+    }
+  }
+  /* Compact section heading */
+  .section-heading {
+    font-size: 1.125rem;
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+    color: #0f172a;
+  }
+  @media (min-width: 768px) {
+    .section-heading {
+      font-size: 1.25rem;
+    }
+  }
+  /* Section eyebrow / label */
+  .section-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #64748b;
+  }
+  /* Narrower container for home sections like recommendations */
+  .page-container-narrow {
+    width: 100%;
+    max-width: 64rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  @media (min-width: 640px) {
+    .page-container-narrow {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
 }
 
 @layer base {
@@ -82,19 +135,30 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* LIKEFOOD palette (premium Vietnamese food in US) */
+    --primary: 154 56% 28%; /* jade */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 30 24% 96%; /* warm neutral */
+    --secondary-foreground: 24 20% 12%;
+
+    --accent: 38 85% 95%; /* saffron tint */
+    --accent-foreground: 24 32% 16%;
+
+    --muted: 30 18% 95%;
+    --muted-foreground: 24 10% 40%;
+
+    --success: 154 56% 28%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 45%;
+    --warning-foreground: 24 60% 10%;
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --ring: 154 56% 28%;
     --radius: 0.5rem;
   }
   .dark {
@@ -104,19 +168,24 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --primary: 154 55% 46%;
+    --primary-foreground: 154 30% 10%;
+    --secondary: 24 10% 14%;
+    --secondary-foreground: 30 20% 96%;
+    --muted: 24 10% 14%;
+    --muted-foreground: 30 10% 70%;
+    --accent: 24 12% 18%;
+    --accent-foreground: 30 20% 96%;
+
+    --success: 154 55% 46%;
+    --success-foreground: 154 30% 10%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 24 60% 10%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 154 55% 46%;
   }
 }
 
@@ -125,21 +194,21 @@
     @apply border-border;
   }
   html {
-    font-size: 16px;
+    font-size: 14px;
   }
   @media (min-width: 640px) {
     html {
-      font-size: 17px;
+      font-size: 14.5px;
     }
   }
   @media (min-width: 1024px) {
     html {
-      font-size: 18px;
+      font-size: 15px;
     }
   }
   body {
     @apply bg-background text-foreground;
     font-size: 1rem;
-    line-height: 1.6;
+    line-height: 1.55;
   }
 }

@@ -95,6 +95,7 @@ export async function POST(req: NextRequest) {
             calculatedAt: new Date(),
           },
           create: {
+            id: crypto.randomUUID(),
             userId,
             segment,
             score: 1.0,

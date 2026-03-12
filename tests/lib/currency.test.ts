@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { formatPrice, formatPriceNumber, parsePrice, getCurrencySymbol } from '@/lib/currency';
+import { formatPrice, formatPriceNumber, parsePrice, getCurrencySymbol, formatVndEquivalent } from '@/lib/currency';
 
 describe('Currency Utils', () => {
   describe('formatPrice', () => {
@@ -53,6 +53,18 @@ describe('Currency Utils', () => {
     it('should return dollar sign for USD', () => {
       expect(getCurrencySymbol('USD')).toBe('$');
       expect(getCurrencySymbol()).toBe('$');
+    });
+  });
+
+  describe('formatVndEquivalent', () => {
+    it('should return VND equivalent string', () => {
+      const result = formatVndEquivalent(10);
+      expect(result).toContain('VND');
+      expect(result).toContain('260.000');
+    });
+
+    it('should handle 0', () => {
+      expect(formatVndEquivalent(0)).toContain('0');
     });
   });
 });

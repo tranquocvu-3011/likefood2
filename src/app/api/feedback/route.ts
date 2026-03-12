@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
     // Store feedback in conversationHistory with feedback field
     const feedback = await prisma.conversationHistory.create({
       data: {
+        id: crypto.randomUUID(),
         userId: userId || null,
         sessionId: sessionId || `feedback_${Date.now()}`,
         role: "feedback",

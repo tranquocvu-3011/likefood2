@@ -23,7 +23,16 @@ interface Post {
     authorName?: string;
     category?: string;
     publishedAt: string;
+    content?: string; // For read time calculation
 }
+
+// Calculate read time based on content (avg 200 words/minute)
+const calculateReadTime = (content?: string): string => {
+    if (!content) return "5";
+    const words = content.trim().split(/\s+/).length;
+    const minutes = Math.ceil(words / 200);
+    return minutes.toString();
+};
 
 export default function PostsPage() {
     const { t, language } = useLanguage();
@@ -38,13 +47,18 @@ export default function PostsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState(t("shop.postCatAll"));
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const POSTS_PER_PAGE = 9;
 
     useEffect(() => {
         const fetchPosts = async () => {
+            setIsLoading(true);
             try {
-                const res = await fetch("/api/posts?limit=50");
+                const res = await fetch(`/api/posts?limit=${POSTS_PER_PAGE}&page=${currentPage}`);
                 const data = await res.json();
                 setPosts(data.posts || []);
+                setTotalPages(data.pagination?.totalPages || 1);
             } catch (error) {
                 console.error("Fetch posts error:", error);
             } finally {
@@ -52,7 +66,7 @@ export default function PostsPage() {
             }
         };
         fetchPosts();
-    }, []);
+    }, [currentPage]);
 
     const filteredPosts = useMemo(() => {
         return posts.filter(post => {
@@ -163,6 +177,7 @@ export default function PostsPage() {
                         </button>
                     </motion.div>
                 ) : (
+                    <>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         <AnimatePresence mode="popLayout">
                             {filteredPosts.map((post, idx) => (
@@ -207,7 +222,7 @@ export default function PostsPage() {
                                                 </div>
                                                 <div className="flex items-center gap-1.5">
                                                     <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                                                    <span>5 Phút</span>
+                                                    <span>{calculateReadTime(post.content)} Phút</span>
                                                 </div>
                                             </div>
 
@@ -236,6 +251,45 @@ export default function PostsPage() {
                             ))}
                         </AnimatePresence>
                     </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-center gap-2 mt-12">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors text-sm font-medium"
+                            >
+                                ← Trước
+                            </button>
+                            <div className="flex items-center gap-1">
+                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                    const page = i + 1;
+                                    return (
+                                        <button
+                                            key={page}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`w-10 h-10 rounded-xl text-sm font-bold transition-colors ${
+                                                currentPage === page 
+                                                    ? "bg-primary text-white" 
+                                                    : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                                            }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors text-sm font-medium"
+                            >
+                                Sau →
+                            </button>
+                        </div>
+                    )}
+                    </>
                 )}
 
                 {/* Newsletter / CTA Section */}

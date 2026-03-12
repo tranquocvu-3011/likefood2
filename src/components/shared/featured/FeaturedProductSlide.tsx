@@ -13,6 +13,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import FeaturedProductFrame from "./FeaturedProductFrame";
 import type { FeaturedProduct } from "./types";
+import { formatPrice } from "@/lib/currency";
 
 interface FeaturedProductSlideProps {
     product: FeaturedProduct;
@@ -127,12 +128,12 @@ export default function FeaturedProductSlide({ product, direction, onAddToCart }
                     {product.basePrice && product.basePrice > product.price && (
                         <p className="text-slate-400 font-bold tracking-tighter line-through relative"
                             style={{ fontSize: 'clamp(1rem, 2vw, 1.8rem)' }}>
-                            ${product.basePrice.toFixed(2)}
+                            {formatPrice(product.basePrice)}
                         </p>
                     )}
                     <p className="text-slate-900 font-black tracking-tighter relative"
                         style={{ fontSize: 'clamp(1.5rem, 3vw, 2.7rem)' }}>
-                        ${product.price.toFixed(2)}
+                        {formatPrice(product.price)}
                     </p>
                 </motion.div>
             </div>

@@ -1,18 +1,27 @@
 "use client";
 
 /**
- * LIKEFOOD - Vietnamese Specialty Marketplace
- * Copyright (c) 2026 LIKEFOOD Team
- * Licensed under the MIT License
- * https://github.com/tranquocvu-3011/likefood
+ * LIKEFOOD - Premium Admin Dashboard
+ * Dark Gray Enterprise Dashboard Style - 2026 Edition
  */
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, Boxes, ClipboardList, Loader2, Package, RefreshCw, Sparkles, TrendingUp, Users } from "lucide-react";
+import { 
+  AlertTriangle, 
+  ArrowRight, 
+  Boxes, 
+  ClipboardList, 
+  Loader2, 
+  Sparkles, 
+  TrendingUp, 
+  Users,
+  DollarSign,
+  ShoppingCart,
+  Plus,
+  RefreshCw
+} from "lucide-react";
 import { useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { formatPrice } from "@/lib/currency";
 
 interface DashboardData {
@@ -28,9 +37,9 @@ interface DashboardData {
 }
 
 const RANGES = [
-  { value: "week", label: "7 ngày" },
-  { value: "month", label: "30 ngày" },
-  { value: "quarter", label: "90 ngày" },
+  { value: "week", label: "7D" },
+  { value: "month", label: "30D" },
+  { value: "quarter", label: "90D" },
 ];
 
 export default function AdminDashboardPage() {
@@ -39,234 +48,390 @@ export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
+      if (range === "week") startDate.setDate(startDate.getDate() - 7);
+      else if (range === "month") startDate.setMonth(startDate.getMonth() - 1);
+      else startDate.setMonth(startDate.getMonth() - 3);
+
+      const [analyticsRes, ordersRes, productsRes, aiRes] = await Promise.all([
+        fetch(`/api/analytics/dashboard?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`),
+        fetch(`/api/orders?page=1&limit=5`),
+        fetch(`/api/products?limit=8&sort=best-selling`),
+        fetch(`/api/ai/admin?type=analytics`),
+      ]);
+
+      const analytics = analyticsRes.ok ? await analyticsRes.json() : null;
+      const ordersData = ordersRes.ok ? await ordersRes.json() : { orders: [] };
+      const productsData = productsRes.ok ? await productsRes.json() : { products: [] };
+      const aiData = aiRes.ok ? await aiRes.json() : { insights: [] };
+
+      const orders = Array.isArray(ordersData?.orders) ? ordersData.orders : [];
+      const products = Array.isArray(productsData?.products) ? productsData.products : [];
+
+      setData({
+        revenue: analytics?.revenue || { total: 0, change: 0 },
+        orders: analytics?.orders || { total: 0, pending: 0, shipping: 0, completed: 0, change: 0 },
+        customers: analytics?.customers || { total: 0, change: 0 },
+        products: analytics?.products || { total: 0, lowStock: 0 },
+        recentOrders: orders,
+        lowStockProducts: products.filter((product: { inventory: number }) => product.inventory < 10).slice(0, 5),
+        topProducts: products.slice(0, 5).map((product: { id: string; name: string; image?: string | null; soldCount?: number; price: number }) => ({
+          id: product.id,
+          name: product.name,
+          image: product.image,
+          soldCount: product.soldCount || 0,
+          revenue: (product.soldCount || 0) * product.price,
+        })),
+        revenueChart: analytics?.revenueByDay?.slice(-7).map((item: { date: string; revenue: number }) => ({
+          label: new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "2-digit" }),
+          value: item.revenue,
+        })) || [],
+        aiInsights: Array.isArray(aiData?.insights) ? aiData.insights : [],
+      });
+    } catch (error) {
+      console.error("Failed to load dashboard data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      setIsLoading(true);
-      try {
-        const endDate = new Date();
-        const startDate = new Date();
-        if (range === "week") startDate.setDate(startDate.getDate() - 7);
-        else if (range === "month") startDate.setMonth(startDate.getMonth() - 1);
-        else startDate.setMonth(startDate.getMonth() - 3);
-
-        const [analyticsRes, ordersRes, productsRes, aiRes] = await Promise.all([
-          fetch(`/api/analytics/dashboard?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`),
-          fetch(`/api/orders?page=1&limit=5`),
-          fetch(`/api/products?limit=8&sort=best-selling`),
-          fetch(`/api/ai/admin?type=analytics`),
-        ]);
-
-        const analytics = analyticsRes.ok ? await analyticsRes.json() : null;
-        const ordersData = ordersRes.ok ? await ordersRes.json() : { orders: [] };
-        const productsData = productsRes.ok ? await productsRes.json() : { products: [] };
-        const aiData = aiRes.ok ? await aiRes.json() : { insights: [] };
-
-        const orders = Array.isArray(ordersData?.orders) ? ordersData.orders : [];
-        const products = Array.isArray(productsData?.products) ? productsData.products : [];
-
-        setData({
-          revenue: analytics?.revenue || { total: 0, change: 0 },
-          orders: analytics?.orders || { total: 0, pending: 0, shipping: 0, completed: 0, change: 0 },
-          customers: analytics?.customers || { total: 0, change: 0 },
-          products: analytics?.products || { total: 0, lowStock: 0 },
-          recentOrders: orders,
-          lowStockProducts: products.filter((product: { inventory: number }) => product.inventory < 10).slice(0, 5),
-          topProducts: products.slice(0, 5).map((product: { id: string; name: string; image?: string | null; soldCount?: number; price: number }) => ({
-            id: product.id,
-            name: product.name,
-            image: product.image,
-            soldCount: product.soldCount || 0,
-            revenue: (product.soldCount || 0) * product.price,
-          })),
-          revenueChart: analytics?.revenueByDay?.slice(-7).map((item: { date: string; revenue: number }) => ({
-            label: new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "2-digit" }),
-            value: item.revenue,
-          })) || [],
-          aiInsights: Array.isArray(aiData?.insights) ? aiData.insights : [],
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void load();
+    loadData();
   }, [range]);
 
   const maxChartValue = useMemo(() => Math.max(...(data?.revenueChart.map((item) => item.value) || [0]), 1), [data]);
 
+  // Get greeting based on time
+  const greeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+
   if (isLoading || !data) {
-    return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 border-2 border-teal-500/20 border-t-teal-500 rounded-full animate-spin" />
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
-      <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
-        <div className="bg-gradient-to-r from-slate-900 via-teal-900 to-emerald-800 px-4 py-5 text-white lg:px-6 lg:py-6">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="max-w-2xl">
-              <p className="text-[9px] font-semibold uppercase tracking-wider text-white/50">Bảng quản trị</p>
-              <h1 className="mt-1.5 text-xl font-bold tracking-tight lg:text-2xl">Quản lý cửa hàng nhanh chóng</h1>
-              <p className="mt-1.5 text-xs text-white/70">
-                Chào mừng trở lại, {session?.user?.name || 'Admin'}. Không gian này tổng hợp doanh thu, rủi ro, vận hành và gợi ý AI tại một nơi.
-              </p>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-zinc-100">{greeting()}, {session?.user?.name || 'Admin'}</h1>
+          <p className="text-sm text-zinc-500 mt-0.5">Here's what's happening today</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={loadData}
+            className="p-2 rounded-md border border-zinc-800 bg-zinc-900 text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </button>
+          <div className="flex items-center rounded-md border border-zinc-800 bg-zinc-900 p-0.5">
+            {RANGES.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setRange(option.value)}
+                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                  range === option.value 
+                    ? 'bg-zinc-800 text-zinc-100' 
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <KPICard 
+          title="Revenue" 
+          value={formatPrice(data.revenue.total)} 
+          change={data.revenue.change}
+          icon={DollarSign}
+          accentColor="text-teal-400"
+        />
+        <KPICard 
+          title="Orders" 
+          value={data.orders.total.toString()} 
+          meta={data.orders.pending > 0 ? `${data.orders.pending} pending` : undefined}
+          icon={ShoppingCart}
+          accentColor="text-blue-400"
+        />
+        <KPICard 
+          title="Customers" 
+          value={data.customers.total.toString()} 
+          change={data.customers.change}
+          icon={Users}
+          accentColor="text-violet-400"
+        />
+        <KPICard 
+          title="Low Stock" 
+          value={data.products.lowStock.toString()} 
+          meta={`/ ${data.products.total} products`}
+          icon={Boxes}
+          accentColor={data.products.lowStock > 0 ? "text-amber-400" : "text-zinc-400"}
+          warning={data.products.lowStock > 0}
+        />
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid gap-4 xl:grid-cols-3">
+        {/* Left Column */}
+        <div className="xl:col-span-2 space-y-4">
+          {/* Revenue Chart */}
+          <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-zinc-300">Revenue Trend</h3>
+              <Link href="/admin/analytics" className="text-xs text-zinc-500 hover:text-teal-400 transition-colors flex items-center gap-1">
+                View analytics <ArrowRight className="h-3 w-3" />
+              </Link>
             </div>
-            <div className="flex flex-wrap items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-0.5 backdrop-blur">
-              {RANGES.map((option) => (
-                <button key={option.value} type="button" onClick={() => setRange(option.value)} className={`rounded-md px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition ${range === option.value ? 'bg-white text-slate-900' : 'text-white/70 hover:text-white'}`}>
-                  {option.label}
-                </button>
-              ))}
+            {data.revenueChart.length === 0 ? (
+              <div className="h-36 flex items-center justify-center border border-dashed border-zinc-800 rounded-lg">
+                <p className="text-xs text-zinc-600">No revenue data available</p>
+              </div>
+            ) : (
+              <div className="flex h-36 items-end gap-2">
+                {data.revenueChart.map((item) => (
+                  <div key={item.label} className="flex flex-1 flex-col items-center gap-1">
+                    <span className="text-[10px] text-zinc-600">{formatPrice(item.value)}</span>
+                    <div className="flex h-24 w-full items-end rounded bg-zinc-900/50 p-1">
+                      <div 
+                        className="w-full rounded-sm bg-gradient-to-t from-teal-600 to-teal-500" 
+                        style={{ height: `${Math.max((item.value / maxChartValue) * 100, 6)}%` }} 
+                      />
+                    </div>
+                    <span className="text-[10px] font-medium text-zinc-500">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Recent Orders */}
+          <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-zinc-300">Recent Orders</h3>
+              <Link href="/admin/orders" className="text-xs text-zinc-500 hover:text-teal-400 transition-colors flex items-center gap-1">
+                View all <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+            <div className="space-y-2">
+              {data.recentOrders.length === 0 ? (
+                <div className="h-24 flex items-center justify-center border border-dashed border-zinc-800 rounded-lg">
+                  <p className="text-xs text-zinc-600">No orders yet</p>
+                </div>
+              ) : (
+                data.recentOrders.map((order) => (
+                  <div 
+                    key={order.id} 
+                    className="flex items-center justify-between rounded-md border border-zinc-800/50 bg-zinc-900/30 px-3 py-2.5"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-zinc-200">#{order.id.slice(-6).toUpperCase()}</p>
+                      <p className="text-xs text-zinc-500 truncate max-w-[180px]">{order.userEmail || 'Guest'}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <StatusBadge status={order.status} />
+                      <span className="text-sm font-semibold text-zinc-200">{formatPrice(order.total)}</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
-      </section>
 
-      <div className="grid gap-3 lg:grid-cols-4">
-        <MetricCard label="Doanh thu" value={formatPrice(data.revenue.total)} meta={`${data.revenue.change.toFixed(1)}%`} tone="emerald" />
-        <MetricCard label="Đơn hàng" value={`${data.orders.total}`} meta={`${data.orders.pending} đang chờ`} tone="sky" />
-        <MetricCard label="Khách hàng" value={`${data.customers.total}`} meta={`${data.customers.change.toFixed(1)}% thay đổi`} tone="violet" />
-        <MetricCard label="Sắp hết hàng" value={`${data.products.lowStock}`} meta={`${data.products.total} sản phẩm`} tone="amber" />
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+        {/* Right Column */}
         <div className="space-y-4">
-          <Card className="rounded-xl border-slate-200/80 bg-white shadow-sm">
-            <CardContent className="p-4 lg:p-5">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Xu hướng doanh thu</p>
-                  <h2 className="mt-1 text-base font-bold tracking-tight text-slate-900">7 điểm dữ liệu gần nhất</h2>
+          {/* AI Insights */}
+          <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-teal-400" />
+                AI Insights
+              </h3>
+              <Link href="/admin/ai" className="text-xs text-zinc-500 hover:text-teal-400 transition-colors">
+                View all
+              </Link>
+            </div>
+            <div className="space-y-2">
+              {data.aiInsights.length === 0 ? (
+                <div className="h-24 flex items-center justify-center border border-dashed border-zinc-800 rounded-lg">
+                  <p className="text-xs text-zinc-600">No insights available</p>
                 </div>
-                <Link href="/admin/analytics"><Button variant="outline" size="sm" className="h-7 text-xs">Xem phân tích<ArrowRight className="h-3 w-3" /></Button></Link>
-              </div>
-              {data.revenueChart.length === 0 ? <EmptyState message="Chưa có dữ liệu doanh thu." /> : (
-                <div className="mt-5 flex h-44 items-end gap-2">
-                  {data.revenueChart.map((item) => (
-                    <div key={item.label} className="flex flex-1 flex-col items-center gap-1.5">
-                      <div className="text-[9px] font-medium text-slate-400">{formatPrice(item.value)}</div>
-                      <div className="flex h-32 w-full items-end rounded-lg bg-slate-100 p-1.5">
-                        <div className="w-full rounded-md bg-gradient-to-t from-teal-600 to-emerald-400" style={{ height: `${Math.max((item.value / maxChartValue) * 100, 6)}%` }} />
-                      </div>
-                      <div className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">{item.label}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-xl border-slate-200/80 bg-white shadow-sm">
-            <CardContent className="p-4 lg:p-5">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Vận hành gần đây</p>
-                  <h2 className="mt-1 text-base font-bold tracking-tight text-slate-900">Đơn hàng mới nhất</h2>
-                </div>
-                <Link href="/admin/orders"><Button variant="outline" size="sm" className="h-7 text-xs">Xem đơn hàng<ArrowRight className="h-3 w-3" /></Button></Link>
-              </div>
-              <div className="mt-4 space-y-2">
-                {data.recentOrders.length === 0 ? <EmptyState message="Chưa có đơn hàng nào." /> : data.recentOrders.map((order) => (
-                  <div key={order.id} className="flex flex-col gap-2 rounded-lg border border-slate-100 bg-slate-50/80 p-3 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-800">#{order.id.slice(-8).toUpperCase()}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">{order.userEmail || 'Khách vãng lai'}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">{order.status}</span>
-                      <span className="text-xs font-bold text-slate-800">{formatPrice(order.total)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-4">
-          <Card className="rounded-xl border-slate-200/80 bg-white shadow-sm">
-            <CardContent className="p-4 lg:p-5">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Tín hiệu AI</p>
-                  <h2 className="mt-1 text-base font-bold tracking-tight text-slate-900">Gợi ý hành động</h2>
-                </div>
-                <Link href="/admin/ai"><Button variant="outline" size="sm" className="h-7 text-xs"><Sparkles className="h-3 w-3" />Mở phòng AI</Button></Link>
-              </div>
-              <div className="mt-4 space-y-2">
-                {data.aiInsights.length === 0 ? <EmptyState message="AI chưa có gợi ý nào." /> : data.aiInsights.slice(0, 4).map((insight) => (
-                  <div key={insight.title} className="rounded-lg border border-slate-100 bg-slate-50/80 p-3">
+              ) : (
+                data.aiInsights.slice(0, 4).map((insight, index) => (
+                  <div 
+                    key={index} 
+                    className="rounded-md border border-zinc-800/50 bg-zinc-900/30 p-2.5"
+                  >
                     <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800">{insight.title}</p>
-                        <p className="mt-1 text-xs text-slate-500">{insight.description}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-zinc-200 truncate">{insight.title}</p>
+                        <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{insight.description}</p>
                       </div>
-                      <span className={`shrink-0 rounded-md px-2 py-1 text-[9px] font-semibold uppercase tracking-wider ${insight.type === 'warning' ? 'bg-amber-100 text-amber-700' : insight.type === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'}`}>{insight.metric || insight.type}</span>
+                      <InsightBadge type={insight.type} metric={insight.metric} />
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                ))
+              )}
+            </div>
+          </div>
 
-          <Card className="rounded-xl border-slate-200/80 bg-white shadow-sm">
-            <CardContent className="p-4 lg:p-5">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Rủi ro tồn kho</p>
-                  <h2 className="mt-1 text-base font-bold tracking-tight text-slate-900">Danh sách sắp hết hàng</h2>
+          {/* Low Stock Alert */}
+          <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-400" />
+                Low Stock
+              </h3>
+              <Link href="/admin/products" className="text-xs text-zinc-500 hover:text-teal-400 transition-colors">
+                Manage
+              </Link>
+            </div>
+            <div className="space-y-2">
+              {data.lowStockProducts.length === 0 ? (
+                <div className="h-24 flex items-center justify-center border border-dashed border-zinc-800 rounded-lg">
+                  <p className="text-xs text-zinc-600">All products in stock</p>
                 </div>
-                <Link href="/admin/products"><Button variant="outline" size="sm" className="h-7 text-xs">Xem sản phẩm<ArrowRight className="h-3 w-3" /></Button></Link>
-              </div>
-              <div className="mt-4 space-y-2">
-                {data.lowStockProducts.length === 0 ? <EmptyState message="Không có sản phẩm sắp hết hàng." /> : data.lowStockProducts.map((product) => (
-                  <div key={product.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50/80 p-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-slate-800">{product.name}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">Còn {product.inventory} đơn vị</p>
+              ) : (
+                data.lowStockProducts.map((product) => (
+                  <div 
+                    key={product.id} 
+                    className="flex items-center justify-between rounded-md border border-zinc-800/50 bg-zinc-900/30 px-3 py-2"
+                  >
+                    <p className="truncate text-sm text-zinc-300 max-w-[160px]">{product.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-semibold text-amber-400">{product.inventory}</span>
+                      <span className="text-xs text-zinc-600">left</span>
                     </div>
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+            <h3 className="text-sm font-medium text-zinc-300 mb-3">Quick Actions</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <Link 
+                href="/admin/products/new" 
+                className="flex items-center justify-center gap-2 rounded-md border border-zinc-800 bg-zinc-900/50 px-3 py-2.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Product
+              </Link>
+              <Link 
+                href="/admin/orders" 
+                className="flex items-center justify-center gap-2 rounded-md border border-zinc-800 bg-zinc-900/50 px-3 py-2.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
+              >
+                <ClipboardList className="h-3.5 w-3.5" />
+                View Orders
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function MetricCard({ label, value, meta, tone }: { label: string; value: string; meta: string; tone: 'emerald' | 'sky' | 'violet' | 'amber' }) {
-  const styles = {
-    emerald: 'bg-emerald-100 text-emerald-600',
-    sky: 'bg-sky-100 text-sky-600',
-    violet: 'bg-violet-100 text-violet-600',
-    amber: 'bg-amber-100 text-amber-600',
-  } satisfies Record<string, string>;
-  const icons = {
-    emerald: TrendingUp,
-    sky: ClipboardList,
-    violet: Users,
-    amber: Boxes,
-  } satisfies Record<string, typeof TrendingUp>;
-  const Icon = icons[tone];
-
+// KPI Card Component
+function KPICard({ 
+  title, 
+  value, 
+  change, 
+  meta,
+  icon: Icon,
+  accentColor,
+  warning 
+}: { 
+  title: string; 
+  value: string; 
+  change?: number;
+  meta?: string;
+  icon: typeof DollarSign;
+  accentColor: string;
+  warning?: boolean;
+}) {
+  const isPositive = change !== undefined && change >= 0;
+  
   return (
-    <Card className="rounded-xl border-slate-200/80 bg-white shadow-sm">
-      <CardContent className="p-3 lg:p-4">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">{label}</p>
-            <p className="mt-1 text-xl font-bold text-slate-900">{value}</p>
-            <p className="mt-1 text-xs text-slate-500">{meta}</p>
-          </div>
-          <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${styles[tone]}`}><Icon className="h-4 w-4" /></div>
+    <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">{title}</p>
+          <p className={`mt-1.5 text-2xl font-bold ${accentColor}`}>{value}</p>
+          {change !== undefined && (
+            <p className={`text-xs mt-1 ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+              {isPositive ? '+' : ''}{change.toFixed(1)}% from last period
+            </p>
+          )}
+          {meta && (
+            <p className="text-xs text-zinc-600 mt-1">{meta}</p>
+          )}
         </div>
-      </CardContent>
-    </Card>
+        <div className={`p-2 rounded-lg bg-zinc-900/50 ${warning ? 'text-amber-400' : accentColor}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </div>
   );
 }
 
-function EmptyState({ message }: { message: string }) {
-  return <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-4 text-xs text-slate-500">{message}</div>;
+// Status Badge Component
+function StatusBadge({ status }: { status: string }) {
+  const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
+    PENDING: { bg: 'bg-amber-500/10', text: 'text-amber-400', label: 'Pending' },
+    CONFIRMED: { bg: 'bg-blue-500/10', text: 'text-blue-400', label: 'Confirmed' },
+    PROCESSING: { bg: 'bg-purple-500/10', text: 'text-purple-400', label: 'Processing' },
+    SHIPPING: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', label: 'Shipping' },
+    DELIVERED: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', label: 'Delivered' },
+    COMPLETED: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', label: 'Completed' },
+    CANCELLED: { bg: 'bg-red-500/10', text: 'text-red-400', label: 'Cancelled' },
+    REFUNDED: { bg: 'bg-red-500/10', text: 'text-red-400', label: 'Refunded' },
+  };
+
+  const config = statusConfig[status] || { bg: 'bg-zinc-500/10', text: 'text-zinc-400', label: status };
+  
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${config.bg} ${config.text}`}>
+      {config.label}
+    </span>
+  );
+}
+
+// Insight Badge Component
+function InsightBadge({ type, metric }: { type: string; metric?: string }) {
+  const config = {
+    warning: { bg: 'bg-amber-500/10', text: 'text-amber-400' },
+    success: { bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
+    info: { bg: 'bg-blue-500/10', text: 'text-blue-400' },
+    trend: { bg: 'bg-teal-500/10', text: 'text-teal-400' },
+  }[type] || { bg: 'bg-zinc-500/10', text: 'text-zinc-400' };
+
+  return (
+    <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase ${config.bg} ${config.text}`}>
+      {metric || type}
+    </span>
+  );
 }

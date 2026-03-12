@@ -1,15 +1,25 @@
 "use client";
 
 /**
- * LIKEFOOD - Vietnamese Specialty Marketplace
- * Copyright (c) 2026 LIKEFOOD Team
- * Licensed under the MIT License
- * https://github.com/tranquocvu-3011/likefood
+ * LIKEFOOD - Premium Analytics Dashboard
+ * Phase 3: Dark Theme, Focus, Executive Summary
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, Loader2, Package, Target, TrendingDown, TrendingUp, Users } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { 
+  BarChart3, 
+  Loader2, 
+  Package, 
+  Target, 
+  TrendingDown, 
+  TrendingUp, 
+  Users,
+  ArrowUpRight,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  DollarSign
+} from "lucide-react";
 import { formatPrice } from "@/lib/currency";
 
 interface AnalyticsData {
@@ -21,7 +31,12 @@ interface AnalyticsData {
   topProducts: Array<{ id: string; name: string; image?: string | null; quantitySold: number }>;
 }
 
-const RANGES = [7, 30, 90, 365];
+const RANGES = [
+  { value: 7, label: '7D' },
+  { value: 30, label: '30D' },
+  { value: 90, label: '90D' },
+  { value: 365, label: '1Y' },
+];
 
 export default function AnalyticsPage() {
   const [days, setDays] = useState(30);
@@ -43,129 +58,209 @@ export default function AnalyticsPage() {
         setIsLoading(false);
       }
     };
-
     void load();
   }, [days]);
 
-  const maxRevenue = useMemo(() => Math.max(...(data?.revenueByDay.map((entry) => entry.revenue) || [0]), 1), [data]);
   const averageOrderValue = data && data.orders.total > 0 ? data.revenue.total / data.orders.total : 0;
   const conversionProxy = data && data.customers.total > 0 ? (data.orders.total / data.customers.total) * 100 : 0;
+  const completionRate = data && data.orders.total > 0 ? (data.orders.completed / data.orders.total) * 100 : 0;
 
   if (isLoading || !data) {
-    return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
+      </div>
+    );
   }
 
-  const statusRows = [
-    { label: 'Chờ xử lý', value: data.orders.pending, tone: 'bg-amber-500' },
-    { label: 'Đang giao', value: data.orders.shipping, tone: 'bg-sky-500' },
-    { label: 'Hoàn thành', value: data.orders.completed, tone: 'bg-emerald-500' },
-    { label: 'Đã hủy', value: data.orders.cancelled || 0, tone: 'bg-rose-500' },
-  ];
-  const maxStatus = Math.max(...statusRows.map((row) => row.value), 1);
-
   return (
-    <div className="space-y-8">
-      <section className="overflow-hidden rounded-[2.25rem] border border-slate-200 bg-white shadow-[0_18px_70px_rgba(15,23,42,0.07)]">
-        <div className="bg-[linear-gradient(135deg,#ffffff_0%,#eff6ff_50%,#f0fdf4_100%)] px-6 py-8 lg:px-8 lg:py-9">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Phân tích</p>
-              <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950">Báo cáo hiệu suất</h1>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500">Theo dõi doanh thu, cơ cấu đơn hàng, hiệu quả khách hàng và sản phẩm bán chạy mà không cần rời khỏi trang quản trị.</p>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-zinc-100">Analytics</h1>
+          <p className="text-sm text-zinc-500 mt-0.5">Business performance overview</p>
+        </div>
+        <div className="flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-900 p-1">
+          {RANGES.map((range) => (
+            <button
+              key={range.value}
+              onClick={() => setDays(range.value)}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                days === range.value
+                  ? 'bg-teal-600 text-white'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              {range.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Executive Summary */}
+      <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+        <h2 className="text-sm font-semibold text-zinc-300 mb-3 flex items-center gap-2">
+          <Target className="h-4 w-4 text-teal-400" />
+          Executive Summary
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-3 rounded-lg bg-zinc-900/50 border border-zinc-800">
+            <p className="text-xs text-zinc-500 mb-1">Revenue Trend</p>
+            <p className={`text-lg font-bold ${data.revenue.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              {data.revenue.change >= 0 ? '+' : ''}{data.revenue.change}% vs previous period
+            </p>
+          </div>
+          <div className="p-3 rounded-lg bg-zinc-900/50 border border-zinc-800">
+            <p className="text-xs text-zinc-500 mb-1">Completion Rate</p>
+            <p className="text-lg font-bold text-zinc-100">{completionRate.toFixed(1)}%</p>
+          </div>
+          <div className="p-3 rounded-lg bg-zinc-900/50 border border-zinc-800">
+            <p className="text-xs text-zinc-500 mb-1">Attention Needed</p>
+            <p className="text-lg font-bold text-amber-400">
+              {data.orders.pending} pending orders
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <KpiCard 
+          label="Revenue" 
+          value={formatPrice(data.revenue.total)} 
+          change={data.revenue.change}
+          icon={DollarSign}
+        />
+        <KpiCard 
+          label="Orders" 
+          value={data.orders.total.toString()} 
+          change={data.orders.change}
+          icon={BarChart3}
+        />
+        <KpiCard 
+          label="Customers" 
+          value={data.customers.total.toString()} 
+          change={data.customers.change}
+          icon={Users}
+        />
+        <KpiCard 
+          label="Avg. Order" 
+          value={formatPrice(averageOrderValue)} 
+          icon={Target}
+        />
+        <KpiCard 
+          label="Conversion" 
+          value={`${conversionProxy.toFixed(1)}%`} 
+          icon={ArrowUpRight}
+        />
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        {/* Revenue Chart */}
+        <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+          <h3 className="text-sm font-semibold text-zinc-300 mb-4">Revenue Trend</h3>
+          <div className="h-64 flex items-end gap-2">
+            {data.revenueByDay.slice(-14).map((entry, i) => {
+              const maxRev = Math.max(...data.revenueByDay.map(e => e.revenue), 1);
+              const height = (entry.revenue / maxRev) * 100;
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                  <div 
+                    className="w-full bg-teal-500/80 rounded-t hover:bg-teal-500 transition-colors"
+                    style={{ height: `${height}%`, minHeight: '4px' }}
+                    title={formatPrice(entry.revenue)}
+                  />
+                  <span className="text-[10px] text-zinc-600">{new Date(entry.date).getDate()}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Order Status Breakdown */}
+        <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+          <h3 className="text-sm font-semibold text-zinc-300 mb-4">Order Status</h3>
+          <div className="space-y-3">
+            <StatusRow label="Pending" value={data.orders.pending} color="bg-amber-500" total={data.orders.total} />
+            <StatusRow label="Processing" value={data.orders.processing || 0} color="bg-purple-500" total={data.orders.total} />
+            <StatusRow label="Shipping" value={data.orders.shipping} color="bg-cyan-500" total={data.orders.total} />
+            <StatusRow label="Delivered" value={data.orders.delivered || 0} color="bg-emerald-500" total={data.orders.total} />
+            <StatusRow label="Completed" value={data.orders.completed} color="bg-teal-500" total={data.orders.total} />
+            <StatusRow label="Cancelled" value={data.orders.cancelled || 0} color="bg-red-500" total={data.orders.total} />
+          </div>
+        </div>
+      </div>
+
+      {/* Top Products */}
+      <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+        <h3 className="text-sm font-semibold text-zinc-300 mb-4">Top Selling Products</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {data.topProducts.slice(0, 8).map((product, i) => (
+            <div key={product.id} className="flex items-center gap-3 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800">
+              <span className="text-lg font-bold text-zinc-600 w-6">#{i + 1}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-zinc-200 truncate">{product.name}</p>
+                <p className="text-xs text-zinc-500">{product.quantitySold} sold</p>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 rounded-full border border-slate-200 bg-white p-1 shadow-sm">
-              {RANGES.map((range) => (
-                <button key={range} type="button" onClick={() => setDays(range)} className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] transition ${days === range ? 'bg-slate-950 text-white' : 'text-slate-500 hover:text-slate-900'}`}>
-                  {range} ngày
-                </button>
-              ))}
+          ))}
+        </div>
+      </div>
+
+      {/* Low Stock Alert */}
+      {data.products.lowStock > 0 && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-400" />
+            <div>
+              <p className="text-sm font-semibold text-amber-400">Low Stock Alert</p>
+              <p className="text-xs text-zinc-400">{data.products.lowStock} products below safety stock level</p>
             </div>
           </div>
         </div>
-      </section>
-
-      <div className="grid gap-4 lg:grid-cols-5">
-        <Metric label="Doanh thu" value={formatPrice(data.revenue.total)} change={data.revenue.change} icon={TrendingUp} />
-        <Metric label="Đơn hàng" value={`${data.orders.total}`} change={data.orders.change} icon={BarChart3} />
-        <Metric label="Khách hàng" value={`${data.customers.total}`} change={data.customers.change} icon={Users} />
-        <Metric label="Giá trị TB" value={formatPrice(averageOrderValue)} icon={Target} />
-        <Metric label="Đơn/khách" value={`${conversionProxy.toFixed(1)}%`} icon={Package} />
-      </div>
-
-      <div className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm">
-          <CardContent className="p-6 lg:p-8">
-            <h2 className="text-2xl font-black tracking-tight text-slate-950">Doanh thu theo ngày</h2>
-            <div className="mt-8 flex h-72 items-end gap-3">
-              {data.revenueByDay.slice(-10).map((entry) => (
-                <div key={entry.date} className="flex flex-1 flex-col items-center gap-3">
-                  <div className="text-[11px] font-bold text-slate-400">{formatPrice(entry.revenue)}</div>
-                  <div className="flex h-52 w-full items-end rounded-3xl bg-slate-100 p-2">
-                    <div className="w-full rounded-[1rem] bg-[linear-gradient(180deg,#60a5fa_0%,#1d4ed8_100%)]" style={{ height: `${Math.max((entry.revenue / maxRevenue) * 100, 6)}%` }} />
-                  </div>
-                  <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">{new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}</div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-8">
-          <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm">
-            <CardContent className="p-6 lg:p-8">
-              <h2 className="text-2xl font-black tracking-tight text-slate-950">Phân bố trạng thái đơn</h2>
-              <div className="mt-6 space-y-4">
-                {statusRows.map((row) => (
-                  <div key={row.label}>
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <span className="text-sm font-black text-slate-900">{row.label}</span>
-                      <span className="text-sm font-medium text-slate-500">{row.value}</span>
-                    </div>
-                    <div className="h-3 overflow-hidden rounded-full bg-slate-100">
-                      <div className={`h-full ${row.tone}`} style={{ width: `${(row.value / maxStatus) * 100}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm">
-            <CardContent className="p-6 lg:p-8">
-              <h2 className="text-2xl font-black tracking-tight text-slate-950">Sản phẩm bán chạy</h2>
-              <div className="mt-6 space-y-3">
-                {data.topProducts.length === 0 ? <p className="text-sm text-slate-500">Chưa có dữ liệu bán hàng.</p> : data.topProducts.map((product) => (
-                  <div key={product.id} className="flex items-center justify-between gap-3 rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
-                    <div>
-                      <p className="font-black text-slate-950">{product.name}</p>
-                      <p className="mt-1 text-sm text-slate-500">Đã bán {product.quantitySold} đơn vị</p>
-                    </div>
-                    <Package className="h-5 w-5 text-slate-400" />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
 
-function Metric({ label, value, change, icon: Icon }: { label: string; value: string; change?: number; icon: typeof TrendingUp }) {
-  const positive = typeof change === 'number' ? change >= 0 : true;
+function KpiCard({ label, value, change, icon: Icon }: { 
+  label: string; 
+  value: string; 
+  change?: number;
+  icon: any;
+}) {
   return (
-    <Card className="rounded-[2rem] border-slate-200 bg-white shadow-sm">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{label}</p>
-            <p className="mt-2 text-3xl font-black text-slate-950">{value}</p>
-            {typeof change === 'number' ? <div className={`mt-3 inline-flex items-center gap-1 rounded-full px-3 py-2 text-xs font-black uppercase tracking-[0.14em] ${positive ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{positive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}{Math.abs(change).toFixed(1)}%</div> : null}
-          </div>
-          <div className="flex h-12 w-12 items-center justify-center rounded-[1.2rem] bg-slate-100 text-slate-700"><Icon className="h-5 w-5" /></div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="rounded-lg border border-zinc-800 bg-[#111113] p-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-medium text-zinc-500 uppercase">{label}</span>
+        <Icon className="h-4 w-4 text-teal-500" />
+      </div>
+      <p className="text-xl font-bold text-zinc-100">{value}</p>
+      {change !== undefined && (
+        <p className={`text-xs mt-1 ${change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          {change >= 0 ? <TrendingUp className="inline h-3 w-3 mr-1" /> : <TrendingDown className="inline h-3 w-3 mr-1" />}
+          {Math.abs(change)}%
+        </p>
+      )}
+    </div>
+  );
+}
+
+function StatusRow({ label, value, color, total }: { 
+  label: string; 
+  value: number; 
+  color: string;
+  total: number;
+}) {
+  const percentage = total > 0 ? (value / total) * 100 : 0;
+  return (
+    <div className="flex items-center gap-3">
+      <div className={`w-2 h-2 rounded-full ${color}`} />
+      <span className="flex-1 text-sm text-zinc-400">{label}</span>
+      <span className="text-sm font-medium text-zinc-200">{value}</span>
+      <span className="text-xs text-zinc-600 w-12 text-right">{percentage.toFixed(0)}%</span>
+    </div>
   );
 }

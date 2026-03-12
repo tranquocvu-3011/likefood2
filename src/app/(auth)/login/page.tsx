@@ -7,7 +7,7 @@
  * https://github.com/tranquocvu-3011/likefood
  */
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect, useRef } from "react";
 import { signIn, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -19,7 +19,7 @@ import {
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { isValidEmailFormat } from "@/lib/validation";
-import MathCaptcha from "@/components/auth/MathCaptcha";
+import { CaptchaField } from "@/components/auth/CaptchaField";
 
 function LoginContent() {
     const [email, setEmail] = useState("");
@@ -31,12 +31,23 @@ function LoginContent() {
     const [isSuccess, setIsSuccess] = useState(false);
     const [unverifiedEmail, setUnverifiedEmail] = useState(false);
     const [isCaptchaValid, setIsCaptchaValid] = useState(false);
+    const [turnstileToken, setTurnstileToken] = useState("");
     // 2FA state for admin
     const [show2FA, setShow2FA] = useState(false);
     const [otp, setOtp] = useState("");
     const [isVerifying2FA, setIsVerifying2FA] = useState(false);
     const [otpError, setOtpError] = useState("");
     const [resendCooldown, setResendCooldown] = useState(0);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Cleanup timer on unmount
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+            }
+        };
+    }, []);
 
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -69,6 +80,7 @@ function LoginContent() {
                 email,
                 password,
                 rememberMe: rememberMe ? "true" : "false",
+                captchaToken: turnstileToken,
             });
 
             if (result?.error) {
@@ -83,10 +95,13 @@ function LoginContent() {
                     });
                     setShow2FA(true);
                     setResendCooldown(60);
-                    const timer = setInterval(() => {
+                    // Clear any existing timer first
+                    if (timerRef.current) clearInterval(timerRef.current);
+                    timerRef.current = setInterval(() => {
                         setResendCooldown((prev) => {
                             if (prev <= 1) {
-                                clearInterval(timer);
+                                if (timerRef.current) clearInterval(timerRef.current);
+                                timerRef.current = null;
                                 return 0;
                             }
                             return prev - 1;
@@ -123,6 +138,7 @@ function LoginContent() {
                 password,
                 otp,
                 rememberMe: rememberMe ? "true" : "false",
+                captchaToken: turnstileToken,
             });
 
             if (result?.error) {
@@ -151,10 +167,13 @@ function LoginContent() {
                 body: JSON.stringify({ email }),
             });
             setResendCooldown(60);
-            const timer = setInterval(() => {
+            // Clear any existing timer first
+            if (timerRef.current) clearInterval(timerRef.current);
+            timerRef.current = setInterval(() => {
                 setResendCooldown((prev) => {
                     if (prev <= 1) {
-                        clearInterval(timer);
+                        if (timerRef.current) clearInterval(timerRef.current);
+                        timerRef.current = null;
                         return 0;
                     }
                     return prev - 1;
@@ -366,7 +385,7 @@ function LoginContent() {
                                         </div>
 
                                         <div className="py-2">
-                                            <MathCaptcha onValidate={setIsCaptchaValid} />
+                                            <CaptchaField onToken={setTurnstileToken} onValidChange={setIsCaptchaValid} />
                                         </div>
 
                                         <Button disabled={isLoading || !isCaptchaValid} type="submit" className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-emerald-600 text-white font-bold uppercase tracking-widest transition-all shadow-lg shadow-slate-200 disabled:opacity-50 disabled:cursor-not-allowed">
