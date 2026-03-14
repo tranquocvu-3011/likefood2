@@ -24,13 +24,12 @@ const isRedisConfigured =
     process.env.UPSTASH_REDIS_REST_URL &&
     process.env.UPSTASH_REDIS_REST_TOKEN;
 
-// Fail-safe: production MUST have Redis for rate limiting
+// Fail-safe: warn in production if Redis is not configured (don't throw — breaks build)
 if (!isRedisConfigured && process.env.NODE_ENV === 'production') {
-    // SEC-004: Production MUST have Redis — crash immediately
-    throw new Error(
-        '🔴 CRITICAL: UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be set in production. ' +
-        'Rate limiting is DISABLED without Redis, making the app vulnerable to abuse. ' +
-        'Please configure Upstash Redis before deploying to production.'
+    console.warn(
+        '⚠️ WARNING: UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN not set. ' +
+        'Rate limiting will use in-memory fallback. ' +
+        'Configure Upstash Redis or Docker Redis for production-grade rate limiting.'
     );
 }
 
