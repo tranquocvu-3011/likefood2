@@ -26,7 +26,6 @@ import {
   Users,
   X,
   Zap,
-  Image,
   File,
   Shield,
   BarChart3,
@@ -64,15 +63,15 @@ const NAV_GROUPS: NavGroup[] = [
     id: "operations",
     label: "Operations",
     items: [
-      { id: "orders", label: "Orders", href: "/admin/orders", icon: ClipboardList, badge: 12 },
-      { id: "inventory", label: "Inventory", href: "/admin/inventory", icon: Package, badge: "⚠️3" },
+      { id: "orders", label: "Orders", href: "/admin/orders", icon: ClipboardList },
+      { id: "inventory", label: "Inventory", href: "/admin/inventory", icon: Package },
     ],
   },
   {
     id: "catalog",
     label: "Catalog",
     items: [
-      { id: "products", label: "Products", href: "/admin/products", icon: Package, badge: 247 },
+      { id: "products", label: "Products", href: "/admin/products", icon: Package },
       { id: "categories", label: "Categories", href: "/admin/categories", icon: FolderTree },
       { id: "brands", label: "Brands", href: "/admin/brands", icon: Tag },
     ],
@@ -91,7 +90,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "coupons", label: "Coupons", href: "/admin/coupons", icon: Ticket },
       { id: "flash-sales", label: "Flash Sales", href: "/admin/flash-sales", icon: Zap },
-      { id: "banners", label: "Banners", href: "/admin/banners", icon: Image },
     ],
   },
   {
@@ -109,7 +107,6 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Settings",
     items: [
       { id: "settings", label: "Settings", href: "/admin/settings", icon: Settings },
-      { id: "security", label: "Security", href: "/admin/security", icon: Shield },
     ],
   },
 ];

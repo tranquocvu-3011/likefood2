@@ -15,6 +15,7 @@ import { motion } from "framer-motion";
 import { Bell, Package, Tag, Megaphone, CheckCheck, Trash2, Loader2, ChevronRight, Clock, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface Notification {
     id: string;
@@ -26,14 +27,6 @@ interface Notification {
     createdAt: string;
 }
 
-const filterOptions = [
-    { id: "all", label: "Tất cả" },
-    { id: "unread", label: "Chưa đọc" },
-    { id: "order", label: "Đơn hàng" },
-    { id: "promo", label: "Khuyến mãi" },
-    { id: "system", label: "Hệ thống" },
-];
-
 import { LucideIcon } from "lucide-react";
 
 const typeConfig: Record<string, { icon: LucideIcon; color: string }> = {
@@ -42,49 +35,6 @@ const typeConfig: Record<string, { icon: LucideIcon; color: string }> = {
     system: { icon: Megaphone, color: "bg-primary" },
 };
 
-// Format relative time
-function formatRelativeTime(dateString: string): string {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffMins < 1) return "Vừa xong";
-    if (diffMins < 60) return `${diffMins} phút trước`;
-    if (diffHours < 24) return `${diffHours} giờ trước`;
-    if (diffDays === 1) return "Hôm qua";
-    if (diffDays < 7) return `${diffDays} ngày trước`;
-    return date.toLocaleDateString('vi-VN');
-}
-
-// Group by date
-function groupByDate(notifications: Notification[]): Record<string, Notification[]> {
-    const groups: Record<string, Notification[]> = {};
-
-    notifications.forEach(notif => {
-        const date = new Date(notif.createdAt);
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-
-        let dateLabel: string;
-        if (date.toDateString() === today.toDateString()) {
-            dateLabel = "Hôm nay";
-        } else if (date.toDateString() === yesterday.toDateString()) {
-            dateLabel = "Hôm qua";
-        } else {
-            dateLabel = date.toLocaleDateString('vi-VN');
-        }
-
-        if (!groups[dateLabel]) groups[dateLabel] = [];
-        groups[dateLabel].push(notif);
-    });
-
-    return groups;
-}
-
 export default function NotificationsPage() {
     const router = useRouter();
     const { data: session, status: sessionStatus } = useSession();
@@ -92,6 +42,59 @@ export default function NotificationsPage() {
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState("all");
     const [unreadCount, setUnreadCount] = useState(0);
+    const { t, language } = useLanguage();
+
+    const filterOptions = [
+        { id: "all", label: t("notifications.filterAll") },
+        { id: "unread", label: t("notifications.filterUnread") },
+        { id: "order", label: t("notifications.filterOrder") },
+        { id: "promo", label: t("notifications.filterPromo") },
+        { id: "system", label: t("notifications.filterSystem") },
+    ];
+
+    // Format relative time
+    function formatRelativeTime(dateString: string): string {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffMins < 1) return t("notifications.justNow");
+        if (diffMins < 60) return `${diffMins} ${t("notifications.minutesAgo")}`;
+        if (diffHours < 24) return `${diffHours} ${t("notifications.hoursAgo")}`;
+        if (diffDays === 1) return t("notifications.yesterday");
+        if (diffDays < 7) return `${diffDays} ${t("notifications.daysAgo")}`;
+        return date.toLocaleDateString(language === "vi" ? "vi-VN" : "en-US");
+    }
+
+    // Group by date
+    function groupByDate(notifs: Notification[]): Record<string, Notification[]> {
+        const groups: Record<string, Notification[]> = {};
+        const locale = language === "vi" ? "vi-VN" : "en-US";
+
+        notifs.forEach(notif => {
+            const date = new Date(notif.createdAt);
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            let dateLabel: string;
+            if (date.toDateString() === today.toDateString()) {
+                dateLabel = t("notifications.today");
+            } else if (date.toDateString() === yesterday.toDateString()) {
+                dateLabel = t("notifications.yesterday");
+            } else {
+                dateLabel = date.toLocaleDateString(locale);
+            }
+
+            if (!groups[dateLabel]) groups[dateLabel] = [];
+            groups[dateLabel].push(notif);
+        });
+
+        return groups;
+    }
 
     // Fetch notifications from API
     const fetchNotifications = useCallback(async () => {
@@ -107,11 +110,11 @@ export default function NotificationsPage() {
             }
         } catch (error) {
             logger.error('Failed to fetch notifications', error as Error, { context: 'notifications-page' });
-            toast.error('Không thể tải thông báo');
+            toast.error(t("notifications.loadError"));
         } finally {
             setLoading(false);
         }
-    }, [session?.user, activeFilter]);
+    }, [session?.user, activeFilter, t]);
 
     useEffect(() => {
         if (sessionStatus === "unauthenticated") {
@@ -159,10 +162,10 @@ export default function NotificationsPage() {
 
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
             setUnreadCount(0);
-            toast.success('Đã đánh dấu tất cả là đã đọc');
+            toast.success(t("notifications.markedAllRead"));
         } catch (error) {
             logger.error('Failed to mark all as read', error as Error, { context: 'notifications-page' });
-            toast.error('Có lỗi xảy ra');
+            toast.error(t("notifications.errorOccurred"));
         }
     };
 
@@ -181,10 +184,10 @@ export default function NotificationsPage() {
             if (!notif?.isRead) {
                 setUnreadCount(prev => Math.max(0, prev - 1));
             }
-            toast.success('Đã xóa thông báo');
+            toast.success(t("notifications.deleted"));
         } catch (error) {
             logger.error('Failed to delete notification', error as Error, { context: 'notifications-page' });
-            toast.error('Có lỗi xảy ra');
+            toast.error(t("notifications.errorOccurred"));
         }
     };
 
@@ -224,16 +227,16 @@ export default function NotificationsPage() {
                     >
                         <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 rounded-full mb-6">
                             <Bell className="w-4 h-4 text-indigo-600" />
-                            <span className="text-xs font-bold uppercase tracking-widest text-indigo-700">Cập nhật mới nhất</span>
+                            <span className="text-xs font-bold uppercase tracking-widest text-indigo-700">{t("notifications.latestUpdates")}</span>
                             {unreadCount > 0 && (
                                 <span className="px-2 py-0.5 bg-red-500 text-white text-[9px] font-black rounded-full">{unreadCount}</span>
                             )}
                         </div>
                         <h1 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-4">
-                            Thông <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">báo</span>
+                            {t("notifications.title")} <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">{t("notifications.titleHighlight")}</span>
                         </h1>
                         <p className="text-lg text-slate-500 font-medium">
-                            Cập nhật về đơn hàng, khuyến mãi và các tin tức mới nhất từ LIKEFOOD
+                            {t("notifications.subtitle")}
                         </p>
                     </motion.div>
                 </div>
@@ -277,7 +280,7 @@ export default function NotificationsPage() {
                                     className="flex items-center gap-2 h-10 px-5 text-xs font-bold text-primary hover:bg-primary/10 rounded-2xl transition-all"
                                 >
                                     <CheckCheck className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Đánh dấu tất cả</span>
+                                    <span className="hidden sm:inline">{t("notifications.markAllRead")}</span>
                                 </button>
                             )}
                         </div>
@@ -287,7 +290,7 @@ export default function NotificationsPage() {
                     {loading && (
                         <div className="flex flex-col items-center justify-center py-20">
                             <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
-                            <p className="text-slate-500 font-medium">Đang tải thông báo...</p>
+                            <p className="text-slate-500 font-medium">{t("notifications.loading")}</p>
                         </div>
                     )}
 
@@ -371,17 +374,17 @@ export default function NotificationsPage() {
                                 <Bell className="w-10 h-10 text-indigo-400" />
                             </div>
                             <h3 className="text-xl font-black uppercase tracking-tighter mb-2">
-                                Không có thông báo
+                                {t("notifications.noNotifications")}
                             </h3>
                             <p className="text-slate-400 font-medium mb-8">
                                 {activeFilter === "unread"
-                                    ? "Bạn đã đọc tất cả thông báo"
-                                    : "Chưa có thông báo nào trong danh mục này"}
+                                    ? t("notifications.allRead")
+                                    : t("notifications.noInCategory")}
                             </p>
                             {activeFilter === "all" && (
                                 <Link href="/products">
                                     <button className="px-8 py-4 bg-primary text-white rounded-full font-black uppercase tracking-widest hover:bg-primary/90 transition-all">
-                                        Khám phá sản phẩm
+                                        {t("notifications.exploreProducts")}
                                     </button>
                                 </Link>
                             )}

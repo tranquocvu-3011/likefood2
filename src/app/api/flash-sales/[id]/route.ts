@@ -32,6 +32,11 @@ export async function GET(
                                 image: true,
                                 price: true,
                                 category: true,
+                                productImages: {
+                                    orderBy: { order: "asc" },
+                                    take: 1,
+                                    select: { imageUrl: true }
+                                },
                             },
                         },
                     },

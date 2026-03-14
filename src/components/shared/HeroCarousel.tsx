@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { tracking } from "@/lib/tracking";
 import { logger } from "@/lib/logger";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface Banner {
     id: string;
@@ -31,6 +32,7 @@ let cacheTimestamp = 0;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 export default function HeroCarousel() {
+    const { t, isVietnamese } = useLanguage();
     const [banners, setBanners] = useState<Banner[]>([]);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
@@ -89,9 +91,11 @@ export default function HeroCarousel() {
         id: "default",
         // Sử dụng banner chuẩn trong thư mục public
         imageUrl: "/banner.png",
-        title: "Hương vị quê nhà ngay tầm tay bạn",
-        subtitle: "LIKEFOOD mang đến hơn 100 loại đặc sản tinh túy nhất từ mọi miền Việt Nam đến tận nhà bạn tại Hoa Kỳ. Chất lượng tuyển chọn, giao hàng nhanh chóng.",
-        ctaText: "Mua ngay",
+        title: isVietnamese ? "Hương vị quê nhà ngay tầm tay bạn" : "Homeland flavors right at your fingertips",
+        subtitle: isVietnamese 
+            ? "LIKEFOOD mang đến hơn 100 loại đặc sản tinh túy nhất từ mọi miền Việt Nam đến tận nhà bạn tại Hoa Kỳ. Chất lượng tuyển chọn, giao hàng nhanh chóng."
+            : "LIKEFOOD brings you over 100 finest Vietnamese specialties from every region to your home in the USA. Premium quality, fast delivery.",
+        ctaText: t('home.shopNow'),
         ctaLink: "/products"
     };
 
@@ -125,7 +129,7 @@ export default function HeroCarousel() {
                         >
                             <div className="space-y-4">
                                 <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 text-orange-600 font-black uppercase tracking-wider px-4 py-2 text-xs md:text-sm">
-                                    <Sparkles className="w-4 h-4 md:w-5 md:h-5" /> Đặc sản Việt Nam tại Hoa Kỳ
+                                    <Sparkles className="w-4 h-4 md:w-5 md:h-5" /> {t('shop.vietnamSpecialtiesUSA')}
                                 </div>
                                 <h1 className="font-black text-slate-900 leading-[1.1] tracking-tight text-4xl md:text-6xl lg:text-7xl">
                                     {activeBanner.title}
@@ -140,12 +144,12 @@ export default function HeroCarousel() {
                             <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start">
                                 <Link href={activeBanner.ctaLink || "/products"}>
                                     <Button className="h-14 px-10 rounded-2xl bg-gradient-to-r from-primary to-amber-500 text-white font-black text-lg shadow-lg shadow-primary/30 transition-all flex gap-2 w-full sm:w-auto">
-                                        {activeBanner.ctaText || "Mua ngay"} <ArrowRight className="w-5 h-5" />
+                                        {activeBanner.ctaText || t('home.shopNow')} <ArrowRight className="w-5 h-5" />
                                     </Button>
                                 </Link>
                                 <Link href="/about">
                                     <Button variant="outline" className="h-14 px-10 rounded-2xl border-2 border-primary/30 text-slate-700 font-black text-lg transition-all w-full sm:w-auto">
-                                        Tìm hiểu thêm
+                                        {t('shop.learnMore')}
                                     </Button>
                                 </Link>
                             </div>

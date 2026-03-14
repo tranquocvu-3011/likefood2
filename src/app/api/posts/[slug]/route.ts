@@ -21,13 +21,16 @@ export async function GET(
                 slug,
                 isPublished: true,
             },
+            include: {
+                images: {
+                    orderBy: { order: "asc" },
+                },
+            },
         });
 
         if (!post) {
             return NextResponse.json({ error: "Post not found" }, { status: 404 });
         }
-
-        // Increment view count could be added here if needed
 
         return NextResponse.json(post);
     } catch (error) {

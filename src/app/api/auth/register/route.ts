@@ -77,7 +77,7 @@ export async function POST(req: Request) {
         }
 
         // Check if user already exists
-        // AUTH-04: Check BOTH email and phone in the same query to prevent enumeration
+        // Check BOTH email and phone in the same query to prevent enumeration
         const existingUser = await prisma.user.findFirst({
             where: {
                 OR: [
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
             }
         });
 
-        // AUTH-04: Return GENERIC message for BOTH cases to prevent user enumeration
+        // Return GENERIC message for BOTH cases to prevent user enumeration
         // Never reveal whether it's email or phone that exists
         if (existingUser) {
             return NextResponse.json(

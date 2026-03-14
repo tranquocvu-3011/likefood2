@@ -30,6 +30,9 @@ interface CartItem {
     slug?: string;
     name: string;
     price: number;
+    originalPrice?: number;
+    salePrice?: number;
+    isOnSale?: boolean;
     quantity: number;
     image?: string;
     inventory?: number; // For stock checking

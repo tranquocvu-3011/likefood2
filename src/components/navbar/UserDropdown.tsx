@@ -11,7 +11,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { Package, Heart, Ticket, Settings, LogOut, Crown, ChevronRight, Loader2, Sparkles } from "lucide-react";
+import { Package, Heart, Ticket, Settings, LogOut, Crown, ChevronRight, Loader2, Sparkles, UserPlus } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { logger } from "@/lib/logger";
 import Image from "next/image";
@@ -37,6 +37,7 @@ interface UserStats {
 
 export default function UserDropdown({ isOpen, onClose, user }: UserDropdownProps) {
     const { t } = useLanguage();
+    const isAdminUser = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
     const [stats, setStats] = useState<UserStats | null>(null);
     const [isLoadingStats, setIsLoadingStats] = useState(false);
     const [isCheckInOpen, setIsCheckInOpen] = useState(false);
@@ -73,6 +74,7 @@ export default function UserDropdown({ isOpen, onClose, user }: UserDropdownProp
     const menuItems = [
         { icon: Package, label: t("navbar.myOrders"), href: "/profile/orders", badge: null },
         { icon: Heart, label: t("navbar.myWishlist"), href: "/profile/wishlist", badge: stats?.wishlist ? String(stats.wishlist) : null },
+        { icon: UserPlus, label: t("navbar.referral"), href: "/profile/referrals", badge: null },
         { icon: Sparkles, label: t("navbar.dailyCheckIn"), onClick: () => setIsCheckInOpen(true), badge: null },
         { icon: Ticket, label: t("navbar.myVouchers"), href: "/profile/vouchers", badge: stats?.vouchers ? String(stats.vouchers) : null },
         { icon: Settings, label: t("navbar.accountSettings"), href: "/profile", badge: null },
@@ -124,7 +126,7 @@ export default function UserDropdown({ isOpen, onClose, user }: UserDropdownProp
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
                                         <h4 className="text-[14px] font-black text-slate-900 truncate">{user.name || t("navbar.customer")}</h4>
-                                        {user.role === "ADMIN" && (
+                                        {isAdminUser && (
                                             <span className="px-2 py-0.5 bg-amber-100 text-amber-600 text-[8px] font-black rounded-full flex items-center gap-1">
                                                 <Crown className="w-2.5 h-2.5" />
                                                 ADMIN
@@ -162,7 +164,7 @@ export default function UserDropdown({ isOpen, onClose, user }: UserDropdownProp
 
                         {/* Menu Items */}
                         <div className="p-3">
-                            {user.role === "ADMIN" && (
+                            {isAdminUser && (
                                 <Link
                                     href="/admin/dashboard"
                                     prefetch={false}

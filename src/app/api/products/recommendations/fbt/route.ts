@@ -86,7 +86,12 @@ export async function GET(req: NextRequest) {
                 isOnSale: true,
                 image: true,
                 inventory: true,
-                category: true
+                category: true,
+                productImages: {
+                    orderBy: { order: "asc" },
+                    take: 1,
+                    select: { imageUrl: true }
+                }
             }
         });
 
@@ -109,13 +114,32 @@ export async function GET(req: NextRequest) {
                     isOnSale: true,
                     image: true,
                     inventory: true,
-                    category: true
+                    category: true,
+                    productImages: {
+                        orderBy: { order: "asc" },
+                        take: 1,
+                        select: { imageUrl: true }
+                    }
                 }
             });
             recommendedProducts = [...recommendedProducts, ...fallbackProducts];
         }
 
-        return NextResponse.json(recommendedProducts);
+        // Map image: use product.image first, fallback to first productImage
+        const result = recommendedProducts.map(p => ({
+            id: p.id,
+            slug: p.slug,
+            name: p.name,
+            price: p.price,
+            originalPrice: p.originalPrice,
+            salePrice: p.salePrice,
+            isOnSale: p.isOnSale,
+            image: p.image || p.productImages[0]?.imageUrl || null,
+            inventory: p.inventory,
+            category: p.category,
+        }));
+
+        return NextResponse.json(result);
 
     } catch (error) {
         logger.error("Frequently Bought Together Error", error as Error, { context: "fbt-api" });

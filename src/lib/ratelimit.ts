@@ -8,7 +8,7 @@
 /**
  * Rate Limiting with Upstash Redis
  * Protects API routes from abuse
- * 
+ *
  * SETUP REQUIRED:
  * 1. Create Upstash Redis database (free tier): https://upstash.com
  * 2. Add to .env:
@@ -23,6 +23,13 @@ import { Redis } from '@upstash/redis';
 const isRedisConfigured =
     process.env.UPSTASH_REDIS_REST_URL &&
     process.env.UPSTASH_REDIS_REST_TOKEN;
+
+// Fail-safe: production MUST have Redis for rate limiting
+if (!isRedisConfigured && process.env.NODE_ENV === 'production') {
+    console.error(
+        '🔴 CRITICAL: UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be set in production for rate limiting!'
+    );
+}
 
 // Initialize Redis client
 const redis = isRedisConfigured
@@ -88,7 +95,7 @@ export const apiRateLimit = redis
     : null;
 
 /**
- * AUTH-02: OTP Verification Rate Limiter
+ * OTP Verification Rate Limiter
  * 5 attempts per 15 minutes - prevents brute force attacks on 2FA
  */
 export const otpRateLimit = redis
@@ -101,7 +108,7 @@ export const otpRateLimit = redis
     : null;
 
 /**
- * AUTH-02: Admin 2FA Verify Rate Limiter (stricter)
+ * Admin 2FA Verify Rate Limiter (stricter)
  * 3 attempts per 10 minutes - protect admin 2FA
  */
 export const admin2FARateLimit = redis

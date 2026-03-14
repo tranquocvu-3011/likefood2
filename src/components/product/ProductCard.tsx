@@ -6,7 +6,7 @@
 
 "use client";
 
-import { Star, Eye, Flame, Ticket, Truck, Package } from "lucide-react";
+import { Star, Eye, Package } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -17,7 +17,6 @@ import WishlistButton from "./WishlistButton";
 import { useRouter } from "next/navigation";
 import { useCartState, useCartActions } from "@/contexts/CartContext";
 import { useLanguage } from "@/lib/i18n/context";
-import { Badge } from "@/components/ui/badge";
 
 // Sub-components
 import ProductCardImage from "./ProductCardImage";
@@ -67,13 +66,16 @@ interface ProductCardProps {
 function computeProductMeta(product: ProductCardProduct) {
     const ratingValue = product.ratingAvg ?? product.rating ?? 0;
     const ratingCount = product.ratingCount ?? 0;
-    const isOnSale = product.onSale || product.isOnSale;
-    const effectiveSalePrice = product.salePrice ?? null;
-    const currentPrice = isOnSale && effectiveSalePrice != null ? effectiveSalePrice : product.price;
+    const hasSalePrice = product.salePrice != null && product.salePrice < product.price;
+    const currentPrice = (hasSalePrice ? product.salePrice : product.price) ?? product.price;
     const basePriceForDiscount = product.originalPrice && product.originalPrice > currentPrice
         ? product.originalPrice
-        : product.price;
+        : hasSalePrice
+            ? product.price
+            : product.price;
     const hasDiscount = basePriceForDiscount > currentPrice;
+    const isOnSale = Boolean(product.onSale || product.isOnSale || hasDiscount);
+    const effectiveSalePrice = hasDiscount ? currentPrice : null;
     const discountPercent = hasDiscount
         ? Math.round(((basePriceForDiscount - currentPrice) / basePriceForDiscount) * 100)
         : 0;
@@ -130,7 +132,7 @@ function formatCompactNumber(num: number) {
 // List View (kept inline — simpler layout)
 // ───────────────────────────────────────────────────────────
 function ProductCardList({ product, meta }: { product: ProductCardProduct; meta: ReturnType<typeof computeProductMeta> }) {
-    const { language } = useLanguage();
+    const { language, isVietnamese, t } = useLanguage();
     const router = useRouter();
     const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
@@ -170,25 +172,6 @@ function ProductCardList({ product, meta }: { product: ProductCardProduct; meta:
                         <Package className="w-10 h-10 text-slate-300" />
                     </div>
                 )}
-                {/* Badges */}
-                <div className="absolute top-2 left-2 flex flex-col gap-1">
-                    {meta.isCurrentlyFlashSale && (
-                        <Badge variant="flash" className="px-2 py-0.5 text-[9px]">
-                            <Flame className="w-2.5 h-2.5" /> FLASH
-                        </Badge>
-                    )}
-                    {!meta.isCurrentlyFlashSale && meta.hasDiscount && (
-                        <Badge variant="sale" className="px-2 py-0.5 text-[9px]">-{meta.discountPercent}%</Badge>
-                    )}
-                    {meta.isNewProduct && !meta.hasDiscount && (
-                        <Badge variant="new" className="px-2 py-0.5 text-[9px]">{language === "vi" ? "Mới" : "New"}</Badge>
-                    )}
-                </div>
-                {product.inventory <= 0 && (
-                    <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
-                        <Badge variant="out" className="px-3 py-1 text-xs">{language === "vi" ? "Hết hàng" : "Out of Stock"}</Badge>
-                    </div>
-                )}
             </div>
 
             {/* Content */}
@@ -208,12 +191,12 @@ function ProductCardList({ product, meta }: { product: ProductCardProduct; meta:
                         </div>
                         <span className="text-[10px] font-bold text-slate-600">{meta.ratingValue.toFixed(1)}</span>
                         {meta.ratingCount > 0 && <span className="text-[10px] text-slate-400">({formatCompactNumber(meta.ratingCount)})</span>}
-                        <span className="text-[10px] text-slate-400 ml-1">{language === "vi" ? `${formatCompactNumber(meta.soldCount)} đã bán` : `${formatCompactNumber(meta.soldCount)} sold`}</span>
+                        <span className="text-[10px] text-slate-400 ml-1">{t('shop.sold')}: {formatCompactNumber(meta.soldCount)}</span>
                     </div>
                     {meta.isLowStock && (
                         <div className="flex items-center gap-1.5">
                             <div className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute h-full w-full rounded-full bg-orange-400 opacity-75" /><span className="relative rounded-full h-1.5 w-1.5 bg-orange-500" /></div>
-                            <span className="text-[10px] font-bold text-orange-600">{language === "vi" ? `Chỉ còn ${product.inventory}` : `Only ${product.inventory} left`}</span>
+                            <span className="text-[10px] font-bold text-orange-600">{t('shop.lowStock')}</span>
                         </div>
                     )}
                 </div>
@@ -222,16 +205,30 @@ function ProductCardList({ product, meta }: { product: ProductCardProduct; meta:
                         <PriceDisplay
                             currentPrice={meta.currentPrice}
                             originalPrice={meta.hasDiscount ? meta.basePriceForDiscount : undefined}
+                            salePrice={meta.effectiveSalePrice}
+                            isOnSale={meta.isOnSale}
                             size="md"
                             showDiscountBadge={false}
                         />
                     </div>
                     <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                        <button onClick={handleQuickView} aria-label={language === "vi" ? "Xem nhanh sản phẩm" : "Quick view product"} className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors">
+                        <button onClick={handleQuickView} aria-label={t('shop.quickView')} className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors">
                             <Eye className="w-4 h-4" />
                         </button>
                         <WishlistButton productId={product.id} />
-                        <QuickAddButton product={{ id: product.id, slug: product.slug || undefined, name: product.name, price: meta.currentPrice, image: product.image, inventory: product.inventory }} />
+                        <QuickAddButton
+                            product={{
+                                id: product.id,
+                                slug: product.slug || undefined,
+                                name: product.name,
+                                price: meta.currentPrice,
+                                originalPrice: meta.hasDiscount ? meta.basePriceForDiscount : undefined,
+                                salePrice: meta.hasDiscount ? meta.currentPrice : undefined,
+                                isOnSale: meta.hasDiscount,
+                                image: product.image,
+                                inventory: product.inventory,
+                            }}
+                        />
                     </div>
                 </div>
             </div>
@@ -247,7 +244,7 @@ function ProductCardList({ product, meta }: { product: ProductCardProduct; meta:
 // Grid View (uses sub-components)
 // ───────────────────────────────────────────────────────────
 function ProductCardGrid({ product, meta }: { product: ProductCardProduct; meta: ReturnType<typeof computeProductMeta> }) {
-    const { language } = useLanguage();
+    const { language, isVietnamese, t } = useLanguage();
     const router = useRouter();
     const { lastAddedId } = useCartState();
     const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
@@ -285,18 +282,6 @@ function ProductCardGrid({ product, meta }: { product: ProductCardProduct; meta:
                         name={product.name}
                         image={product.image}
                         inventory={product.inventory}
-                        isNewProduct={meta.isNewProduct}
-                        isHot={product.isHot}
-                        isCurrentlyFlashSale={meta.isCurrentlyFlashSale}
-                        hasDiscount={meta.hasDiscount}
-                        discountPercent={meta.discountPercent}
-                        badgeText={product.badgeText}
-                        hasVoucher={product.hasVoucher}
-                        hasFreeship={product.hasFreeship}
-                        saleEndAt={product.saleEndAt}
-                        soldCount={meta.soldCount}
-                        soldPercentage={meta.soldPercentage}
-                        productUrl={meta.productUrl}
                         onQuickView={handleQuickView}
                         onNavigate={handleCardClick}
                         lastAddedId={lastAddedId}
@@ -318,7 +303,7 @@ function ProductCardGrid({ product, meta }: { product: ProductCardProduct; meta:
 
                         <ProductCardPrice
                             currentPrice={meta.currentPrice}
-                            originalPrice={product.originalPrice}
+                            originalPrice={product.originalPrice ?? meta.basePriceForDiscount}
                             salePrice={meta.effectiveSalePrice}
                             isOnSale={meta.isOnSale ?? false}
                             hasDiscount={meta.hasDiscount}
@@ -328,6 +313,9 @@ function ProductCardGrid({ product, meta }: { product: ProductCardProduct; meta:
                                 slug: product.slug || undefined,
                                 name: product.name,
                                 price: meta.currentPrice,
+                                originalPrice: meta.hasDiscount ? meta.basePriceForDiscount : undefined,
+                                salePrice: meta.hasDiscount ? meta.currentPrice : undefined,
+                                isOnSale: meta.hasDiscount,
                                 image: product.image,
                                 inventory: product.inventory,
                             }}

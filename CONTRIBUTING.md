@@ -1,124 +1,145 @@
-# Hướng dẫn đóng góp — LIKEFOOD
+# Contributing to LIKEFOOD
 
-Cảm ơn bạn đã quan tâm đến dự án LIKEFOOD! Mọi đóng góp đều được chào đón.
-
----
-
-## Mục lục
-
-1. [Báo lỗi (Bug Report)](#báo-lỗi)
-2. [Đề xuất tính năng (Feature Request)](#đề-xuất-tính-năng)
-3. [Quy trình Pull Request](#quy-trình-pull-request)
-4. [Coding Style](#coding-style)
-5. [Chạy tests trước khi nộp PR](#chạy-tests)
-6. [Giấy phép](#giấy-phép)
+Thank you for your interest in contributing to LIKEFOOD!
 
 ---
 
-## Báo lỗi
+## Code of Conduct
 
-1. Mở [GitHub Issues](https://github.com/tranquocvu-3011/likefood/issues).
-2. Kiểm tra xem lỗi đã được báo cáo chưa.
-3. Nếu chưa, tạo issue mới với tiêu đề rõ ràng và mô tả:
-   - **Bước tái hiện lỗi** (steps to reproduce).
-   - **Kết quả mong đợi** vs **kết quả thực tế**.
-   - Môi trường: hệ điều hành, Node.js version, trình duyệt.
-   - Screenshot (nếu có).
+By participating in this project, you agree to follow our Code of Conduct:
 
----
-
-## Đề xuất tính năng
-
-1. Mở [GitHub Issues](https://github.com/tranquocvu-3011/likefood/issues) với nhãn `enhancement`.
-2. Mô tả tính năng, lý do cần thiết và cách triển khai (nếu biết).
+- Be respectful and inclusive
+- Welcome newcomers and help them learn
+- Accept constructive criticism gracefully
+- Focus on what is best for the community
 
 ---
 
-## Quy trình Pull Request
+## How to Contribute
+
+### Reporting Bugs
+
+1. Check if the bug has already been reported
+2. Create a detailed bug report with:
+   - Clear title
+   - Steps to reproduce
+   - Expected vs actual behavior
+   - Screenshots if applicable
+   - Environment details
+
+### Suggesting Features
+
+1. Check the roadmap for planned features
+2. Open a discussion issue first
+3. Describe the feature in detail
+4. Explain why it would be beneficial
+
+### Pull Requests
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Make your changes following our coding standards
+4. Write tests for new functionality
+5. Ensure all tests pass
+6. Commit with clear messages
+7. Push to your fork
+8. Submit a pull request
+
+---
+
+## Development Setup
+
+### Prerequisites
+
+- Node.js 20.x
+- MySQL 8.0 or higher
+- Redis (optional, for rate limiting)
+
+### Setup Steps
 
 ```bash
-# 1. Fork repository và clone về máy
-git clone https://github.com/<your-username>/likefood.git
+# Clone the repository
+git clone https://github.com/tranquocvu-3011/likefood.git
 cd likefood
 
-# 2. Tạo branch mới từ main
-git checkout -b feature/ten-tinh-nang
-
-# 3. Cài dependencies
+# Install dependencies
 npm install
 
-# 4. Cấu hình .env (xem .env.example)
+# Copy environment variables
 cp .env.example .env
-# Điền các giá trị cần thiết
 
-# 5. Thực hiện thay đổi, sau đó chạy kiểm tra
-npm run lint
-npm test
+# Generate Prisma client
+npm run db:generate
 
-# 6. Commit theo Conventional Commits
-git commit -m "feat: thêm tính năng XYZ"
+# Push database schema
+npm run db:push
 
-# 7. Push và tạo Pull Request
-git push origin feature/ten-tinh-nang
+# Start development server
+npm run dev
 ```
-
-### Quy ước Commit Message
-
-Dự án tuân theo [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
-
-| Prefix | Khi nào dùng |
-|---|---|
-| `feat:` | Thêm tính năng mới |
-| `fix:` | Sửa lỗi |
-| `docs:` | Cập nhật tài liệu |
-| `style:` | Định dạng code (không thay đổi logic) |
-| `refactor:` | Tái cấu trúc code |
-| `test:` | Thêm / sửa test |
-| `chore:` | Cập nhật công cụ, deps, config |
-| `security:` | Sửa lỗ hổng bảo mật |
 
 ---
 
-## Coding Style
+## Coding Standards
 
-- **TypeScript strict**: Không tắt `strict` trong `tsconfig.json`.
-- **ESLint**: Chạy `npm run lint` — 0 warnings trước khi nộp PR.
-- **Prettier**: Code được format tự động qua ESLint rules.
-- **License Header**: Mỗi file `.ts` / `.tsx` mới **phải** bắt đầu bằng:
+### TypeScript
 
-```typescript
-/**
- * LIKEFOOD - Vietnamese Specialty Marketplace
- * Copyright (c) 2026 LIKEFOOD Team
- * Licensed under the MIT License
- * https://github.com/tranquocvu-3011/likefood
- */
+- Use strict mode
+- Avoid `any` types
+- Use proper type annotations
+- Export types when needed
+
+### React Components
+
+- Use functional components with hooks
+- Keep components small and focused
+- Use proper naming conventions (PascalCase for components)
+- Add JSDoc for complex logic
+
+### Git Commits
+
+Follow conventional commits:
+
 ```
-
-- **Naming**: camelCase cho biến/hàm, PascalCase cho component/type/interface.
-- **API Routes**: Luôn xác thực session/admin qua helper `getServerSession` hoặc `requireAdmin()`.
-- **No hardcoded secrets**: Mọi config nhạy cảm phải qua biến môi trường và được khai báo trong `src/env.ts`.
+feat: add new feature
+fix: fix a bug
+docs: update documentation
+style: format code
+refactor: restructure code
+test: add tests
+chore: maintenance
+```
 
 ---
 
-## Chạy Tests
+## Testing
+
+### Running Tests
 
 ```bash
-# Chạy toàn bộ test suite
+# Run all tests
 npm test
 
-# Chạy test ở chế độ watch
-npm run test:watch
+# Run tests in watch mode
+npm test -- --watch
 
-# Xem coverage
-npm run test:coverage
+# Run tests with coverage
+npm test -- --coverage
 ```
 
-Yêu cầu: tests phải **xanh 100%** (`74/74 pass`) trước khi nộp Pull Request.
+### Writing Tests
+
+- Write tests for all new functionality
+- Follow AAA pattern (Arrange, Act, Assert)
+- Test edge cases
+- Mock external dependencies
 
 ---
 
-## Giấy phép
+## License
 
-Khi đóng góp vào dự án này, bạn đồng ý rằng phần đóng góp của bạn sẽ được phân phối
-theo giấy phép **MIT** — như toàn bộ dự án. Xem [LICENSE](LICENSE) để biết thêm chi tiết.
+By contributing to LIKEFOOD, you agree that your contributions will be licensed under the MIT License.
+
+---
+
+*Last Updated: 2026-03-14*

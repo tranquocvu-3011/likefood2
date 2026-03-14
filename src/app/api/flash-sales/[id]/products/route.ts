@@ -33,7 +33,12 @@ export async function GET(
                         ratingAvg: true,
                         ratingCount: true,
                         soldCount: true,
-                        inventory: true
+                        inventory: true,
+                        productImages: {
+                            orderBy: { order: "asc" },
+                            take: 1,
+                            select: { imageUrl: true }
+                        }
                     }
                 }
             }

@@ -6,12 +6,15 @@
  */
 
 import { Metadata } from "next";
+import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
 
 export async function generateMetadata(
     { params }: { params: Promise<{ slug: string }> }
 ): Promise<Metadata> {
     const { slug } = await params;
+    const cookieStore = await cookies();
+    const isEn = cookieStore.get("language")?.value === "en";
 
     try {
         const product = await prisma.product.findFirst({
@@ -33,8 +36,8 @@ export async function generateMetadata(
 
         if (!product) {
             return {
-                title: "Sản phẩm không tồn tại | LIKEFOOD",
-                description: "Không tìm thấy sản phẩm yêu cầu.",
+                title: isEn ? "Product Not Found | LIKEFOOD" : "Sản phẩm không tồn tại | LIKEFOOD",
+                description: isEn ? "The requested product could not be found." : "Không tìm thấy sản phẩm yêu cầu.",
             };
         }
 
@@ -42,10 +45,12 @@ export async function generateMetadata(
         const priceStr = `$${currentPrice.toFixed(2)}`;
         const title = `${product.name} - ${product.category} | LIKEFOOD`;
         
-        // Tạo description tối ưu cho SEO: 150-160 ký tự, chứa giá & keywords
+        // Build SEO description with price while keeping concise length.
         const description = product.description 
-            ? `${product.description.substring(0, 140)}... [Giá: ${priceStr}]` 
-            : `Mua ngay ${product.name} chính gốc - Đặc sản ${product.category} chất lượng cao tại LIKEFOOD chỉ với ${priceStr}. Giao hàng nhanh toàn nước Mỹ, đảm bảo vệ sinh an toàn thực phẩm.`;
+            ? `${product.description.substring(0, 140)}... ${isEn ? `[Price: ${priceStr}]` : `[Giá: ${priceStr}]`}`
+            : isEn
+                ? `Buy authentic ${product.name} from the ${product.category} category at LIKEFOOD for ${priceStr}. Fast U.S. shipping and trusted food quality.`
+                : `Mua ngay ${product.name} chính gốc - Đặc sản ${product.category} chất lượng cao tại LIKEFOOD chỉ với ${priceStr}. Giao hàng nhanh toàn nước Mỹ, đảm bảo vệ sinh an toàn thực phẩm.`;
 
         const images = product.image ? [product.image] : ["/og-image.png"];
 
@@ -61,7 +66,7 @@ export async function generateMetadata(
                 images,
                 type: "website",
                 siteName: "LIKEFOOD",
-                locale: "vi_VN",
+                locale: isEn ? "en_US" : "vi_VN",
                 url: `/products/${slug}`,
             },
             twitter: {
@@ -74,8 +79,10 @@ export async function generateMetadata(
         };
     } catch (error) {
         return {
-            title: "Sản phẩm Đặc sản Việt Nam | LIKEFOOD",
-            description: "Khám phá các loại đặc sản Việt Nam chất lượng cao tại LIKEFOOD.",
+            title: isEn ? "Vietnamese Specialty Products | LIKEFOOD" : "Sản phẩm đặc sản Việt Nam | LIKEFOOD",
+            description: isEn
+                ? "Explore premium Vietnamese specialty products at LIKEFOOD."
+                : "Khám phá các loại đặc sản Việt Nam chất lượng cao tại LIKEFOOD.",
         };
     }
 }

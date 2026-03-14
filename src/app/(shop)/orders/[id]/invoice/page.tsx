@@ -14,6 +14,7 @@ import { ArrowLeft, Download, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/currency";
 import { logger } from "@/lib/logger";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface OrderItem {
     id: string;
@@ -49,6 +50,8 @@ export default function InvoicePage() {
     const { data: session, status: sessionStatus } = useSession();
     const [order, setOrder] = useState<Order | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const { t, language } = useLanguage();
+    const locale = language === "vi" ? "vi-VN" : "en-US";
 
     const fetchOrder = useCallback(async () => {
         try {
@@ -105,14 +108,14 @@ export default function InvoicePage() {
                         className="inline-flex items-center gap-2 text-slate-500 hover:text-primary transition-colors text-sm font-bold"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Quay lại đơn hàng
+                        {t("invoice.backToOrder")}
                     </Link>
                     <button
                         onClick={handlePrint}
                         className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-black hover:bg-slate-800 transition-colors shadow"
                     >
                         <Download className="w-4 h-4" />
-                        In / Tải PDF
+                        {t("invoice.printPdf")}
                     </button>
                 </div>
 
@@ -139,20 +142,20 @@ export default function InvoicePage() {
                                     <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">LIKE</h1>
                                     <h1 className="text-3xl font-black uppercase tracking-tighter text-emerald-600">FOOD</h1>
                                 </div>
-                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Tinh hoa đặc sản Việt Nam</p>
+                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">{t("invoice.tagline")}</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Hóa đơn</p>
+                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">{t("invoice.invoiceLabel")}</p>
                                 <p className="text-2xl font-black text-slate-900 font-mono tracking-tight">
                                     #{order.id.slice(-8).toUpperCase()}
                                 </p>
                                 <p className="text-xs text-slate-400 mt-1.5 font-medium">
-                                    {new Date(order.createdAt).toLocaleDateString("vi-VN", {
+                                    {new Date(order.createdAt).toLocaleDateString(locale, {
                                         year: "numeric", month: "long", day: "numeric",
                                     })}
                                 </p>
                                 <p className="text-[10px] text-slate-400 font-medium">
-                                    {new Date(order.createdAt).toLocaleTimeString("vi-VN", {
+                                    {new Date(order.createdAt).toLocaleTimeString(locale, {
                                         hour: "2-digit", minute: "2-digit",
                                     })}
                                 </p>
@@ -163,12 +166,12 @@ export default function InvoicePage() {
                     {/* Customer & Shipping Info */}
                     <div className="px-8 py-5 grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-slate-100 bg-slate-50/50">
                         <div>
-                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Khách hàng</p>
-                            <p className="font-black text-slate-900 text-sm">{session?.user?.name || "Khách hàng"}</p>
+                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">{t("invoice.customer")}</p>
+                            <p className="font-black text-slate-900 text-sm">{session?.user?.name || t("invoice.defaultCustomer")}</p>
                             <p className="text-xs text-slate-500 mt-0.5">{session?.user?.email}</p>
                         </div>
                         <div>
-                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Giao hàng đến</p>
+                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">{t("invoice.shipTo")}</p>
                             {order.shippingAddress ? (
                                 <>
                                     <p className="font-bold text-slate-900 text-sm leading-relaxed">
@@ -181,7 +184,7 @@ export default function InvoicePage() {
                                     )}
                                 </>
                             ) : (
-                                <p className="text-xs text-slate-400 italic">Chưa có địa chỉ</p>
+                                <p className="text-xs text-slate-400 italic">{t("invoice.noAddress")}</p>
                             )}
                         </div>
                     </div>
@@ -189,13 +192,13 @@ export default function InvoicePage() {
                     {/* Payment method badge */}
                     {order.paymentMethod && (
                         <div className="px-8 py-3 border-b border-slate-100 flex items-center gap-2">
-                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Thanh toán:</p>
+                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">{t("invoice.payment")}</p>
                             <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 uppercase tracking-wider">
                                 {order.paymentMethod}
                             </span>
                             {isPaid && (
                                 <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 uppercase tracking-wider">
-                                    Đã thanh toán
+                                    {t("invoice.paid")}
                                 </span>
                             )}
                         </div>
@@ -206,10 +209,10 @@ export default function InvoicePage() {
                         <table className="w-full border-collapse">
                             <thead>
                                 <tr className="border-b border-slate-200">
-                                    <th className="text-left pb-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400">Sản phẩm</th>
-                                    <th className="text-center pb-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 w-16">SL</th>
-                                    <th className="text-right pb-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 w-28">Đơn giá</th>
-                                    <th className="text-right pb-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 w-28">Thành tiền</th>
+                                    <th className="text-left pb-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400">{t("invoice.productCol")}</th>
+                                    <th className="text-center pb-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 w-16">{t("invoice.qtyCol")}</th>
+                                    <th className="text-right pb-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 w-28">{t("invoice.priceCol")}</th>
+                                    <th className="text-right pb-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 w-28">{t("invoice.totalCol")}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -234,25 +237,25 @@ export default function InvoicePage() {
                     <div className="px-8 pb-7 border-t border-dashed border-slate-200 pt-5">
                         <div className="max-w-xs ml-auto space-y-2">
                             <div className="flex justify-between text-sm text-slate-500">
-                                <span className="font-bold">Tạm tính</span>
+                                <span className="font-bold">{t("invoice.subtotal")}</span>
                                 <span className="font-black text-slate-700">{formatPrice(order.subtotal ?? order.total)}</span>
                             </div>
                             {order.shippingFee && order.shippingFee > 0 && (
                                 <div className="flex justify-between text-sm text-slate-500">
-                                    <span className="font-bold">Vận chuyển</span>
+                                    <span className="font-bold">{t("invoice.shipping")}</span>
                                     <span className="font-black text-slate-700">{formatPrice(order.shippingFee)}</span>
                                 </div>
                             )}
                             {(order.discount ?? 0) > 0 && (
                                 <div className="flex justify-between text-sm text-emerald-600">
-                                    <span className="font-bold">Giảm giá</span>
+                                    <span className="font-bold">{t("invoice.discount")}</span>
                                     <span className="font-black">-{formatPrice(order.discount || 0)}</span>
                                 </div>
                             )}
                             {/* Total row */}
                             <div className="mt-3 pt-3 border-t-2 border-slate-200">
                                 <div className="flex justify-between items-baseline">
-                                    <span className="text-xs font-black uppercase tracking-widest text-slate-400">Tổng cộng</span>
+                                    <span className="text-xs font-black uppercase tracking-widest text-slate-400">{t("invoice.grandTotal")}</span>
                                     <span className="text-2xl font-black text-slate-900 tracking-tight">
                                         {formatPrice(order.total)}
                                     </span>
@@ -264,10 +267,10 @@ export default function InvoicePage() {
                     {/* Footer */}
                     <div className="bg-slate-50 border-t border-slate-100 px-8 py-4 text-center">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
-                            Cảm ơn bạn đã tin tưởng LIKEFOOD!
+                            {t("invoice.thankYou")}
                         </p>
                         <p className="text-[9px] text-slate-300 font-medium">
-                            Hóa đơn được tạo tự động · {new Date().getFullYear()} LIKEFOOD
+                            {t("invoice.autoGenerated")} · {new Date().getFullYear()} LIKEFOOD
                         </p>
                     </div>
                 </div>

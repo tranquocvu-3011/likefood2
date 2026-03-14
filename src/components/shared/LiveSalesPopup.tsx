@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, X, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 import { useChatOpen } from "@/contexts/ChatOpenContext";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface SaleNotification {
     id: string;
@@ -28,7 +29,7 @@ const NOTIFICATION_INTERVAL_MS = 10 * 60 * 1000;
 /** Độ lệch ngẫu nhiên ±1 phút để tránh quá đều */
 const INTERVAL_JITTER_MS = 60 * 1000;
 
-const SAMPLE_SALES: SaleNotification[] = [
+const SAMPLE_SALES_VI: SaleNotification[] = [
     { id: "1", userName: "Khách hàng", location: "California", productName: "Cá Lóc Khô Đồng Tháp", timeAgo: "2 phút trước" },
     { id: "2", userName: "Khách hàng", location: "Texas", productName: "Tôm Khô Cà Mau", timeAgo: "5 phút trước" },
     { id: "3", userName: "Khách hàng", location: "Washington", productName: "Mực Khô Câu Phú Quốc", timeAgo: "8 phút trước" },
@@ -36,13 +37,24 @@ const SAMPLE_SALES: SaleNotification[] = [
     { id: "5", userName: "Khách hàng", location: "New York", productName: "Nước Mắm Phú Quốc", timeAgo: "15 phút trước" },
 ];
 
+const SAMPLE_SALES_EN: SaleNotification[] = [
+    { id: "1", userName: "Customer", location: "California", productName: "Dong Thap Dried Snakehead Fish", timeAgo: "2 minutes ago" },
+    { id: "2", userName: "Customer", location: "Texas", productName: "Ca Mau Dried Shrimp", timeAgo: "5 minutes ago" },
+    { id: "3", userName: "Customer", location: "Washington", productName: "Phu Quoc Hook-Caught Dried Squid", timeAgo: "8 minutes ago" },
+    { id: "4", userName: "Customer", location: "Florida", productName: "Cam Ranh Dried Mango", timeAgo: "12 minutes ago" },
+    { id: "5", userName: "Customer", location: "New York", productName: "Phu Quoc Fish Sauce", timeAgo: "15 minutes ago" },
+];
+
 export default function LiveSalesPopup() {
     const { isChatOpen } = useChatOpen();
+    const { t, language } = useLanguage();
     const [currentSale, setCurrentSale] = useState<SaleNotification | null>(null);
     const [isVisible, setIsVisible] = useState(false);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pathname = usePathname();
     const isAdminRoute = pathname?.startsWith('/admin');
+
+    const sampleSales = language === "en" ? SAMPLE_SALES_EN : SAMPLE_SALES_VI;
 
     useEffect(() => {
         if (isAdminRoute || isChatOpen) {
@@ -54,8 +66,8 @@ export default function LiveSalesPopup() {
             NOTIFICATION_INTERVAL_MS + (Math.random() * 2 - 1) * INTERVAL_JITTER_MS;
 
         const showRandomSale = () => {
-            const randomIndex = Math.floor(Math.random() * SAMPLE_SALES.length);
-            setCurrentSale(SAMPLE_SALES[randomIndex]);
+            const randomIndex = Math.floor(Math.random() * sampleSales.length);
+            setCurrentSale(sampleSales[randomIndex]);
             setIsVisible(true);
 
             setTimeout(() => {
@@ -68,7 +80,7 @@ export default function LiveSalesPopup() {
         return () => {
             if (timerRef.current) clearTimeout(timerRef.current);
         };
-    }, [isAdminRoute, isChatOpen]);
+    }, [isAdminRoute, isChatOpen, sampleSales]);
 
     if (isAdminRoute) {
         return null;
@@ -107,14 +119,14 @@ export default function LiveSalesPopup() {
                         {/* Content */}
                         <div className="flex-1 min-w-0 pr-4">
                             <div className="flex items-center gap-1.5 mb-0.5">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Vừa có đơn hàng</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-primary">{t("liveSales.newOrder")}</span>
                                 <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                             </div>
                             <p className="text-[13px] leading-tight text-slate-900 font-bold mb-0.5">
                                 {currentSale.userName} <span className="font-medium text-slate-500 text-[11px]">({currentSale.location})</span>
                             </p>
                             <p className="text-[12px] text-slate-600 line-clamp-1 italic font-medium">
-                                mua &quot;{currentSale.productName}&quot;
+                                {t("liveSales.bought")} &quot;{currentSale.productName}&quot;
                             </p>
                             <span className="text-[10px] text-slate-400 mt-1 block">{currentSale.timeAgo}</span>
                         </div>
@@ -135,5 +147,3 @@ export default function LiveSalesPopup() {
         </AnimatePresence>
     );
 }
-
-

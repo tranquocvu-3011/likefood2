@@ -74,14 +74,14 @@ export default function MiniCart({ isOpen, onClose }: MiniCartProps) {
                             {items.length === 0 ? (
                                 <EmptyState
                                     icon={ShoppingBag}
-                                    title="Giỏ hàng trống"
-                                    description="Hãy thêm sản phẩm vào giỏ nhé!"
+                                    title={t("cart.emptyCart")}
+                                    description={t("cart.emptyCartDesc")}
                                     action={
                                         <button
                                             onClick={onClose}
                                             className="mt-2 px-6 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-sm tracking-wide hover:bg-primary transition-colors"
                                         >
-                                            {t("cart.continueShopping")}
+                                            {t("shop.continueShopping")}
                                         </button>
                                     }
                                     className="py-12"
@@ -109,6 +109,9 @@ export default function MiniCart({ isOpen, onClose }: MiniCartProps) {
                                                     </h3>
                                                     <PriceDisplay
                                                         currentPrice={item.price}
+                                                        originalPrice={item.originalPrice}
+                                                        salePrice={item.salePrice}
+                                                        isOnSale={item.isOnSale || (item.originalPrice != null && item.originalPrice > item.price)}
                                                         size="sm"
                                                         className="mt-1"
                                                         showDiscountBadge={false}
@@ -158,7 +161,7 @@ export default function MiniCart({ isOpen, onClose }: MiniCartProps) {
                                         onClick={onClose}
                                         className="flex items-center justify-center py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-xs hover:border-primary hover:text-primary transition-all"
                                     >
-                                        {t("cart.viewDetails")}
+                                        {t("shop.details")}
                                     </Link>
                                     <Link
                                         href="/checkout"

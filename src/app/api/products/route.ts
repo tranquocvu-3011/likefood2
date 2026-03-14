@@ -277,6 +277,11 @@ export async function GET(req: Request) {
                     ratingCount: true,
                     soldCount: true,
                     createdAt: true,
+                    productImages: {
+                        orderBy: { order: "asc" },
+                        take: 1,
+                        select: { imageUrl: true }
+                    },
                 },
             }),
             prisma.product.count({ where }),
@@ -328,6 +333,7 @@ export async function GET(req: Request) {
 
             return {
                 ...p,
+                image: p.image || p.productImages?.[0]?.imageUrl || null,
                 price: currentPrice,
                 originalPrice: original,
                 isFlashSale,

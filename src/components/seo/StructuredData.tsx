@@ -1,73 +1,57 @@
-"use client";
-
 /**
- * LIKEFOOD - Vietnamese Specialty Marketplace
- * Copyright (c) 2026 LIKEFOOD Team
- * Licensed under the MIT License
- * https://github.com/tranquocvu-3011/likefood
+ * LIKEFOOD - Structured Data Component (Server Component)
+ * Renders Organization, WebSite, and BreadcrumbList JSON-LD
+ * server-side so Google can see them in the initial HTML response.
  */
 
-import { useEffect, useState } from "react";
-import Script from "next/script";
-
-interface PublicSettings {
-    SEO_SITE_URL?: string;
-    SEO_DEFAULT_TITLE?: string;
-    SEO_DEFAULT_DESCRIPTION?: string;
-    SEO_OG_IMAGE_URL?: string;
-}
+const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://likefood.vn";
+const SITE_NAME = "LIKEFOOD";
 
 export default function StructuredData() {
-    const [settings, setSettings] = useState<PublicSettings | null>(null);
-
-    useEffect(() => {
-        const load = async () => {
-            try {
-                const res = await fetch("/api/public/settings");
-                if (!res.ok) return;
-                const data = await res.json();
-                setSettings(data);
-            } catch {
-                // ignore
-            }
-        };
-        load();
-    }, []);
-
-    const siteUrl = settings?.SEO_SITE_URL || "https://likefood.com";
-    const siteName = settings?.SEO_DEFAULT_TITLE || "LIKEFOOD";
-    const siteDesc = settings?.SEO_DEFAULT_DESCRIPTION || "Premium Vietnamese specialty food and dried seafood";
-    const ogImage = settings?.SEO_OG_IMAGE_URL || `${siteUrl}/og-image.png`;
-
     const organizationSchema = {
         "@context": "https://schema.org",
         "@type": "Organization",
-        name: siteName,
-        url: siteUrl,
-        logo: ogImage,
-        description: siteDesc,
-        address: {
-            "@type": "PostalAddress",
-            addressCountry: "US",
+        "@id": `${SITE_URL}/#organization`,
+        name: SITE_NAME,
+        url: SITE_URL,
+        logo: {
+            "@type": "ImageObject",
+            url: `${SITE_URL}/logo.png`,
         },
+        description: "Vietnamese Specialty Marketplace in the United States — Nền tảng đặc sản Việt Nam tại Hoa Kỳ",
         contactPoint: {
             "@type": "ContactPoint",
-            contactType: "Customer Service",
-            availableLanguage: ["English", "Vietnamese"],
+            telephone: "+1-402-315-8105",
+            email: "tranquocvu3011@gmail.com",
+            contactType: "customer service",
+            availableLanguage: ["Vietnamese", "English"],
         },
+        address: {
+            "@type": "PostalAddress",
+            addressLocality: "Omaha",
+            addressRegion: "NE",
+            postalCode: "68136",
+            addressCountry: "US",
+        },
+        sameAs: [
+            "https://www.facebook.com/profile.php?id=100076170558548",
+            "https://instagram.com/likefood",
+        ],
     };
 
     const websiteSchema = {
         "@context": "https://schema.org",
         "@type": "WebSite",
-        name: siteName,
-        url: siteUrl,
-        description: siteDesc,
+        "@id": `${SITE_URL}/#website`,
+        name: SITE_NAME,
+        url: SITE_URL,
+        inLanguage: "vi",
+        publisher: { "@id": `${SITE_URL}/#organization` },
         potentialAction: {
             "@type": "SearchAction",
             target: {
                 "@type": "EntryPoint",
-                urlTemplate: `${siteUrl}/products?search={search_term_string}`,
+                urlTemplate: `${SITE_URL}/products?search={search_term_string}`,
             },
             "query-input": "required name=search_term_string",
         },
@@ -80,29 +64,18 @@ export default function StructuredData() {
             {
                 "@type": "ListItem",
                 position: 1,
-                name: "Home",
-                item: siteUrl,
+                name: SITE_NAME,
+                item: SITE_URL,
             },
         ],
     };
 
     return (
-        <>
-            <Script
-                id="organization-schema"
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
-            />
-            <Script
-                id="website-schema"
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
-            />
-            <Script
-                id="breadcrumb-schema"
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-            />
-        </>
+        <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+                __html: JSON.stringify([organizationSchema, websiteSchema, breadcrumbSchema]),
+            }}
+        />
     );
 }

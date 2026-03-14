@@ -13,8 +13,8 @@ import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import {
     ShoppingCart, User, Search, Menu, X, ChevronDown,
     Heart, Phone, Sparkles, Headphones, Home, Flame,
-    Settings, FileText, ShoppingBag, Scale, Info,
-    HelpCircle, Gift, Package,
+    Settings, FileText, ShoppingBag, Info,
+    HelpCircle, Gift, Package, UserPlus,
 } from "lucide-react";
 import { useState, useEffect, Suspense, useRef, useCallback } from "react";
 import { useCartState } from "@/contexts/CartContext";
@@ -146,6 +146,33 @@ function NavbarContent() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const isAdminUser = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
+
+    const featuredCategories = [
+        { name: t("navbar.driedFish"), icon: "🐟", color: "bg-blue-50", href: "/products?category=Cá khô" },
+        { name: t("navbar.shrimpSquid"), icon: "🦐", color: "bg-rose-50", href: "/products?category=Tôm & Mực khô" },
+        { name: t("navbar.fruits"), icon: "🥭", color: "bg-emerald-50", href: "/products?category=Trái cây sấy" },
+        { name: t("navbar.spices"), icon: "🌶️", color: "bg-orange-50", href: "/products?category=Gia vị Việt" },
+    ];
+
+    const mobilePrimaryLinks = [
+        { label: t("common.home"), href: "/", icon: <Home className="w-5 h-5" /> },
+        { label: t("common.products"), href: "/products", icon: <ShoppingBag className="w-5 h-5" /> },
+        { label: t("common.about"), href: "/about", icon: <Info className="w-5 h-5" /> },
+        { label: t("common.flashSale"), href: "/flash-sale", icon: <Flame className="w-5 h-5 text-red-500" />, highlight: true },
+        { label: t("navbar.voucher"), href: "/vouchers", icon: <Gift className="w-5 h-5 text-primary" /> },
+        { label: t("navbar.posts"), href: "/posts", icon: <FileText className="w-5 h-5 text-emerald-500" /> },
+        { label: t("common.faq"), href: "/faq", icon: <HelpCircle className="w-5 h-5 text-sky-500" /> },
+        { label: t("common.contact"), href: "/contact", icon: <Phone className="w-5 h-5 text-primary" /> },
+    ];
+
+    const mobileAccountLinks = [
+        { label: t("navbar.orderHistory"), href: "/profile/orders", icon: <ShoppingCart className="w-5 h-5" /> },
+        { label: t("navbar.wishlist"), href: "/profile/wishlist", icon: <Heart className="w-5 h-5 text-rose-500" /> },
+        { label: t("navbar.referral"), href: "/profile/referrals", icon: <UserPlus className="w-5 h-5 text-emerald-500" /> },
+        { label: t("navbar.myVouchers"), href: "/profile/vouchers", icon: <Gift className="w-5 h-5 text-primary" /> },
+        { label: t("navbar.accountSettings"), href: "/profile", icon: <Settings className="w-5 h-5 text-slate-600" /> },
+    ];
 
     useEffect(() => { setIsMounted(true); }, []);
 
@@ -214,6 +241,31 @@ function NavbarContent() {
             desktopSearchRef.current?.blur();
         }
     };
+
+    const renderMobileNavLink = (
+        item: { label: string; href: string; icon: React.ReactNode; highlight?: boolean },
+        idx: number,
+        baseDelay: number
+    ) => (
+        <motion.div
+            key={item.href}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: baseDelay + idx * 0.05 }}
+        >
+            <Link
+                href={item.href}
+                onClick={() => setIsOpen(false)}
+                className={`flex items-center gap-3.5 p-3 rounded-2xl transition-all border ${item.highlight ? "bg-red-50/50 border-red-100/50" : "bg-slate-50 border-transparent hover:border-slate-100"}`}
+            >
+                <div className="w-9 h-9 rounded-2xl bg-white shadow-sm flex items-center justify-center transition-transform">
+                    {item.icon}
+                </div>
+                <span className={`text-[13px] font-bold ${item.highlight ? "text-red-600" : "text-slate-700"}`}>{item.label}</span>
+                <ChevronDown className="w-3.5 h-3.5 -rotate-90 text-slate-300 ml-auto" />
+            </Link>
+        </motion.div>
+    );
 
 
     return (
@@ -558,11 +610,6 @@ function NavbarContent() {
                                             <span className="relative">{t("navbar.voucher")}<span className={`absolute -bottom-0.5 left-0 h-[2px] bg-current rounded-full transition-all duration-300 ${pathname.startsWith("/vouchers") ? "w-full" : "w-0 group-hover:w-full"}`} /></span>
                                         </Link>
 
-                                        <Link href="/compare" className={`relative flex items-center gap-1.5 px-3.5 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-colors group ${pathname.startsWith("/compare") ? "text-primary" : "text-slate-500 hover:text-primary"}`}>
-                                            <Scale className="w-3.5 h-3.5 group-hover:scale-110 transition-transform flex-shrink-0" />
-                                            <span className="relative">{t("shop.compare")}<span className={`absolute -bottom-0.5 left-0 h-[2px] bg-current rounded-full transition-all duration-300 ${pathname.startsWith("/compare") ? "w-full" : "w-0 group-hover:w-full"}`} /></span>
-                                        </Link>
-
                                         <div className="w-px h-4 bg-slate-200/80 mx-2 flex-shrink-0" />
 
                                         <Link href="/posts" className={`relative flex items-center gap-1.5 px-3.5 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-colors group ${pathname.startsWith("/posts") ? "text-primary" : "text-slate-500 hover:text-primary"}`}>
@@ -635,7 +682,7 @@ function NavbarContent() {
                                     </motion.button>
                                 </div>
 
-                                <div className="p-5 space-y-8 pb-32">
+                                <div className="p-4 space-y-6 pb-28">
                                     {/* Mobile Search - Prominent in Drawer */}
                                     <motion.div
                                         initial={{ opacity: 0, y: 10 }}
@@ -657,18 +704,13 @@ function NavbarContent() {
                                     </motion.div>
 
                                     {/* Popular Categories Grid - Refined */}
-                                    <div className="space-y-4">
+                                    <div className="space-y-3">
                                         <div className="flex items-center justify-between px-1">
                                             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{t("navbar.featuredCategories")}</h3>
                                             <Link href="/products" className="text-[10px] font-bold text-primary" onClick={() => setIsOpen(false)}>{t("common.viewAll")}</Link>
                                         </div>
                                         <div className="grid grid-cols-4 gap-2">
-                                            {[
-                                                { name: t("navbar.driedFish"), icon: "🐟", color: "bg-blue-50", href: "/products?category=Cá khô" },
-                                                { name: t("navbar.shrimpSquid"), icon: "🦐", color: "bg-rose-50", href: "/products?category=Tôm & Mực khô" },
-                                                { name: t("navbar.fruits"), icon: "🥭", color: "bg-emerald-50", href: "/products?category=Trái cây sấy" },
-                                                { name: t("navbar.spices"), icon: "🌶️", color: "bg-orange-50", href: "/products?category=Gia vị Việt" },
-                                            ].map((cat, idx) => (
+                                            {featuredCategories.map((cat, idx) => (
                                                 <motion.div
                                                     key={cat.name}
                                                     initial={{ opacity: 0, scale: 0.9 }}
@@ -690,40 +732,47 @@ function NavbarContent() {
                                         </div>
                                     </div>
 
-                                    {/* Quick Links with Icons */}
-                                    <div className="space-y-4">
+                                    {/* Primary navigation synced with desktop */}
+                                    <div className="space-y-3">
                                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">{t("navbar.discover")}</h3>
                                         <div className="grid grid-cols-1 gap-2">
-                                            {[
-                                                { label: t("common.home"), href: "/", icon: <Home className="w-5 h-5" /> },
-                                                { label: t("common.flashSale"), href: "/products?sale=true", icon: <Flame className="w-5 h-5 text-red-500" />, highlight: true },
-                                                { label: t("navbar.orderHistory"), href: "/profile/orders", icon: <ShoppingCart className="w-5 h-5" /> },
-                                                { label: t("navbar.wishlist"), href: "/profile/wishlist", icon: <Heart className="w-5 h-5 text-rose-500" /> },
-                                                { label: t("navbar.posts"), href: "/posts", icon: <FileText className="w-5 h-5 text-emerald-500" /> },
-                                                { label: t("navbar.supportCenter"), href: "/contact", icon: <Phone className="w-5 h-5 text-primary" /> },
-                                            ].map((item, idx) => (
-                                                <motion.div
-                                                    key={item.href}
-                                                    initial={{ opacity: 0, x: -10 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    transition={{ delay: 0.3 + idx * 0.05 }}
-                                                >
-                                                    <Link
-                                                        href={item.href}
-                                                        onClick={() => setIsOpen(false)}
-                                                        className={`flex items-center gap-3.5 p-3.5 rounded-2xl transition-all border ${item.highlight ? "bg-red-50/50 border-red-100/50" : "bg-slate-50 border-transparent hover:border-slate-100"
-                                                            }`}
-                                                    >
-                                                        <div className={`w-9 h-9 rounded-2xl bg-white shadow-sm flex items-center justify-center group-hover:scale-105 transition-transform`}>
-                                                            {item.icon}
-                                                        </div>
-                                                        <span className={`text-[13px] font-bold ${item.highlight ? "text-red-600" : "text-slate-700"}`}>{item.label}</span>
-                                                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 text-slate-300 ml-auto" />
-                                                    </Link>
-                                                </motion.div>
-                                            ))}
+                                            {mobilePrimaryLinks.map((item, idx) => renderMobileNavLink(item, idx, 0.3))}
                                         </div>
                                     </div>
+
+                                    {/* Account shortcuts */}
+                                    {session && (
+                                        <div className="space-y-3">
+                                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">{t("navbar.member")}</h3>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {mobileAccountLinks.map((item, idx) => renderMobileNavLink(item, idx, 0.45))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Admin portal for admin accounts */}
+                                    {session && isAdminUser && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.58 }}
+                                        >
+                                            <Link
+                                                href="/admin/dashboard"
+                                                onClick={() => setIsOpen(false)}
+                                                className="flex items-center gap-3.5 p-3.5 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 shadow-sm"
+                                            >
+                                                <div className="w-9 h-9 rounded-2xl bg-emerald-500 text-white shadow-sm flex items-center justify-center">
+                                                    <Settings className="w-4.5 h-4.5" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[12px] font-black uppercase tracking-wider text-emerald-700">{t("navbar.adminPortal")}</p>
+                                                    <p className="text-[11px] font-semibold text-emerald-600/90">Dashboard</p>
+                                                </div>
+                                                <ChevronDown className="w-3.5 h-3.5 -rotate-90 text-emerald-500" />
+                                            </Link>
+                                        </motion.div>
+                                    )}
 
                                     {/* Language toggle for mobile */}
                                     <div className="flex items-center justify-between py-3 px-1 border-t border-slate-100">

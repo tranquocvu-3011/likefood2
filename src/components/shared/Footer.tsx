@@ -27,77 +27,11 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion, useInView } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-
-// ─── Static data ──────────────────────────────────────────────────────────────
-
-const TRUST_ITEMS = [
-    { icon: ShieldCheck, title: "100% Chính Hãng",        desc: "Nguồn gốc rõ ràng",          color: "text-emerald-600", bg: "bg-emerald-50",  border: "border-emerald-100" },
-    { icon: Truck,       title: "Miễn Phí Vận Chuyển",   desc: "Đơn từ 399K trở lên",         color: "text-sky-600",     bg: "bg-sky-50",      border: "border-sky-100"     },
-    { icon: RefreshCw,   title: "Đổi Trả Dễ Dàng",       desc: "Hỗ trợ trong 30 ngày",        color: "text-amber-600",   bg: "bg-amber-50",    border: "border-amber-100"   },
-    { icon: CreditCard,  title: "Thanh Toán An Toàn",     desc: "Bảo mật SSL & đối tác uy tín", color: "text-violet-600",  bg: "bg-violet-50",   border: "border-violet-100"  },
-];
-
-const LINK_GROUPS = [
-    {
-        title: "Sản phẩm",
-        links: [
-            { label: "Tất cả sản phẩm",      href: "/products" },
-            { label: "Đặc sản nổi bật",       href: "/products?featured=true" },
-            { label: "Quà tặng",              href: "/products?category=gifts" },
-            { label: "Gia vị truyền thống",   href: "/products?category=gia-vi" },
-            { label: "Hải sản khô",           href: "/products?category=ca-kho" },
-            { label: "Flash Sale",            href: "/products?sale=true" },
-        ],
-    },
-    {
-        title: "Công ty",
-        links: [
-            { label: "Về LIKEFOOD",           href: "/about" },
-            { label: "Câu chuyện thương hiệu", href: "/about#story" },
-            { label: "Bài viết",              href: "/posts" },
-            { label: "FAQ",                   href: "/faq" },
-            { label: "Liên hệ",              href: "/contact" },
-        ],
-    },
-    {
-        title: "Hỗ trợ",
-        links: [
-            { label: "Theo dõi đơn hàng",    href: "/track-order" },
-            { label: "Hướng dẫn mua hàng",   href: "/policies/guide" },
-            { label: "Chính sách vận chuyển", href: "/policies/shipping" },
-            { label: "Chính sách đổi trả",   href: "/policies/return" },
-            { label: "Câu hỏi thường gặp",   href: "/faq" },
-        ],
-    },
-    {
-        title: "Chính sách",
-        links: [
-            { label: "Chính sách bảo mật",   href: "/privacy" },
-            { label: "Điều khoản dịch vụ",   href: "/terms" },
-            { label: "Chính sách đổi trả",   href: "/policies/return" },
-            { label: "Chính sách thanh toán", href: "/policies/payment" },
-            { label: "Chính sách vận chuyển", href: "/policies/shipping" },
-        ],
-    },
-];
-
-const PAYMENT_METHODS = [
-    { label: "Stripe",     color: "text-[#635BFF] bg-indigo-50 border-indigo-100"  },
-    { label: "Visa",       color: "text-blue-700 bg-blue-50 border-blue-100"  },
-    { label: "Mastercard", color: "text-red-600 bg-red-50 border-red-100"  },
-    { label: "Amex",       color: "text-blue-600 bg-blue-50 border-blue-100" },
-];
-
-const SHIPPING_PARTNERS = [
-    { label: "USPS",       color: "text-blue-700 bg-blue-50 border-blue-100" },
-    { label: "FedEx",      color: "text-purple-600 bg-purple-50 border-purple-100" },
-    { label: "UPS",        color: "text-amber-700 bg-amber-50 border-amber-100" },
-    { label: "US Shipping", color: "text-emerald-600 bg-emerald-50 border-emerald-100" },
-];
+import { useLanguage } from "@/lib/i18n/context";
 
 // ─── Link group (accordion on mobile) ─────────────────────────────────────────
 
-function LinkGroup({ group }: { group: (typeof LINK_GROUPS)[0] }) {
+function LinkGroup({ group }: { group: { title: string; links: { label: string; href: string }[] } }) {
     const [open, setOpen] = useState(false);
 
     return (
@@ -154,6 +88,7 @@ function LinkGroup({ group }: { group: (typeof LINK_GROUPS)[0] }) {
 // ─── Newsletter ───────────────────────────────────────────────────────────────
 
 function Newsletter() {
+    const { t } = useLanguage();
     const [email, setEmail] = useState("");
     const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
@@ -182,13 +117,13 @@ function Newsletter() {
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-1.5">
                         <Star className="w-3.5 h-3.5 text-primary fill-primary" />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">Ưu đãi độc quyền</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">{t("footer.exclusiveOffers")}</span>
                     </div>
                     <h3 className="text-base font-bold text-slate-800 leading-snug">
-                        Nhận ưu đãi độc quyền từ LIKEFOOD
+                        {t("footer.newsletterTitle")}
                     </h3>
                     <p className="text-[12px] text-slate-500 mt-1 max-w-sm leading-relaxed">
-                        Đăng ký để nhận khuyến mãi mới nhất và ưu đãi dành riêng cho thành viên.
+                        {t("footer.newsletterDesc")}
                     </p>
                 </div>
 
@@ -197,7 +132,7 @@ function Newsletter() {
                     {status === "success" ? (
                         <div className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
                             <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                            <p className="text-[13px] font-medium text-emerald-700">Đăng ký thành công! Cảm ơn bạn.</p>
+                            <p className="text-[13px] font-medium text-emerald-700">{t("footer.subscribeSuccess")}</p>
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} className="flex gap-2">
@@ -208,7 +143,7 @@ function Newsletter() {
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Nhập email của bạn"
+                                    placeholder={t("footer.emailPlaceholder")}
                                     className={`w-full pl-9 pr-3 py-2.5 rounded-xl bg-white border text-[13px] text-slate-800 placeholder:text-slate-400 outline-none transition-all ${
                                         status === "error"
                                             ? "border-red-300 focus:ring-1 focus:ring-red-200"
@@ -225,14 +160,14 @@ function Newsletter() {
                                     ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     : <Send className="w-3.5 h-3.5" />
                                 }
-                                <span>Đăng ký</span>
+                                <span>{t("footer.subscribe")}</span>
                             </button>
                         </form>
                     )}
                     {status === "error" && (
                         <div className="flex items-center gap-1 mt-1.5">
                             <AlertCircle className="w-3 h-3 text-red-400" />
-                            <p className="text-[11px] text-red-500">Có lỗi xảy ra. Vui lòng thử lại.</p>
+                            <p className="text-[11px] text-red-500">{t("footer.subscribeError")}</p>
                         </div>
                     )}
                 </div>
@@ -241,13 +176,37 @@ function Newsletter() {
     );
 }
 
+// ─── Payment Methods ──────────────────────────────────────────────────────────
+
+const PAYMENT_METHODS = [
+    { label: "Stripe",     color: "text-[#635BFF] bg-indigo-50 border-indigo-100"  },
+    { label: "Visa",       color: "text-blue-700 bg-blue-50 border-blue-100"  },
+    { label: "Mastercard", color: "text-red-600 bg-red-50 border-red-100"  },
+    { label: "Amex",       color: "text-blue-600 bg-blue-50 border-blue-100" },
+];
+
+const SHIPPING_PARTNERS = [
+    { label: "USPS",       color: "text-blue-700 bg-blue-50 border-blue-100" },
+    { label: "FedEx",      color: "text-purple-600 bg-purple-50 border-purple-100" },
+    { label: "UPS",        color: "text-amber-700 bg-amber-50 border-amber-100" },
+    { label: "US Shipping", color: "text-emerald-600 bg-emerald-50 border-emerald-100" },
+];
+
 // ─── Main Footer ──────────────────────────────────────────────────────────────
 
 export default function Footer() {
     const ref = useRef<HTMLElement>(null);
     const isInView = useInView(ref, { once: true, margin: "-60px" });
+    const { t } = useLanguage();
     const [supportPhone, setSupportPhone] = useState("+1 402-315-8105");
-    const [supportEmail, setSupportEmail] = useState("support@likefood.com");
+    const [supportEmail, setSupportEmail] = useState("tranquocvu3011@gmail.com");
+    const [supportAddress, setSupportAddress] = useState("Omaha, NE 68136, United States");
+    const [socialUrls, setSocialUrls] = useState({
+        facebook: "https://www.facebook.com/profile.php?id=100076170558548",
+        instagram: "https://instagram.com/likefood",
+        tiktok: "",
+        youtube: "",
+    });
 
     useEffect(() => {
         const load = async () => {
@@ -256,10 +215,68 @@ export default function Footer() {
                 const data = await getPublicSettings();
                 if (data.SITE_SUPPORT_PHONE) setSupportPhone(data.SITE_SUPPORT_PHONE);
                 if (data.SITE_SUPPORT_EMAIL) setSupportEmail(data.SITE_SUPPORT_EMAIL);
+                if (data.SITE_ADDRESS) setSupportAddress(data.SITE_ADDRESS);
+                setSocialUrls(prev => ({
+                    facebook: data.FACEBOOK_URL || prev.facebook,
+                    instagram: data.INSTAGRAM_URL || prev.instagram,
+                    tiktok: data.TIKTOK_URL || prev.tiktok,
+                    youtube: data.YOUTUBE_URL || prev.youtube,
+                }));
             } catch { /* keep defaults */ }
         };
         void load();
     }, []);
+
+    // ── Trust badges using i18n ──
+    const TRUST_ITEMS = [
+        { icon: ShieldCheck, title: t("trustBadges.authentic"),  desc: t("trustBadges.authenticDesc"), color: "text-emerald-600", bg: "bg-emerald-50",  border: "border-emerald-100" },
+        { icon: Truck,       title: t("trustBadges.freeShip"),   desc: t("trustBadges.freeShipDesc"),  color: "text-sky-600",     bg: "bg-sky-50",      border: "border-sky-100"     },
+        { icon: RefreshCw,   title: t("trustBadges.return"),     desc: t("trustBadges.returnDesc"),    color: "text-amber-600",   bg: "bg-amber-50",    border: "border-amber-100"   },
+        { icon: CreditCard,  title: t("trustBadges.secure"),     desc: t("trustBadges.secureDesc"),    color: "text-violet-600",  bg: "bg-violet-50",   border: "border-violet-100"  },
+    ];
+
+    // ── Link groups using i18n — fixed dead links ──
+    const LINK_GROUPS = [
+        {
+            title: t("footer.products"),
+            links: [
+                { label: t("footer.allProducts"),       href: "/products" },
+                { label: t("footer.featuredProducts"),   href: "/products?featured=true" },
+                { label: t("footer.gifts"),              href: "/products?category=gifts" },
+                { label: t("footer.traditionalSpices"),  href: "/products?category=gia-vi" },
+                { label: t("footer.driedSeafood"),       href: "/products?category=ca-kho" },
+                { label: t("footer.flashSale"),          href: "/flash-sale" },
+            ],
+        },
+        {
+            title: t("footer.company"),
+            links: [
+                { label: t("footer.aboutUs"),            href: "/about" },
+                { label: t("footer.brandStory"),         href: "/about#story" },
+                { label: t("footer.posts"),              href: "/posts" },
+                { label: t("footer.faq"),                href: "/faq" },
+                { label: t("footer.contactUs"),          href: "/contact" },
+            ],
+        },
+        {
+            title: t("footer.support"),
+            links: [
+                { label: t("footer.orderTracking"),      href: "/profile/orders" },
+                { label: t("footer.shippingPolicy"),     href: "/policies/shipping" },
+                { label: t("footer.returnPolicy"),       href: "/policies/return" },
+                { label: t("footer.faqLink"),            href: "/faq" },
+            ],
+        },
+        {
+            title: t("footer.policies"),
+            links: [
+                { label: t("footer.privacyPolicy"),      href: "/policies/privacy" },
+                { label: t("footer.termsOfService"),      href: "/policies/terms" },
+                { label: t("footer.returnPolicy"),        href: "/policies/return" },
+                { label: t("footer.shippingPolicy"),      href: "/policies/shipping" },
+            ],
+        },
+    ];
 
     return (
         <footer ref={ref} className="bg-white text-slate-800 border-t border-slate-100">
@@ -281,7 +298,7 @@ export default function Footer() {
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                         {TRUST_ITEMS.map((item, i) => (
                             <motion.div
-                                key={item.title}
+                                key={i}
                                 initial={{ opacity: 0, y: 12 }}
                                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                                 transition={{ duration: 0.35, delay: 0.08 + i * 0.06 }}
@@ -311,8 +328,8 @@ export default function Footer() {
                         animate={isInView ? { opacity: 1, x: 0 } : {}}
                         transition={{ duration: 0.45, delay: 0.12 }}
                     >
-                        {/* Logo — no filter, displays naturally on white bg */}
-                        <Link href="/" aria-label="LIKEFOOD trang chủ">
+                        {/* Logo */}
+                        <Link href="/" aria-label="LIKEFOOD">
                             <Image
                                 src="/logo.png"
                                 alt="LIKEFOOD"
@@ -325,7 +342,7 @@ export default function Footer() {
                         </Link>
 
                         <p className="text-[13px] text-slate-600 leading-relaxed max-w-xs font-medium">
-                            Chuyên cung cấp đặc sản Việt Nam, thực phẩm chọn lọc và sản phẩm chất lượng dành cho khách hàng yêu hương vị quê nhà.
+                            {t("footer.description")}
                         </p>
 
                         {/* Contact info */}
@@ -348,16 +365,16 @@ export default function Footer() {
                                 <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center">
                                     <MapPin className="w-3 h-3 text-slate-400" />
                                 </div>
-                                Omaha, NE 68136, United States
+                                {supportAddress}
                             </div>
                         </div>
 
                         {/* Social */}
                         <div className="flex gap-2 pt-1">
                             {[
-                                { href: "https://www.facebook.com/profile.php?id=100076170558548", icon: Facebook, label: "Facebook", hover: "hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600" },
+                                ...(socialUrls.facebook ? [{ href: socialUrls.facebook, icon: Facebook, label: "Facebook", hover: "hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600" }] : []),
                                 { href: `mailto:${supportEmail}`,       icon: Mail,      label: "Email",    hover: "hover:bg-primary/5 hover:border-primary/30 hover:text-primary" },
-                                { href: "https://instagram.com",        icon: Instagram, label: "Instagram", hover: "hover:bg-pink-50 hover:border-pink-200 hover:text-pink-600" },
+                                ...(socialUrls.instagram ? [{ href: socialUrls.instagram, icon: Instagram, label: "Instagram", hover: "hover:bg-pink-50 hover:border-pink-200 hover:text-pink-600" }] : []),
                             ].map((s) => (
                                 <a key={s.label} href={s.href} aria-label={s.label}
                                     target={s.href.startsWith("http") ? "_blank" : undefined}
@@ -376,7 +393,7 @@ export default function Footer() {
                         animate={isInView ? { opacity: 1, x: 0 } : {}}
                         transition={{ duration: 0.45, delay: 0.18 }}
                     >
-                        {LINK_GROUPS.map((group, i) => (
+                        {LINK_GROUPS.map((group) => (
                             <LinkGroup key={group.title} group={group} />
                         ))}
                     </motion.div>
@@ -388,7 +405,7 @@ export default function Footer() {
                 <div className="w-full mx-auto px-4 sm:px-6 lg:px-[6%] py-5">
                     <div className="flex flex-col sm:flex-row gap-5 sm:gap-8 items-start sm:items-center">
                         <div className="flex items-center gap-3 flex-wrap">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Thanh toán</span>
+                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">{t("footer.payment")}</span>
                             <div className="hidden sm:block w-px h-4 bg-slate-200" />
                             {PAYMENT_METHODS.map((p) => (
                                 <span key={p.label} className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold ${p.color}`}>{p.label}</span>
@@ -396,7 +413,7 @@ export default function Footer() {
                         </div>
                         <div className="hidden sm:block w-px h-5 bg-slate-200 self-center" />
                         <div className="flex items-center gap-3 flex-wrap">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Vận chuyển</span>
+                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">{t("footer.shipping")}</span>
                             <div className="hidden sm:block w-px h-4 bg-slate-200" />
                             {SHIPPING_PARTNERS.map((s) => (
                                 <span key={s.label} className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold ${s.color}`}>{s.label}</span>
@@ -414,16 +431,15 @@ export default function Footer() {
                             © 2026 <span className="font-extrabold text-slate-700">LIKEFOOD</span>. All rights reserved.
                         </p>
                         <div className="flex items-center gap-3 flex-wrap justify-center text-[11px] text-slate-400">
-                            <div className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-emerald-500" /><span>Chuẩn chất lượng</span></div>
+                            <div className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-emerald-500" /><span>{t("footer.qualityStandard")}</span></div>
                             <div className="w-px h-3 bg-slate-200" />
-                            <div className="flex items-center gap-1"><Truck className="w-3 h-3 text-sky-500" /><span>Giao hàng toàn nước Mỹ</span></div>
+                            <div className="flex items-center gap-1"><Truck className="w-3 h-3 text-sky-500" /><span>{t("footer.shipNationwide")}</span></div>
                             <div className="w-px h-3 bg-slate-200" />
-                            <div className="flex items-center gap-1"><Phone className="w-3 h-3 text-primary" /><span>Hỗ trợ nhanh chóng</span></div>
+                            <div className="flex items-center gap-1"><Phone className="w-3 h-3 text-primary" /><span>{t("footer.quickSupport")}</span></div>
                         </div>
                         <div className="flex items-center gap-4">
-                            <Link href="/privacy" className="text-[12px] text-slate-400 hover:text-slate-600 transition-colors">Bảo mật</Link>
-                            <Link href="/terms" className="text-[12px] text-slate-400 hover:text-slate-600 transition-colors">Điều khoản</Link>
-                            <Link href="/policies/cookies" className="text-[12px] text-slate-400 hover:text-slate-600 transition-colors">Cookies</Link>
+                            <Link href="/policies/privacy" className="text-[12px] text-slate-400 hover:text-slate-600 transition-colors">{t("footer.privacy")}</Link>
+                            <Link href="/policies/terms" className="text-[12px] text-slate-400 hover:text-slate-600 transition-colors">{t("footer.terms")}</Link>
                         </div>
                     </div>
                 </div>
@@ -432,4 +448,3 @@ export default function Footer() {
         </footer>
     );
 }
-

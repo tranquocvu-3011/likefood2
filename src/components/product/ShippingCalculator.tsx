@@ -10,6 +10,7 @@
 import { MapPin, Truck } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
 import { DEFAULT_SHIPPING_FEE_USD, FREE_SHIPPING_THRESHOLD_USD } from "@/lib/commerce";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface ShippingCalculatorProps {
     productId: string;
@@ -29,6 +30,7 @@ export default function ShippingCalculator({
     basePrice,
     shippingInfo,
 }: ShippingCalculatorProps) {
+    const { t } = useLanguage();
     const quantity = 1;
     const orderTotal = basePrice * quantity;
     const freeShipThreshold = shippingInfo?.freeShipMin || FREE_SHIPPING_THRESHOLD_USD;
@@ -45,7 +47,7 @@ export default function ShippingCalculator({
         >
             <h3 className="text-xl font-black text-slate-800 mb-4 flex items-center gap-2">
                 <Truck className="w-6 h-6 text-sky-600" />
-                Van Chuyen
+                {t("shippingCalc.title")}
             </h3>
 
             <div className="space-y-4">
@@ -55,13 +57,13 @@ export default function ShippingCalculator({
                             <MapPin className="w-5 h-5 text-sky-600" />
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-slate-700">Phi van chuyen</p>
-                            <p className="text-xs text-slate-500">Giao hang chuan • {estimatedDays} ngay</p>
+                            <p className="text-sm font-bold text-slate-700">{t("shippingCalc.shippingFee")}</p>
+                            <p className="text-xs text-slate-500">{t("shippingCalc.standardDelivery")} • {estimatedDays} {t("shippingCalc.days")}</p>
                         </div>
                     </div>
                     <div className="text-right">
                         {isFreeShip ? (
-                            <span className="text-lg font-black text-green-600">FREESHIP</span>
+                            <span className="text-lg font-black text-green-600">{t("shippingCalc.freeShip")}</span>
                         ) : (
                             <span className="text-lg font-black text-slate-800">{formatPrice(shippingFee)}</span>
                         )}
@@ -71,7 +73,7 @@ export default function ShippingCalculator({
                 {!isFreeShip && (
                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl">
                         <p className="text-sm font-bold text-amber-800 mb-2">
-                            Mua them <span className="text-amber-600">{formatPrice(freeShipThreshold - orderTotal)}</span> de duoc FREESHIP.
+                            {t("shippingCalc.buyMore")} <span className="text-amber-600">{formatPrice(freeShipThreshold - orderTotal)}</span> {t("shippingCalc.toFreeShip")}
                         </p>
                         <div className="w-full bg-amber-200 rounded-full h-2 overflow-hidden">
                             <div
@@ -80,30 +82,30 @@ export default function ShippingCalculator({
                             />
                         </div>
                         <p className="text-xs text-amber-700 mt-1">
-                            {Math.round((orderTotal / freeShipThreshold) * 100)}% dat freeship
+                            {Math.round((orderTotal / freeShipThreshold) * 100)}% {t("shippingCalc.reached")}
                         </p>
                     </div>
                 )}
 
                 {shippingInfo?.weight && (
                     <div className="text-sm text-slate-600">
-                        <span className="font-bold">Khoi luong:</span> {shippingInfo.weight} kg
+                        <span className="font-bold">{t("shippingCalc.weight")}</span> {shippingInfo.weight} kg
                     </div>
                 )}
 
                 <div className="pt-4 border-t-2 border-sky-200">
                     <div className="flex items-center justify-between text-sm mb-2">
-                        <span className="text-slate-600">Tam tinh ({quantity} san pham)</span>
+                        <span className="text-slate-600">{t("shippingCalc.subtotal")} ({quantity} {t("shippingCalc.product")})</span>
                         <span className="font-bold text-slate-800">{formatPrice(orderTotal)}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm mb-3">
-                        <span className="text-slate-600">Phi van chuyen</span>
+                        <span className="text-slate-600">{t("shippingCalc.shippingFeeLabel")}</span>
                         <span className="font-bold text-slate-800">
-                            {isFreeShip ? "Free" : formatPrice(shippingFee)}
+                            {isFreeShip ? t("shippingCalc.free") : formatPrice(shippingFee)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between pt-3 border-t border-sky-200">
-                        <span className="text-base font-black text-slate-800">Tong cong</span>
+                        <span className="text-base font-black text-slate-800">{t("shippingCalc.total")}</span>
                         <span className="text-xl font-black bg-gradient-to-r from-sky-600 to-blue-600 bg-clip-text text-transparent">
                             {formatPrice(orderTotal + shippingFee)}
                         </span>

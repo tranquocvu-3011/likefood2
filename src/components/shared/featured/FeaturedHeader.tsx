@@ -8,8 +8,10 @@
  */
 
 import { motion } from "framer-motion";
+import { useLanguage } from "@/lib/i18n/context";
 
 export default function FeaturedHeader() {
+    const { t } = useLanguage();
     return (
         <motion.div
             className="text-center mb-[clamp(0.9rem,1.8vw,1.5rem)]"
@@ -34,7 +36,7 @@ export default function FeaturedHeader() {
                 className="font-black uppercase tracking-tighter text-slate-900 leading-[0.9] relative"
                 style={{ fontSize: 'clamp(0.75rem,2.1vw,1.8rem)' }}
             >
-                <span className="relative z-10">Sản phẩm nổi bật</span>
+                <span className="relative z-10">{t('shop.featuredProducts')}</span>
                 <motion.span
                     className="absolute inset-0 bg-gradient-to-r from-primary/20 via-amber-500/20 to-primary/20 blur-xl"
                     animate={{

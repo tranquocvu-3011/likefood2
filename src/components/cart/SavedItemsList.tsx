@@ -19,6 +19,9 @@ export interface SavedItem {
     name: string;
     slug?: string;
     price: number;
+    originalPrice?: number;
+    salePrice?: number;
+    isOnSale?: boolean;
     quantity?: number;
     image?: string;
     inventory?: number;
@@ -61,7 +64,15 @@ export function SavedItemsList({ items, onMoveToCart, onRemove }: SavedItemsList
                             <Link href={`/products/${item.slug || item.id}`} prefetch={true}>
                                 <h3 className="font-black text-lg md:text-xl hover:text-primary transition-colors">{item.name}</h3>
                             </Link>
-                            <PriceDisplay currentPrice={item.price} size="md" className="mt-1" showDiscountBadge={false} />
+                            <PriceDisplay
+                                currentPrice={item.price}
+                                originalPrice={item.originalPrice}
+                                salePrice={item.salePrice}
+                                isOnSale={item.isOnSale || (item.originalPrice != null && item.originalPrice > item.price)}
+                                size="md"
+                                className="mt-1"
+                                showDiscountBadge={false}
+                            />
                         </div>
                         <div className="flex items-center gap-2 mt-4">
                             <Button

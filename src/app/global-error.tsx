@@ -9,7 +9,32 @@
 
 // global-error.tsx catches errors in the root layout itself.
 // It must include its own <html> and <body> tags.
-// Cannot use external CSS or logger here since root layout may have failed.
+// Cannot use useLanguage hook here since root layout (and LanguageProvider) may have failed.
+// Using cookie-based locale detection as fallback.
+
+const translations = {
+    vi: {
+        title: "Đã có lỗi nghiêm trọng!",
+        description: "Hệ thống gặp sự cố không thể khôi phục. Vui lòng tải lại trang hoặc quay về trang chủ.",
+        reload: "Tải lại trang",
+        goHome: "Về trang chủ",
+    },
+    en: {
+        title: "A critical error occurred!",
+        description: "The system encountered an unrecoverable error. Please reload the page or go back to the homepage.",
+        reload: "Reload page",
+        goHome: "Go to homepage",
+    },
+};
+
+function getLocale(): "vi" | "en" {
+    if (typeof document !== "undefined") {
+        const match = document.cookie.match(/(?:^|;\s*)locale=([^;]*)/);
+        if (match && match[1] === "en") return "en";
+    }
+    return "vi";
+}
+
 export default function GlobalError({
     error,
     reset,
@@ -17,8 +42,11 @@ export default function GlobalError({
     error: Error & { digest?: string }
     reset: () => void
 }) {
+    const locale = getLocale();
+    const t = translations[locale];
+
     return (
-        <html lang="vi">
+        <html lang={locale}>
             <body>
                 <div style={{
                     minHeight: '100vh',
@@ -37,10 +65,10 @@ export default function GlobalError({
                         justifyContent: 'center', marginBottom: 24, fontSize: 28,
                     }}>⚠️</div>
                     <h2 style={{ fontSize: '24px', fontWeight: 900, marginBottom: '12px', color: '#0f172a' }}>
-                        Đã có lỗi nghiêm trọng!
+                        {t.title}
                     </h2>
                     <p style={{ color: '#64748b', marginBottom: '32px', maxWidth: '400px', lineHeight: 1.6 }}>
-                        Hệ thống gặp sự cố không thể khôi phục. Vui lòng tải lại trang hoặc quay về trang chủ.
+                        {t.description}
                     </p>
                     {error.digest && (
                         <p style={{ color: '#94a3b8', fontSize: '11px', marginBottom: '16px', fontFamily: 'monospace' }}>
@@ -56,7 +84,7 @@ export default function GlobalError({
                                 cursor: 'pointer', fontSize: '14px',
                             }}
                         >
-                            Tải lại trang
+                            {t.reload}
                         </button>
                         <a
                             href="/"
@@ -67,7 +95,7 @@ export default function GlobalError({
                                 display: 'inline-flex', alignItems: 'center',
                             }}
                         >
-                            Về trang chủ
+                            {t.goHome}
                         </a>
                     </div>
                 </div>

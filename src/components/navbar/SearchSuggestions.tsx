@@ -66,13 +66,13 @@ export default function SearchSuggestions({
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4 text-slate-400" />
-                            <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Tìm kiếm gần đây</span>
+                            <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">{t('shopPage.recentSearches')}</span>
                         </div>
                         <button
                             onClick={onClearHistory}
                             className="text-[11px] font-semibold text-slate-400 hover:text-slate-600 transition-colors"
                         >
-                            Xóa
+                            {t('common.delete')}
                         </button>
                     </div>
                     <div className="flex flex-wrap gap-2">

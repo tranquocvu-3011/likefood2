@@ -15,7 +15,7 @@ export default async function AdminLayout({
 }: {
     children: React.ReactNode;
 }) {
-    // SEC-03: Server-side auth check - this runs BEFORE any client-side code
+    // Server-side auth check - this runs BEFORE any client-side code
     const session = await getServerSession(authOptions);
     
     // If not logged in, redirect to login

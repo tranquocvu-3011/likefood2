@@ -252,19 +252,19 @@ export default function AdminPagesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Quản lý Trang</h1>
-          <p className="text-gray-500">Tạo và chỉnh sửa các trang nội dung (About, FAQ, Policies...)</p>
+            <h1 className="text-2xl font-bold text-zinc-100">Quản lý Trang</h1>
+            <p className="text-zinc-400">Tạo và chỉnh sửa các trang nội dung (About, FAQ, Policies...)</p>
         </div>
-        <Button onClick={() => setShowAddDialog(true)}>
+          <Button className="bg-teal-600 hover:bg-teal-500 text-white" onClick={() => setShowAddDialog(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Thêm trang mới
         </Button>
@@ -274,35 +274,35 @@ export default function AdminPagesPage() {
         {pages.map((page) => {
           const typeInfo = PAGE_TYPES.find(t => t.value === page.type);
           return (
-            <Card key={page.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
+            <Card key={page.id} className="border-zinc-800 bg-[#111113] hover:border-zinc-700 transition-colors">
+              <CardHeader className="pb-3 border-b border-zinc-800">
                 <div className="flex items-start justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2">
+                  <CardTitle className="text-base flex items-center gap-2 text-zinc-100">
                     {typeInfo?.icon || "📄"} {page.title}
                   </CardTitle>
                   <div className="flex items-center gap-1">
                     {page.isPublished ? (
                       <Eye className="h-4 w-4 text-green-500" />
                     ) : (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
+                       <EyeOff className="h-4 w-4 text-zinc-600" />
                     )}
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-500 mb-2">/{page.slug}</p>
+              <CardContent className="pt-3">
+                <p className="text-sm text-zinc-400 mb-2">/{page.slug}</p>
                 {page.excerpt && (
-                  <p className="text-sm text-gray-600 line-clamp-2 mb-3">{page.excerpt}</p>
+                  <p className="text-sm text-zinc-500 line-clamp-2 mb-3">{page.excerpt}</p>
                 )}
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs px-2 py-1 bg-gray-100 rounded">
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <span className="text-xs px-2 py-1 bg-zinc-800 text-zinc-300 rounded">
                     {typeInfo?.label || page.type}
                   </span>
-                  <span className="text-xs px-2 py-1 bg-gray-100 rounded">
+                  <span className="text-xs px-2 py-1 bg-zinc-800 text-zinc-300 rounded">
                     {PAGE_TEMPLATES.find(t => t.value === page.template)?.label || page.template}
                   </span>
                   {page.isDefault && (
-                    <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                    <span className="text-xs px-2 py-1 bg-teal-900/40 text-teal-400 rounded">
                       Mặc định
                     </span>
                   )}
@@ -311,6 +311,7 @@ export default function AdminPagesPage() {
                   <Button
                     variant="outline"
                     size="sm"
+                      className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
                     onClick={() => handlePreview(page)}
                   >
                     <Eye className="h-4 w-4" />
@@ -318,6 +319,7 @@ export default function AdminPagesPage() {
                   <Button
                     variant="outline"
                     size="sm"
+                      className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
                     onClick={() => {
                       setEditingPage(page);
                       setShowEditDialog(true);
@@ -328,6 +330,7 @@ export default function AdminPagesPage() {
                   <Button
                     variant="outline"
                     size="sm"
+                      className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
                     onClick={() => handleDuplicate(page)}
                   >
                     <Copy className="h-4 w-4" />
@@ -335,7 +338,7 @@ export default function AdminPagesPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-red-500 hover:text-red-600"
+                      className="border-zinc-700 text-red-400 hover:bg-red-950/30 hover:border-red-800"
                     onClick={() => handleDeletePage(page.id)}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -348,11 +351,11 @@ export default function AdminPagesPage() {
 
         {pages.length === 0 && (
           <div className="col-span-full">
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <FileText className="h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-gray-500 mb-4">Chưa có trang nào</p>
-                <Button onClick={() => setShowAddDialog(true)}>
+            <Card className="border-zinc-800 bg-[#111113]">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <FileText className="h-12 w-12 text-zinc-600 mb-4" />
+                  <p className="text-zinc-500 mb-4">Chưa có trang nào</p>
+                  <Button className="bg-teal-600 hover:bg-teal-500 text-white" onClick={() => setShowAddDialog(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Tạo trang đầu tiên
                 </Button>
@@ -364,15 +367,16 @@ export default function AdminPagesPage() {
 
       {/* Add Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-[#111113] border-zinc-800 text-zinc-100">
           <DialogHeader>
-            <DialogTitle>Tạo trang mới</DialogTitle>
+            <DialogTitle className="text-zinc-100">Tạo trang mới</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Tiêu đề *</Label>
+                <Label className="text-zinc-400">Tiêu đề *</Label>
                 <Input
+                  className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-teal-500/50"
                   value={newPage.title}
                   onChange={(e) => {
                     setNewPage({ 
@@ -385,8 +389,9 @@ export default function AdminPagesPage() {
                 />
               </div>
               <div>
-                <Label>Slug *</Label>
+                <Label className="text-zinc-400">Slug *</Label>
                 <Input
+                  className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-teal-500/50"
                   value={newPage.slug}
                   onChange={(e) => setNewPage({ ...newPage, slug: generateSlug(e.target.value) })}
                   placeholder="gioi-thieu"
@@ -395,9 +400,9 @@ export default function AdminPagesPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Loại trang</Label>
+                <Label className="text-zinc-400">Loại trang</Label>
                 <select
-                  className="w-full h-10 px-3 border rounded-md"
+                  className="w-full h-10 px-3 border border-zinc-700 bg-zinc-900 text-zinc-100 rounded-lg"
                   value={newPage.type}
                   onChange={(e) => setNewPage({ ...newPage, type: e.target.value })}
                 >
@@ -409,9 +414,9 @@ export default function AdminPagesPage() {
                 </select>
               </div>
               <div>
-                <Label>Giao diện</Label>
+                <Label className="text-zinc-400">Giao diện</Label>
                 <select
-                  className="w-full h-10 px-3 border rounded-md"
+                  className="w-full h-10 px-3 border border-zinc-700 bg-zinc-900 text-zinc-100 rounded-lg"
                   value={newPage.template}
                   onChange={(e) => setNewPage({ ...newPage, template: e.target.value })}
                 >
@@ -422,8 +427,9 @@ export default function AdminPagesPage() {
               </div>
             </div>
             <div>
-              <Label>Tóm tắt</Label>
+              <Label className="text-zinc-400">Tóm tắt</Label>
               <Textarea
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-teal-500/50"
                 value={newPage.excerpt}
                 onChange={(e) => setNewPage({ ...newPage, excerpt: e.target.value })}
                 placeholder="Mô tả ngắn về trang..."
@@ -431,27 +437,29 @@ export default function AdminPagesPage() {
               />
             </div>
             <div>
-              <Label>Nội dung</Label>
+              <Label className="text-zinc-400">Nội dung</Label>
               <Textarea
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-teal-500/50 font-mono text-sm"
                 value={newPage.content}
                 onChange={(e) => setNewPage({ ...newPage, content: e.target.value })}
                 placeholder="Nội dung trang (hỗ trợ HTML)..."
                 rows={10}
-                className="font-mono text-sm"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Meta Title</Label>
+                <Label className="text-zinc-400">Meta Title</Label>
                 <Input
+                  className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-teal-500/50"
                   value={newPage.metaTitle}
                   onChange={(e) => setNewPage({ ...newPage, metaTitle: e.target.value })}
                   placeholder="SEO Title"
                 />
               </div>
               <div>
-                <Label>Meta Description</Label>
+                <Label className="text-zinc-400">Meta Description</Label>
                 <Input
+                  className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-teal-500/50"
                   value={newPage.metaDescription}
                   onChange={(e) => setNewPage({ ...newPage, metaDescription: e.target.value })}
                   placeholder="SEO Description"
@@ -465,9 +473,9 @@ export default function AdminPagesPage() {
                   id="newPublished"
                   checked={newPage.isPublished}
                   onChange={(e) => setNewPage({ ...newPage, isPublished: e.target.checked })}
-                  className="rounded"
+                    className="rounded accent-teal-500"
                 />
-                <Label htmlFor="newPublished" className="cursor-pointer">Xuất bản</Label>
+                <Label htmlFor="newPublished" className="cursor-pointer text-zinc-300">Xuất bản</Label>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -475,17 +483,17 @@ export default function AdminPagesPage() {
                   id="newDefault"
                   checked={newPage.isDefault}
                   onChange={(e) => setNewPage({ ...newPage, isDefault: e.target.checked })}
-                  className="rounded"
+                    className="rounded accent-teal-500"
                 />
-                <Label htmlFor="newDefault" className="cursor-pointer">Làm trang mặc định</Label>
+                <Label htmlFor="newDefault" className="cursor-pointer text-zinc-300">Làm trang mặc định</Label>
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+            <Button variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800" onClick={() => setShowAddDialog(false)}>
               Hủy
             </Button>
-            <Button onClick={handleAddPage} disabled={saving}>
+            <Button className="bg-teal-600 hover:bg-teal-500 text-white" onClick={handleAddPage} disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
               Tạo trang
             </Button>
@@ -495,23 +503,25 @@ export default function AdminPagesPage() {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-[#111113] border-zinc-800 text-zinc-100">
           <DialogHeader>
-            <DialogTitle>Chỉnh sửa trang</DialogTitle>
+            <DialogTitle className="text-zinc-100">Chỉnh sửa trang</DialogTitle>
           </DialogHeader>
           {editingPage && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Tiêu đề *</Label>
+                  <Label className="text-zinc-400">Tiêu đề *</Label>
                   <Input
+                    className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-teal-500/50"
                     value={editingPage.title}
                     onChange={(e) => setEditingPage({ ...editingPage, title: e.target.value })}
                   />
                 </div>
                 <div>
-                  <Label>Slug *</Label>
+                  <Label className="text-zinc-400">Slug *</Label>
                   <Input
+                    className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-teal-500/50"
                     value={editingPage.slug}
                     onChange={(e) => setEditingPage({ ...editingPage, slug: generateSlug(e.target.value) })}
                   />
@@ -519,9 +529,9 @@ export default function AdminPagesPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Loại trang</Label>
+                  <Label className="text-zinc-400">Loại trang</Label>
                   <select
-                    className="w-full h-10 px-3 border rounded-md"
+                    className="w-full h-10 px-3 border border-zinc-700 bg-zinc-900 text-zinc-100 rounded-lg"
                     value={editingPage.type}
                     onChange={(e) => setEditingPage({ ...editingPage, type: e.target.value })}
                   >
@@ -533,9 +543,9 @@ export default function AdminPagesPage() {
                   </select>
                 </div>
                 <div>
-                  <Label>Giao diện</Label>
+                  <Label className="text-zinc-400">Giao diện</Label>
                   <select
-                    className="w-full h-10 px-3 border rounded-md"
+                    className="w-full h-10 px-3 border border-zinc-700 bg-zinc-900 text-zinc-100 rounded-lg"
                     value={editingPage.template}
                     onChange={(e) => setEditingPage({ ...editingPage, template: e.target.value })}
                   >
@@ -546,33 +556,36 @@ export default function AdminPagesPage() {
                 </div>
               </div>
               <div>
-                <Label>Tóm tắt</Label>
+                <Label className="text-zinc-400">Tóm tắt</Label>
                 <Textarea
+                  className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-teal-500/50"
                   value={editingPage.excerpt || ""}
                   onChange={(e) => setEditingPage({ ...editingPage, excerpt: e.target.value })}
                   rows={2}
                 />
               </div>
               <div>
-                <Label>Nội dung</Label>
+                <Label className="text-zinc-400">Nội dung</Label>
                 <Textarea
+                  className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-teal-500/50 font-mono text-sm"
                   value={editingPage.content}
                   onChange={(e) => setEditingPage({ ...editingPage, content: e.target.value })}
                   rows={15}
-                  className="font-mono text-sm"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Meta Title</Label>
+                  <Label className="text-zinc-400">Meta Title</Label>
                   <Input
+                    className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-teal-500/50"
                     value={editingPage.metaTitle || ""}
                     onChange={(e) => setEditingPage({ ...editingPage, metaTitle: e.target.value })}
                   />
                 </div>
                 <div>
-                  <Label>Meta Description</Label>
+                  <Label className="text-zinc-400">Meta Description</Label>
                   <Input
+                    className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:border-teal-500/50"
                     value={editingPage.metaDescription || ""}
                     onChange={(e) => setEditingPage({ ...editingPage, metaDescription: e.target.value })}
                   />
@@ -585,9 +598,9 @@ export default function AdminPagesPage() {
                     id="editPublished"
                     checked={editingPage.isPublished}
                     onChange={(e) => setEditingPage({ ...editingPage, isPublished: e.target.checked })}
-                    className="rounded"
+                      className="rounded accent-teal-500"
                   />
-                  <Label htmlFor="editPublished" className="cursor-pointer">Xuất bản</Label>
+                  <Label htmlFor="editPublished" className="cursor-pointer text-zinc-300">Xuất bản</Label>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -595,18 +608,18 @@ export default function AdminPagesPage() {
                     id="editDefault"
                     checked={editingPage.isDefault}
                     onChange={(e) => setEditingPage({ ...editingPage, isDefault: e.target.checked })}
-                    className="rounded"
+                      className="rounded accent-teal-500"
                   />
-                  <Label htmlFor="editDefault" className="cursor-pointer">Làm trang mặc định</Label>
+                  <Label htmlFor="editDefault" className="cursor-pointer text-zinc-300">Làm trang mặc định</Label>
                 </div>
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+            <Button variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800" onClick={() => setShowEditDialog(false)}>
               Hủy
             </Button>
-            <Button onClick={handleUpdatePage} disabled={saving}>
+            <Button className="bg-teal-600 hover:bg-teal-500 text-white" onClick={handleUpdatePage} disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
               Lưu
             </Button>
@@ -616,16 +629,16 @@ export default function AdminPagesPage() {
 
       {/* Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-[#111113] border-zinc-800 text-zinc-100">
           <DialogHeader>
-            <DialogTitle>Xem trước nội dung</DialogTitle>
+            <DialogTitle className="text-zinc-100">Xem trước nội dung</DialogTitle>
           </DialogHeader>
           <div 
-            className="prose max-w-none p-6 bg-gray-50 rounded-lg"
+            className="prose prose-invert max-w-none p-6 bg-zinc-900 rounded-lg border border-zinc-800"
             dangerouslySetInnerHTML={{ __html: previewContent }}
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPreview(false)}>
+            <Button variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800" onClick={() => setShowPreview(false)}>
               Đóng
             </Button>
           </DialogFooter>

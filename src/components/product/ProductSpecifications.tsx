@@ -8,6 +8,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface Specification {
     id: string;
@@ -21,6 +22,7 @@ interface ProductSpecificationsProps {
 }
 
 export default function ProductSpecifications({ slug }: ProductSpecificationsProps) {
+    const { t } = useLanguage();
     const [specifications, setSpecifications] = useState<Specification[]>([]);
 
     useEffect(() => {
@@ -39,7 +41,7 @@ export default function ProductSpecifications({ slug }: ProductSpecificationsPro
         <div className="bg-white rounded-2xl border-2 border-slate-100 p-6 shadow-lg">
             <h3 className="text-xl font-black text-slate-800 mb-4 flex items-center gap-2">
                 <span className="text-2xl">📋</span>
-                Thông Số Kỹ Thuật
+                {t("productSpecs.title")}
             </h3>
             <div className="space-y-3">
                 {specifications.map((spec, index) => (

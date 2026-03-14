@@ -88,6 +88,7 @@ export default function CheckoutFormSaaS({
                         totalPrice={checkout.totalPrice}
                         formErrors={checkout.formErrors}
                         onNext={checkout.handleOrder}
+                        isSubmitting={checkout.isSubmitting}
                     />
 
                     {/* Order Notes — inline below shipping form */}
@@ -155,7 +156,7 @@ export default function CheckoutFormSaaS({
             <p className="mt-5 text-center text-[10px] text-slate-300">
                 {vi ? "Hỗ trợ:" : "Support:"}{" "}
                 <Link href="/contact" className="hover:text-slate-500 transition-colors">
-                    support@likefood.com
+                    {vi ? "Liên hệ hỗ trợ" : "Contact support"}
                 </Link>
             </p>
         </div>

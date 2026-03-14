@@ -17,6 +17,7 @@ import {
     ORDER_STATUS_VALUES,
     normalizeOrderStatus,
 } from "@/lib/commerce";
+import { onOrderCompleted, onOrderRefunded } from "@/lib/referral/events.service";
 
 type SessionUser = {
     role?: string;
@@ -155,6 +156,17 @@ export async function PATCH(
             await createOrderNotification(order.userId, order.id, status, order.total);
         } catch (e) {
             logger.error("Failed to send order notification", e as Error, { context: "order-status" });
+        }
+
+        // Referral system integration — trigger on order completion/cancellation
+        try {
+            if (status === ORDER_STATUS.COMPLETED && previousStatus !== ORDER_STATUS.COMPLETED) {
+                await onOrderCompleted(id);
+            } else if (status === ORDER_STATUS.CANCELLED && previousStatus !== ORDER_STATUS.CANCELLED) {
+                await onOrderRefunded(id, `Order cancelled by admin`);
+            }
+        } catch (e) {
+            logger.error("Referral event processing failed", e as Error, { context: "referral-event" });
         }
 
         return NextResponse.json({

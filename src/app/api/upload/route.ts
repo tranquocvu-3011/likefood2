@@ -13,7 +13,7 @@ import { join } from "path";
 import { randomUUID } from "crypto";
 import { logger } from "@/lib/logger";
 
-// N-02: Allowed file signatures (magic bytes) for image types
+// Allowed file signatures (magic bytes) for image types
 const ALLOWED_MAGIC_BYTES: { signature: number[]; ext: string }[] = [
     { signature: [0xFF, 0xD8, 0xFF], ext: "jpg" },           // JPEG
     { signature: [0x89, 0x50, 0x4E, 0x47], ext: "png" },     // PNG
@@ -82,7 +82,7 @@ export async function POST(req: Request) {
                 }, { status: 400 });
             }
 
-            // N-02: Validate extension whitelist
+            // Validate extension whitelist
             const ext = getSafeExtension(file.name);
             if (!ext) {
                 return NextResponse.json({
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
                 }, { status: 400 });
             }
 
-            // N-02: Validate actual file content via magic bytes
+            // Validate actual file content via magic bytes
             const headerBytes = await file.slice(0, 16).arrayBuffer();
             const headerBuffer = Buffer.from(headerBytes);
             if (!isAllowedImageBuffer(headerBuffer)) {

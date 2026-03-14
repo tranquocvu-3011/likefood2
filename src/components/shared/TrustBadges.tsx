@@ -5,9 +5,12 @@
  * https://github.com/tranquocvu-3011/likefood
  */
 
-import { ShieldCheck, Truck, RefreshCw, CreditCard } from "lucide-react";
+"use client";
 
-const BADGES = [
+import { ShieldCheck, Truck, RefreshCw, CreditCard } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/context";
+
+const BADGES_VI = [
     {
         icon: ShieldCheck,
         title: "100% Chính Hãng",
@@ -19,7 +22,7 @@ const BADGES = [
     {
         icon: Truck,
         title: "Miễn Phí Vận Chuyển",
-        desc: "Đơn từ 399K trở lên",
+        desc: "Đơn từ $50 trở lên",
         color: "text-sky-600",
         bg: "bg-sky-50 hover:bg-sky-100",
         border: "border-sky-100",
@@ -42,10 +45,48 @@ const BADGES = [
     },
 ];
 
+const BADGES_EN = [
+    {
+        icon: ShieldCheck,
+        title: "100% Authentic",
+        desc: "Clear origin & quality",
+        color: "text-emerald-600",
+        bg: "bg-emerald-50 hover:bg-emerald-100",
+        border: "border-emerald-100",
+    },
+    {
+        icon: Truck,
+        title: "Free Shipping",
+        desc: "Orders $50 and above",
+        color: "text-sky-600",
+        bg: "bg-sky-50 hover:bg-sky-100",
+        border: "border-sky-100",
+    },
+    {
+        icon: RefreshCw,
+        title: "Easy Returns",
+        desc: "30-day support",
+        color: "text-amber-600",
+        bg: "bg-amber-50 hover:bg-amber-100",
+        border: "border-amber-100",
+    },
+    {
+        icon: CreditCard,
+        title: "Secure Payment",
+        desc: "SSL encryption & trusted partners",
+        color: "text-violet-600",
+        bg: "bg-violet-50 hover:bg-violet-100",
+        border: "border-violet-100",
+    },
+];
+
 export default function TrustBadges() {
+    const { language } = useLanguage();
+    const badges = language === "vi" ? BADGES_VI : BADGES_EN;
+
     return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 py-6">
-            {BADGES.map((badge) => (
+            {badges.map((badge) => (
                 <div
                     key={badge.title}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-200 cursor-default group ${badge.bg} ${badge.border}`}

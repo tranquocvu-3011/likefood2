@@ -1,178 +1,132 @@
-"use client";
-
 /**
  * LIKEFOOD - Vietnamese Specialty Marketplace
- * Copyright (c) 2026 LIKEFOOD Team
- * Licensed under the MIT License
- * https://github.com/tranquocvu-3011/likefood
+ * Shipping Policy Page
  */
 
-import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import { ArrowLeft, CheckCircle2, Clock3, MapPin, ShieldCheck, Truck } from "lucide-react";
+import { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
 
-interface PublicSettings {
-    SHIPPING_POLICY_CONTENT?: string;
+export const revalidate = 3600;
+
+type Locale = "vi" | "en";
+
+const SHIPPING_COPY: Record<Locale, {
+    title: string;
+    metaDesc: string;
+    backHome: string;
+    heading: string;
+    section1Title: string;
+    section1Content: string;
+    section2Title: string;
+    section2Content: string;
+    section3Title: string;
+    section3Content: string;
+    section4Title: string;
+    section4Content: string;
+    section5Title: string;
+    commitment1: string;
+    commitment2: string;
+    commitment3: string;
+}> = {
+    vi: {
+        title: "Chính Sách Vận Chuyển | LIKEFOOD",
+        metaDesc: "Chính sách giao hàng của LIKEFOOD - Miễn phí vận chuyển cho đơn từ $500, phạm vi toàn nước Mỹ.",
+        backHome: "← Quay lại trang chủ",
+        heading: "Chính Sách Vận Chuyển",
+        section1Title: "1. Phạm vi giao hàng",
+        section1Content: "LIKEFOOD hiện phục vụ khách hàng trên toàn nước Mỹ. Một số khu vực xa hoặc đặc thù có thể cần thêm thời gian xử lý so với tuyến tiêu chuẩn.",
+        section2Title: "2. Thời gian xử lý",
+        section2Content: "Đơn hàng thường được xác nhận và chuẩn bị trong vòng 24 giờ làm việc. Thời gian giao thực tế phụ thuộc vào phương thức vận chuyển và địa chỉ nhận hàng.",
+        section3Title: "3. Chi phí vận chuyển",
+        section3Content: "Đơn từ <strong>$500</strong> được miễn phí vận chuyển. Với đơn dưới mức này, phí giao hàng sẽ được hiển thị rõ ngay trong bước checkout trước khi bạn xác nhận thanh toán.",
+        section4Title: "4. Theo dõi đơn hàng",
+        section4Content: "Khi đơn đã được bàn giao cho đơn vị vận chuyển, hệ thống sẽ cập nhật mã vận đơn trong chi tiết đơn hàng để bạn dễ theo dõi tiến trình giao nhận.",
+        section5Title: "5. Cam kết",
+        commitment1: "Thông tin giao hàng minh bạch",
+        commitment2: "Theo dõi đơn sau khi cập nhật mã vận đơn",
+        commitment3: "Hỗ trợ khách hàng 24/7",
+    },
+    en: {
+        title: "Shipping Policy | LIKEFOOD",
+        metaDesc: "LIKEFOOD shipping policy - Free shipping for orders over $500, nationwide U.S. delivery.",
+        backHome: "← Back to home",
+        heading: "Shipping Policy",
+        section1Title: "1. Delivery area",
+        section1Content: "LIKEFOOD currently serves customers across the United States. Some remote or special areas may require additional processing time compared to standard routes.",
+        section2Title: "2. Processing time",
+        section2Content: "Orders are usually confirmed and prepared within 24 business hours. Actual delivery time depends on shipping method and delivery address.",
+        section3Title: "3. Shipping cost",
+        section3Content: "Orders from <strong>$500</strong> qualify for free shipping. For orders below this threshold, shipping fees will be clearly displayed at checkout before you confirm payment.",
+        section4Title: "4. Order tracking",
+        section4Content: "Once the order is handed to the courier, the system will update the tracking number in your order details so you can easily track delivery progress.",
+        section5Title: "5. Commitments",
+        commitment1: "Transparent shipping information",
+        commitment2: "Order tracking after tracking number update",
+        commitment3: "24/7 customer support",
+    },
+};
+
+export async function generateMetadata(): Promise<Metadata> {
+    const cookieStore = await cookies();
+    const locale: Locale = cookieStore.get("language")?.value === "en" ? "en" : "vi";
+    const copy = SHIPPING_COPY[locale];
+
+    return {
+        title: copy.title,
+        description: copy.metaDesc,
+        alternates: { canonical: "/policies/shipping" },
+    };
 }
 
-const DEFAULT_POLICY = [
-    {
-        title: "Phạm vi giao hàng",
-        body:
-            "LIKEFOOD hiện phục vụ khách hàng trên toàn nước Mỹ. Một số khu vực xa hoặc đặc thù có thể cần thêm thời gian xử lý so với tuyến tiêu chuẩn.",
-        icon: MapPin,
-    },
-    {
-        title: "Thời gian xử lý",
-        body:
-            "Đơn hàng thường được xác nhận và chuẩn bị trong vòng 24 giờ làm việc. Thời gian giao thực tế phụ thuộc vào phương thức vận chuyển và địa chỉ nhận hàng.",
-        icon: Clock3,
-    },
-    {
-        title: "Chi phí vận chuyển",
-        body:
-            "Đơn từ $500 được miễn phí vận chuyển. Với đơn dưới mức này, phí giao hàng sẽ được hiển thị rõ ngay trong bước checkout trước khi bạn xác nhận thanh toán.",
-        icon: Truck,
-    },
-    {
-        title: "Theo dõi đơn hàng",
-        body:
-            "Khi đơn đã được bàn giao cho đơn vị vận chuyển, hệ thống sẽ cập nhật mã vận đơn trong chi tiết đơn hàng để bạn dễ theo dõi tiến trình giao nhận.",
-        icon: CheckCircle2,
-    },
-] as const;
-
-function normalizeCmsContent(content: string) {
-    return content.replaceAll("$99", "$500").replaceAll("$50", "$500").trim();
-}
-
-export default function ShippingPolicyPage() {
-    const [content, setContent] = useState<string | null>(null);
-
-    useEffect(() => {
-        const load = async () => {
-            try {
-                const response = await fetch("/api/public/settings");
-                if (!response.ok) {
-                    return;
-                }
-
-                const data: PublicSettings = await response.json();
-                if (data.SHIPPING_POLICY_CONTENT) {
-                    setContent(normalizeCmsContent(data.SHIPPING_POLICY_CONTENT));
-                }
-            } catch {
-                // Keep fallback content.
-            }
-        };
-
-        load();
-    }, []);
-
-    const highlights = useMemo(
-        () => [
-            { label: "Freeship", value: "Từ $500" },
-            { label: "Xử lý", value: "Trong 24h làm việc" },
-            { label: "Phạm vi", value: "Toàn nước Mỹ" },
-        ],
-        []
-    );
+export default async function ShippingPolicyPage() {
+    const cookieStore = await cookies();
+    const locale: Locale = cookieStore.get("language")?.value === "en" ? "en" : "vi";
+    const copy = SHIPPING_COPY[locale];
 
     return (
-        <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef6f4_100%)] py-24">
-            <div className="page-container-wide space-y-10">
-                <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.2em] text-slate-500 transition hover:text-primary">
-                    <ArrowLeft className="h-4 w-4" />
-                    Quay lại trang chủ
+        <div className="min-h-screen bg-slate-50 py-12 md:py-20 lg:py-24">
+            <div className="page-container-wide">
+                <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.2em] text-slate-500 transition hover:text-primary mb-12">
+                    {copy.backHome}
                 </Link>
 
-                <section className="overflow-hidden rounded-[2.75rem] border border-slate-200 bg-white shadow-[0_20px_70px_rgba(15,23,42,0.08)]">
-                    <div className="grid gap-8 px-6 py-8 lg:grid-cols-[1.2fr_0.9fr] lg:px-10 lg:py-10">
-                        <div className="space-y-5">
-                            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-primary">
-                                <Truck className="h-4 w-4" />
-                                Chính sách vận chuyển
-                            </div>
-                            <div className="space-y-3">
-                                <h1 className="max-w-3xl text-4xl font-black uppercase tracking-tight text-slate-950 lg:text-5xl">
-                                    Giao hàng rõ ràng hơn, thông tin quan trọng nằm ngay ở phần đầu
-                                </h1>
-                                <p className="max-w-2xl text-base leading-7 text-slate-600 lg:text-lg">
-                                    Đây là bản trình bày lại chính sách vận chuyển theo cách dễ đọc hơn: mốc freeship, thời gian xử lý, phạm vi giao hàng và cách theo dõi đơn đều được tách rõ theo từng khối.
-                                </p>
-                            </div>
-                        </div>
+                <div className="bg-white rounded-3xl shadow-xl p-8 md:p-12 lg:p-16">
+                    <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 mb-6 tracking-tight">
+                        {copy.heading}
+                    </h1>
 
-                        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                            {highlights.map((item) => (
-                                <div key={item.label} className="rounded-[1.75rem] border border-slate-200 bg-slate-50/80 p-4">
-                                    <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">{item.label}</p>
-                                    <p className="mt-2 text-lg font-black text-slate-950">{item.value}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
+                    <div className="prose prose-slate max-w-none prose-headings:font-black prose-headings:tracking-tight">
+                        <section>
+                            <h2>{copy.section1Title}</h2>
+                            <p>{copy.section1Content}</p>
+                        </section>
 
-                {content ? (
-                    <section className="rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
-                        <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
-                            <div>
-                                <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">Nội dung chi tiết</p>
-                                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Bản chính sách hiện hành</h2>
-                            </div>
-                            <div className="whitespace-pre-line rounded-[2rem] border border-slate-200 bg-slate-50 px-5 py-5 text-sm leading-7 text-slate-600 lg:px-6">
-                                {content}
-                            </div>
-                        </div>
-                    </section>
-                ) : (
-                    <section className="grid gap-4 lg:grid-cols-2">
-                        {DEFAULT_POLICY.map((section, index) => {
-                            const Icon = section.icon;
-                            return (
-                                <motion.article
-                                    key={section.title}
-                                    initial={{ opacity: 0, y: 14 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.06 }}
-                                    className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm"
-                                >
-                                    <div className="flex items-start gap-4">
-                                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                                            <Icon className="h-5 w-5" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-xl font-black tracking-tight text-slate-950">{section.title}</h2>
-                                            <p className="mt-3 text-sm leading-7 text-slate-600">{section.body}</p>
-                                        </div>
-                                    </div>
-                                </motion.article>
-                            );
-                        })}
-                    </section>
-                )}
+                        <section>
+                            <h2>{copy.section2Title}</h2>
+                            <p>{copy.section2Content}</p>
+                        </section>
 
-                <section className="grid gap-4 rounded-[2.5rem] border border-slate-200 bg-[linear-gradient(135deg,#0f172a_0%,#14532d_100%)] p-6 text-white shadow-[0_18px_60px_rgba(15,23,42,0.12)] lg:grid-cols-[1fr_auto] lg:items-center">
-                    <div>
-                        <p className="text-xs font-black uppercase tracking-[0.24em] text-white/60">Cam kết vận hành</p>
-                        <h2 className="mt-2 text-2xl font-black tracking-tight">Thông tin giao hàng được làm rõ để giảm bất ngờ ở bước checkout</h2>
-                        <p className="mt-2 max-w-2xl text-sm leading-6 text-white/75">
-                            LIKEFOOD hiển thị phí vận chuyển trước khi bạn xác nhận đơn, đồng thời cập nhật tiến trình giao nhận trong trang chi tiết đơn hàng sau khi hệ thống xử lý xong.
-                        </p>
+                        <section>
+                            <h2>{copy.section3Title}</h2>
+                            <p dangerouslySetInnerHTML={{ __html: copy.section3Content }} />
+                        </section>
+
+                        <section>
+                            <h2>{copy.section4Title}</h2>
+                            <p>{copy.section4Content}</p>
+                        </section>
+
+                        <section>
+                            <h2>{copy.section5Title}</h2>
+                            <ul>
+                                <li>{copy.commitment1}</li>
+                                <li>{copy.commitment2}</li>
+                                <li>{copy.commitment3}</li>
+                            </ul>
+                        </section>
                     </div>
-                    <div className="space-y-3 rounded-[1.75rem] border border-white/10 bg-white/8 p-5 backdrop-blur">
-                        <div className="flex items-center gap-3 text-sm font-bold text-white/85">
-                            <ShieldCheck className="h-4 w-4 text-emerald-300" />
-                            Thông tin giao hàng minh bạch
-                        </div>
-                        <div className="flex items-center gap-3 text-sm font-bold text-white/85">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-300" />
-                            Theo dõi đơn sau khi cập nhật mã vận đơn
-                        </div>
-                    </div>
-                </section>
+                </div>
             </div>
         </div>
     );

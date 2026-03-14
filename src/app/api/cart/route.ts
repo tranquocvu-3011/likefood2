@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
         const { productId: validProductId, variantId, quantity } = validationResult.data;
         productId = validProductId;
 
-        // SEC-04: Use transaction to prevent race condition
+        // Use transaction to prevent race condition
         // All stock checks and cart updates happen atomically
         const result = await prisma.$transaction(async (tx) => {
             // 1. Verify product exists and has stock (inside transaction)

@@ -53,8 +53,8 @@ function buildEmailBody(
   } else {
     body =
       language === "vi"
-        ? "Cảm ơn bạn đã quan tâm đến LIKEFOOD. Nếu cần hỗ trợ, hãy liên hệ support@likefood.com."
-        : "Thank you for your interest in LIKEFOOD. For support, contact support@likefood.com.";
+        ? "Cảm ơn bạn đã quan tâm đến LIKEFOOD. Nếu cần hỗ trợ, hãy liên hệ tranquocvu3011@gmail.com."
+        : "Thank you for your interest in LIKEFOOD. For support, contact tranquocvu3011@gmail.com.";
   }
   return `<!DOCTYPE html><html><body style="font-family:sans-serif;line-height:1.6;max-width:600px;margin:0 auto;padding:20px;"><p>${greeting}</p><p>${body}</p><p>${signOff}</p></body></html>`;
 }

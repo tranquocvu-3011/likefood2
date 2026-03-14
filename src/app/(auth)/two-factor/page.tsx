@@ -76,12 +76,12 @@ function TwoFactorContent() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, otp: finalOtp }),
             });
-            const data = await res.json();
+            await res.json();
             if (res.ok) {
                 toast.success(t("auth.verify2FASuccess"));
                 router.push(callbackUrl);
             } else {
-                toast.error(data.error || t("auth.invalidOTP2FA"));
+                toast.error(t("auth.invalidOTP2FA"));
                 setOtp(["", "", "", "", "", ""]);
                 inputRefs.current[0]?.focus();
             }

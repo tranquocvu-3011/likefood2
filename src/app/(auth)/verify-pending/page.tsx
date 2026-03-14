@@ -17,7 +17,8 @@ import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n/context";
 
 function VerifyPendingContent() {
-    const { t } = useLanguage();
+    const { t, isVietnamese } = useLanguage();
+    const tr = (viText: string, enKey: string) => (isVietnamese ? viText : t(enKey));
     const searchParams = useSearchParams();
     const router = useRouter();
     const email = searchParams.get("email") || "";
@@ -55,7 +56,7 @@ function VerifyPendingContent() {
                 setResendSuccess(true);
                 setCountdown(60);
                 setCanResend(false);
-                toast.success(t("auth.newOTP2FASent"));
+                toast.success(tr("Mã xác thực mới đã được gửi!", "auth.verificationCodeResent"));
             } else {
                 toast.error(t("auth.resend2FAFailed"));
             }
@@ -156,7 +157,7 @@ function VerifyPendingContent() {
                         className="w-full py-4 rounded-2xl bg-slate-900 text-white font-bold uppercase tracking-widest text-sm hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         {isResending ? (
-                            <><Loader2 className="w-4 h-4 animate-spin" /> {t("auth.sending")}...</>
+                            <><Loader2 className="w-4 h-4 animate-spin" /> {t("auth.sending")}</>
                         ) : canResend ? (
                             <><RefreshCw className="w-4 h-4" /> {t("auth.resendEmail")}</>
                         ) : (
@@ -169,7 +170,7 @@ function VerifyPendingContent() {
                         href={`/resend-verify?email=${encodeURIComponent(email)}&step=otp`}
                         className="mt-4 w-full py-3 rounded-2xl border-2 border-emerald-200 text-emerald-700 font-bold text-sm hover:bg-emerald-50 transition-all flex items-center justify-center gap-2"
                     >
-                        <CheckCircle2 className="w-4 h-4" /> Đã có mã OTP? Nhập mã tại đây
+                        <CheckCircle2 className="w-4 h-4" /> {tr("Đã có mã OTP? Nhập mã tại đây", "auth.alreadyHaveOtp")}
                     </Link>
 
                     <p className="mt-6 text-xs text-slate-400 font-medium">

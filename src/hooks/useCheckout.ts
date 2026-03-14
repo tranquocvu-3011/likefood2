@@ -291,6 +291,8 @@ export function useCheckout(language: string) {
 
     // ── Handle Order Submission ──
     const handleOrder = useCallback(async () => {
+        // Prevent double-submit
+        if (isSubmitting) return;
         // Validate shipping form before creating order
         if (!validateForm()) {
             return;

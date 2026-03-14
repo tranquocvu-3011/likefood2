@@ -21,6 +21,9 @@ export interface CartItem {
     name: string;
     slug?: string;
     price: number;
+    originalPrice?: number;
+    salePrice?: number;
+    isOnSale?: boolean;
     quantity: number;
     image?: string;
     inventory?: number;
@@ -137,6 +140,9 @@ export function CartItemList({
                             </div>
                             <PriceDisplay
                                 currentPrice={item.price}
+                                originalPrice={item.originalPrice}
+                                salePrice={item.salePrice}
+                                isOnSale={item.isOnSale || (item.originalPrice != null && item.originalPrice > item.price)}
                                 size="md"
                                 className="mt-1"
                                 showDiscountBadge={false}

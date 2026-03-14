@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/hooks/useWishlist";
 import { toast } from "sonner";
+import { useLanguage } from "@/lib/i18n/context";
+import PriceDisplay from "@/components/ui/price-display";
 
 interface Product {
     id: string;
@@ -43,6 +45,7 @@ export function QuickViewModal({ isOpen, onClose, productId }: QuickViewModalPro
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const { addItem } = useCart();
     const { isInWishlist, toggleWishlist } = useWishlist();
+    const { t, isVietnamese } = useLanguage();
 
     useEffect(() => {
         if (isOpen && productId) {
@@ -57,7 +60,7 @@ export function QuickViewModal({ isOpen, onClose, productId }: QuickViewModalPro
             if (res.ok) {
                 const data = await res.json();
                 setProduct(data);
-                setSelectedImage(data.image);
+                setSelectedImage(data.image || data.images?.[0]?.imageUrl || null);
             }
         } catch (error) {
             console.error("Failed to fetch product:", error);
@@ -68,10 +71,21 @@ export function QuickViewModal({ isOpen, onClose, productId }: QuickViewModalPro
     const handleAddToCart = () => {
         if (!product) return;
 
+        const hasSalePrice = product.salePrice != null && product.salePrice < product.price;
+        const currentPrice = (hasSalePrice ? product.salePrice : product.price) ?? product.price;
+        const comparePrice = product.originalPrice != null && product.originalPrice > currentPrice
+            ? product.originalPrice
+            : hasSalePrice
+                ? product.price
+                : undefined;
+
         const added = addItem({
             productId: product.id,
             name: product.name,
-            price: product.salePrice || product.price,
+            price: currentPrice,
+            originalPrice: comparePrice,
+            salePrice: comparePrice ? currentPrice : undefined,
+            isOnSale: Boolean(comparePrice),
             image: product.image || undefined,
             quantity,
             slug: product.slug,
@@ -87,18 +101,23 @@ export function QuickViewModal({ isOpen, onClose, productId }: QuickViewModalPro
 
         const isNowInWishlist = await toggleWishlist(product.id);
         if (isNowInWishlist) {
-            toast.success("Đã thêm vào yêu thích");
+            toast.success(t('shop.addedToWishlist'));
         } else {
-            toast.info("Đã xóa khỏi yêu thích");
+            toast.info(t('shop.removedFromWishlist'));
         }
     };
 
     if (!isOpen) return null;
 
-    const displayPrice = product?.salePrice || product?.price || 0;
-    const discount = product?.originalPrice && product.originalPrice > displayPrice
-        ? Math.round((1 - displayPrice / product.originalPrice) * 100)
-        : 0;
+    const hasSalePrice = product ? (product.salePrice != null && product.salePrice < product.price) : false;
+    const displayPrice = product ? (hasSalePrice ? product.salePrice! : product.price) : 0;
+    const comparePrice = product
+        ? (product.originalPrice != null && product.originalPrice > displayPrice
+            ? product.originalPrice
+            : hasSalePrice
+                ? product.price
+                : undefined)
+        : undefined;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -139,11 +158,6 @@ export function QuickViewModal({ isOpen, onClose, productId }: QuickViewModalPro
                                 </div>
                             )}
 
-                            {discount > 0 && (
-                                <div className="absolute top-4 left-4 px-3 py-1 bg-red-500 text-white text-sm font-black rounded-full">
-                                    -{discount}%
-                                </div>
-                            )}
                         </div>
 
                         {/* Content Section */}
@@ -154,7 +168,7 @@ export function QuickViewModal({ isOpen, onClose, productId }: QuickViewModalPro
                                     onClick={onClose}
                                     className="text-sm text-primary hover:underline mb-2 block"
                                 >
-                                    Xem chi tiết
+                                    {t('shopPage.viewDetails')}
                                 </Link>
 
                                 <h2 className="text-2xl font-black uppercase tracking-tight mb-2">
@@ -176,21 +190,21 @@ export function QuickViewModal({ isOpen, onClose, productId }: QuickViewModalPro
                                             ))}
                                         </div>
                                         <span className="text-sm text-slate-500">
-                                            ({product.reviewCount} đánh giá)
+                                            ({product.reviewCount} {t('shop.reviews')})
                                         </span>
                                     </div>
                                 )}
 
                                 {/* Price */}
-                                <div className="flex items-baseline gap-3 mb-4">
-                                    <span className="text-3xl font-black text-primary">
-                                        ${displayPrice.toFixed(2)}
-                                    </span>
-                                    {product.originalPrice && product.originalPrice > displayPrice && (
-                                        <span className="text-lg text-slate-400 line-through">
-                                            ${product.originalPrice.toFixed(2)}
-                                        </span>
-                                    )}
+                                <div className="mb-4">
+                                    <PriceDisplay
+                                        currentPrice={displayPrice}
+                                        originalPrice={comparePrice}
+                                        salePrice={comparePrice ? displayPrice : undefined}
+                                        isOnSale={!!comparePrice}
+                                        size="lg"
+                                        showDiscountBadge={false}
+                                    />
                                 </div>
 
                                 {/* Description */}
@@ -210,15 +224,15 @@ export function QuickViewModal({ isOpen, onClose, productId }: QuickViewModalPro
                                                 : "text-red-600"
                                             }`}>
                                             {product.inventory > 0
-                                                ? `Còn ${product.inventory} sản phẩm`
-                                                : "Hết hàng"}
+                                                 ? t('shop.inStock')
+                                                : t('shop.outOfStock')}
                                         </p>
                                     )}
                                 </div>
 
                                 {/* Quantity Selector */}
                                 <div className="flex items-center gap-4 mb-6">
-                                    <span className="text-sm font-bold text-slate-500">Số lượng:</span>
+                                    <span className="text-sm font-bold text-slate-500">{t('shop.quantity')}:</span>
                                     <div className="flex items-center border border-slate-200 rounded-full">
                                         <button
                                             onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -245,7 +259,7 @@ export function QuickViewModal({ isOpen, onClose, productId }: QuickViewModalPro
                                     className="flex-1 h-14 rounded-full bg-primary hover:bg-primary/90 font-black uppercase tracking-widest gap-2"
                                 >
                                     <ShoppingCart className="w-5 h-5" />
-                                    Thêm vào giỏ
+                                    {t('shop.addToCart')}
                                 </Button>
 
                                 <button
@@ -268,7 +282,7 @@ export function QuickViewModal({ isOpen, onClose, productId }: QuickViewModalPro
                     </div>
                 ) : (
                     <div className="p-8 text-center">
-                        <p className="text-slate-500">Không tìm thấy sản phẩm</p>
+                        <p className="text-slate-500">{t('shop.productNotFound')}</p>
                     </div>
                 )}
             </div>

@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Loader2, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
@@ -22,6 +22,7 @@ type PostFormData = {
     summary: string;
     content: string;
     image: string;
+    galleryImages: string[];
     authorName: string;
     category: string;
     isPublished: boolean;
@@ -29,7 +30,9 @@ type PostFormData = {
 };
 
 interface PostFormProps {
-    initialData?: Partial<PostFormData>;
+    initialData?: Partial<PostFormData> & {
+        images?: Array<{ imageUrl: string; order: number }>;
+    };
 }
 
 export default function PostForm({ initialData }: PostFormProps) {
@@ -40,6 +43,7 @@ export default function PostForm({ initialData }: PostFormProps) {
         summary: initialData?.summary || "",
         content: initialData?.content || "",
         image: initialData?.image || "",
+        galleryImages: initialData?.images?.map((img) => img.imageUrl) || initialData?.galleryImages || [],
         authorName: initialData?.authorName || "LIKEFOOD",
         category: initialData?.category || "Tin tức",
         isPublished: initialData?.isPublished ?? true,
@@ -51,8 +55,8 @@ export default function PostForm({ initialData }: PostFormProps) {
         setIsSubmitting(true);
 
         try {
-            const url = initialData ? `/api/admin/posts/${initialData.id}` : "/api/admin/posts";
-            const method = initialData ? "PUT" : "POST";
+            const url = initialData?.id ? `/api/admin/posts/${initialData.id}` : "/api/admin/posts";
+            const method = initialData?.id ? "PUT" : "POST";
 
             const res = await fetch(url, {
                 method,
@@ -61,7 +65,7 @@ export default function PostForm({ initialData }: PostFormProps) {
             });
 
             if (res.ok) {
-                toast.success(initialData ? "Cập nhật bài viết thành công" : "Tạo bài viết thành công");
+                toast.success(initialData?.id ? "Cập nhật bài viết thành công" : "Tạo bài viết thành công");
                 router.push("/admin/posts");
                 router.refresh();
             } else {
@@ -87,7 +91,7 @@ export default function PostForm({ initialData }: PostFormProps) {
                         <span className="text-sm font-bold">Quay lại danh sách</span>
                     </Link>
                     <h1 className="text-4xl font-black uppercase tracking-tighter">
-                        {initialData ? "Chỉnh sửa bài viết" : "Thêm bài viết mới"}
+                        {initialData?.id ? "Chỉnh sửa bài viết" : "Thêm bài viết mới"}
                     </h1>
                 </div>
             </div>
@@ -132,8 +136,8 @@ export default function PostForm({ initialData }: PostFormProps) {
                                     rows={15}
                                     value={formData.content}
                                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                                    className="w-full bg-slate-50 border-none ring-1 ring-slate-100 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium resize-none"
-                                    placeholder="Nhập nội dung bài viết ở đây..."
+                                    className="w-full bg-slate-50 border-none ring-1 ring-slate-100 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium resize-none font-mono text-sm"
+                                    placeholder="Nhập nội dung bài viết (hỗ trợ Markdown)..."
                                 />
                             </div>
 
@@ -162,6 +166,7 @@ export default function PostForm({ initialData }: PostFormProps) {
                                     <option value="Khuyến mãi">Khuyến mãi</option>
                                     <option value="Cẩm nang">Cẩm nang</option>
                                     <option value="Sức khỏe">Sức khỏe</option>
+                                    <option value="Hậu trường vận hành">Hậu trường vận hành</option>
                                 </select>
                             </div>
 
@@ -195,6 +200,7 @@ export default function PostForm({ initialData }: PostFormProps) {
                                 </div>
                             </div>
 
+                            {/* Cover Image */}
                             <div className="md:col-span-2 space-y-4">
                                 <label className="text-xs font-black uppercase tracking-widest text-slate-400">
                                     Ảnh bìa bài viết *
@@ -204,6 +210,26 @@ export default function PostForm({ initialData }: PostFormProps) {
                                     onChange={(urls) => setFormData({ ...formData, image: urls[urls.length - 1] || "" })}
                                     onRemove={() => setFormData({ ...formData, image: "" })}
                                     disabled={isSubmitting}
+                                />
+                            </div>
+
+                            {/* Gallery Images */}
+                            <div className="md:col-span-2 space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <ImagePlus className="w-5 h-5 text-emerald-600" />
+                                    <label className="text-xs font-black uppercase tracking-widest text-slate-400">
+                                        Thư viện ảnh bài viết (nhiều ảnh)
+                                    </label>
+                                </div>
+                                <p className="text-xs text-slate-400 -mt-2">
+                                    Thêm nhiều ảnh minh họa cho bài viết. Ảnh sẽ hiển thị dưới dạng gallery trong trang chi tiết.
+                                </p>
+                                <ImageUpload
+                                    value={formData.galleryImages}
+                                    onChange={(urls) => setFormData({ ...formData, galleryImages: urls })}
+                                    onRemove={(url) => setFormData({ ...formData, galleryImages: formData.galleryImages.filter(u => u !== url) })}
+                                    disabled={isSubmitting}
+                                    multiple
                                 />
                             </div>
                         </div>
@@ -228,7 +254,7 @@ export default function PostForm({ initialData }: PostFormProps) {
                                 ) : (
                                     <>
                                         <Save className="w-6 h-6 mr-2" />
-                                        {initialData ? "Lưu thay đổi" : "Đăng bài viết"}
+                                        {initialData?.id ? "Lưu thay đổi" : "Đăng bài viết"}
                                     </>
                                 )}
                             </Button>

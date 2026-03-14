@@ -52,30 +52,15 @@ const baseContactInfo = [
 ];
 
 const socialLinks = [
-    { name: "Facebook", icon: Facebook, href: "https://www.facebook.com/profile.php?id=100076170558548", color: "bg-blue-600" },
-    { name: "Instagram", icon: Instagram, href: "https://instagram.com/likefood", color: "bg-gradient-to-br from-purple-600 to-pink-500" },
-];
-
-const faqs = [
-    {
-        question: "Thời gian giao hàng mất bao lâu?",
-        answer: "Đơn hàng thường được giao trong 3-7 ngày làm việc tùy khu vực tại Hoa Kỳ.",
-    },
-    {
-        question: "Có hỗ trợ đổi trả không?",
-        answer: "Có, chúng tôi hỗ trợ đổi trả trong vòng 7 ngày nếu sản phẩm bị lỗi hoặc không đúng mô tả.",
-    },
-    {
-        question: "Phương thức thanh toán nào được chấp nhận?",
-        answer: "Chúng tôi chấp nhận Visa, Mastercard, American Express, PayPal và chuyển khoản ngân hàng.",
-    },
+    { name: "Facebook", icon: Facebook, href: "https://www.facebook.com/profile.php?id=100076170558548", color: "bg-blue-600", key: "FACEBOOK_URL" },
+    { name: "Instagram", icon: Instagram, href: "https://instagram.com/likefood", color: "bg-gradient-to-br from-purple-600 to-pink-500", key: "INSTAGRAM_URL" },
 ];
 
 export default function ContactPage() {
-    const { t } = useLanguage();
+    const { t, isVietnamese } = useLanguage();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
-    const [contactInfo, setContactInfo] = useState(baseContactInfo);
+    const [contactData, setContactData] = useState(baseContactInfo);
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -85,6 +70,34 @@ export default function ContactPage() {
     });
     const [isCaptchaValid, setIsCaptchaValid] = useState(false);
     const [turnstileToken, setTurnstileToken] = useState("");
+    const [dynamicSocialLinks, setDynamicSocialLinks] = useState(socialLinks);
+    const [dynamicAddress, setDynamicAddress] = useState("Omaha, NE 68136, United States");
+
+    const localizedContactInfo = [
+        {
+            ...contactData[0],
+            title: t("contact.phone"),
+        },
+        {
+            ...contactData[1],
+            title: t("contact.email"),
+        },
+        {
+            ...contactData[2],
+            title: t("contact.address"),
+        },
+        {
+            ...contactData[3],
+            title: t("contact.workingHours"),
+            value: contactData[3]?.value === baseContactInfo[3].value ? t("contact.workingHoursValue") : contactData[3]?.value,
+        },
+    ];
+
+    const localizedFaqs = [
+        { question: t("contact.faq1Q"), answer: t("contact.faq1A") },
+        { question: t("contact.faq2Q"), answer: t("contact.faq2A") },
+        { question: t("contact.faq3Q"), answer: t("contact.faq3A") },
+    ];
 
     useEffect(() => {
         const loadSettings = async () => {
@@ -92,7 +105,7 @@ export default function ContactPage() {
                 const res = await fetch("/api/public/settings");
                 if (!res.ok) return;
                 const data = await res.json();
-                setContactInfo(
+                setContactData(
                     baseContactInfo.map((info) => {
                         const raw = data[info.key];
                         if (!raw) return info;
@@ -106,6 +119,17 @@ export default function ContactPage() {
                         return { ...info, value: raw };
                     })
                 );
+                // Update social links dynamically
+                setDynamicSocialLinks(
+                    socialLinks.map((link) => {
+                        const url = data[link.key];
+                        return url ? { ...link, href: url } : link;
+                    }).filter(link => link.href)
+                );
+                // Update address for map
+                if (data.SITE_ADDRESS) {
+                    setDynamicAddress(data.SITE_ADDRESS);
+                }
             } catch {
                 // ignore
             }
@@ -138,11 +162,11 @@ export default function ContactPage() {
                 });
                 setTimeout(() => setIsSuccess(false), 5000);
             } else {
-                toast.error(data.error || "Đã có lỗi xảy ra. Vui lòng thử lại.");
+                toast.error(data.error || (isVietnamese ? "Đã có lỗi xảy ra. Vui lòng thử lại." : "An error occurred. Please try again."));
             }
         } catch (error) {
             logger.error("Contact form error", error as Error, { context: 'contact-page' });
-            toast.error("Không thể gửi tin nhắn. Vui lòng thử lại sau.");
+            toast.error(isVietnamese ? "Không thể gửi tin nhắn. Vui lòng thử lại sau." : "Unable to send message. Please try again later.");
         } finally {
             setIsSubmitting(false);
         }
@@ -181,7 +205,7 @@ export default function ContactPage() {
             <section className="relative -mt-8 z-10">
                 <div className="page-container-wide">
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-                        {contactInfo.map((info, index) => (
+                        {localizedContactInfo.map((info, index) => (
                             <motion.a
                                 key={info.key}
                                 href={info.link || undefined}
@@ -248,7 +272,7 @@ export default function ContactPage() {
                                                 value={formData.name}
                                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                                 className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all font-medium text-sm"
-                                                placeholder="Nguyễn Văn A"
+                                                placeholder={isVietnamese ? "Nguyễn Văn A" : "John Doe"}
                                             />
                                         </div>
 
@@ -294,7 +318,7 @@ export default function ContactPage() {
                                                 value={formData.subject}
                                                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                                                 className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all font-medium text-sm"
-                                                placeholder="Câu hỏi về sản phẩm"
+                                                placeholder={isVietnamese ? "Câu hỏi về sản phẩm" : "Question about product"}
                                             />
                                         </div>
                                     </div>
@@ -349,8 +373,9 @@ export default function ContactPage() {
                                 id="map"
                                 className="bg-white rounded-3xl shadow-xl overflow-hidden"
                             >
-                                <iframe
-                                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d96254.84025055428!2d-96.09178885!3d41.2565369!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8793ee4c1a7148d5%3A0x62ede312f2f40a18!2sOmaha%2C%20NE%2C%20USA!5e0!3m2!1sen!2sus!4v1707401234567!5m2!1sen!2sus"
+                            <iframe
+                                    src={`https://www.google.com/maps?q=${encodeURIComponent(dynamicAddress)}&output=embed`}
+                                    title={isVietnamese ? "Bản đồ văn phòng LIKEFOOD" : "LIKEFOOD office map"}
                                     width="100%"
                                     height="300"
                                     style={{ border: 0 }}
@@ -362,7 +387,7 @@ export default function ContactPage() {
                                 <div className="p-5">
                                     <p className="text-sm font-bold text-slate-900 flex items-center gap-2">
                                         <MapPin className="w-4 h-4 text-primary" />
-                                        Omaha, NE 68136, United States
+                                        {dynamicAddress}
                                     </p>
                                 </div>
                             </motion.div>
@@ -376,7 +401,7 @@ export default function ContactPage() {
                             >
                                 <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">{t("contact.connectWithUs")}</h3>
                                 <div className="flex gap-3">
-                                    {socialLinks.map((social) => (
+                                    {dynamicSocialLinks.map((social) => (
                                         <a
                                             key={social.name}
                                             href={social.href}
@@ -399,7 +424,7 @@ export default function ContactPage() {
                             >
                                 <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">{t("contact.faqTitle")}</h3>
                                 <div className="space-y-4">
-                                    {faqs.map((faq, index) => (
+                                    {localizedFaqs.map((faq, index) => (
                                         <div key={index} className="p-4 bg-slate-50 rounded-2xl">
                                             <h4 className="text-sm font-bold text-slate-900 mb-1">{faq.question}</h4>
                                             <p className="text-xs text-slate-500">{faq.answer}</p>

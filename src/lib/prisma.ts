@@ -8,7 +8,7 @@
 import { PrismaClient } from "../generated/client";
 import { validateEnv } from "./env";
 
-// SEC-07: Validate env vars at startup
+// Validate env vars at startup
 // Note: throw (not process.exit) so Next.js handles it gracefully in dev
 try {
   validateEnv();

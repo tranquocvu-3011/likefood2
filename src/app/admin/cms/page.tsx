@@ -9,7 +9,6 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Save, Image as ImageIcon, Info, FileText } from "lucide-react";
 import { toast } from "sonner";
@@ -131,93 +130,81 @@ export default function AdminCmsPage() {
 
     if (isLoading) {
         return (
-            <div className="h-[60vh] flex flex-col items-center justify-center gap-4 text-slate-400">
-                <Loader2 className="w-10 h-10 animate-spin text-primary" />
+            <div className="h-[60vh] flex flex-col items-center justify-center gap-4 text-zinc-500">
+                <Loader2 className="w-10 h-10 animate-spin text-teal-500" />
                 <p className="text-xs font-black uppercase tracking-widest">Đang tải nội dung trang...</p>
             </div>
         );
     }
 
     return (
-        <div className="p-6 lg:p-10 space-y-8 max-w-6xl mx-auto">
+        <div className="p-6 lg:p-8 space-y-6 max-w-5xl mx-auto">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-slate-900 font-outfit uppercase">
+                    <h1 className="text-2xl font-black tracking-tight text-zinc-100 uppercase">
                         Trang & nội dung
                     </h1>
-                    <p className="text-slate-500 font-medium">
+                    <p className="text-zinc-400 font-medium text-sm mt-1">
                         Quản lý hero banner trang chủ và các con số ấn tượng từ dữ liệu thực trong hệ thống.
                     </p>
                 </div>
                 <Button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="bg-primary hover:bg-primary/90 text-white px-8 py-6 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-primary/20 transition-all flex gap-3"
+                    className="bg-teal-600 hover:bg-teal-500 text-white px-5 py-2.5 rounded-xl font-bold uppercase tracking-wide shadow-lg shadow-teal-500/20 transition-all flex gap-2 shrink-0"
                 >
-                    {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     Lưu thay đổi
                 </Button>
             </div>
 
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="space-y-8"
+                className="space-y-6"
             >
                 {/* Hero banner */}
-                <Card className="rounded-[2.5rem] border-slate-100 shadow-sm overflow-hidden">
-                    <CardHeader className="bg-slate-50/60 p-8 border-b border-slate-100 flex flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
-                                <ImageIcon className="w-5 h-5 text-primary" />
-                            </div>
-                            <div>
-                                <CardTitle className="font-outfit font-black text-xs uppercase tracking-widest">
-                                    Hero banner trang chủ
-                                </CardTitle>
-                                <CardDescription className="text-xs text-slate-500 font-medium mt-1">
-                                    Điều chỉnh nội dung hero giống với phần bạn đang thấy ngoài trang chủ.
-                                </CardDescription>
-                            </div>
+                <div className="rounded-2xl border border-zinc-800 bg-[#111113] overflow-hidden">
+                    <div className="bg-zinc-900/60 px-6 py-4 border-b border-zinc-800 flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+                            <ImageIcon className="w-4 h-4 text-teal-400" />
                         </div>
-                    </CardHeader>
-                    <CardContent className="p-8 space-y-6">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                Ảnh banner (URL)
-                            </label>
+                        <div>
+                            <p className="text-xs font-black uppercase tracking-widest text-zinc-100">Hero banner trang chủ</p>
+                            <p className="text-xs text-zinc-500 font-medium mt-0.5">Điều chỉnh nội dung hero giống với phần bạn đang thấy ngoài trang chủ.</p>
+                        </div>
+                    </div>
+                    <div className="p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Ảnh banner (URL)</label>
                             <input
-                                className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-medium text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all outline-none text-xs"
+                                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all"
                                 value={banner.imageUrl}
                                 onChange={(e) => setBanner({ ...banner, imageUrl: e.target.value })}
                                 placeholder="/banner.png hoặc URL đầy đủ"
                             />
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                    Tiêu đề lớn
-                                </label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Tiêu đề lớn</label>
                                 <input
-                                    className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all outline-none"
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all"
                                     value={banner.title}
                                     onChange={(e) => setBanner({ ...banner, title: e.target.value })}
                                     placeholder="Hương vị quê nhà ngay tầm tay bạn"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                    Nút kêu gọi hành động (CTA)
-                                </label>
-                                <div className="grid grid-cols-3 gap-3">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Nút kêu gọi hành động (CTA)</label>
+                                <div className="grid grid-cols-3 gap-2">
                                     <input
-                                        className="col-span-1 bg-slate-50 border-none rounded-2xl px-4 py-3 font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all outline-none text-sm"
+                                        className="col-span-1 bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all"
                                         value={banner.ctaText}
                                         onChange={(e) => setBanner({ ...banner, ctaText: e.target.value })}
                                         placeholder="Mua ngay"
                                     />
                                     <input
-                                        className="col-span-2 bg-slate-50 border-none rounded-2xl px-4 py-3 font-medium text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all outline-none text-xs"
+                                        className="col-span-2 bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all"
                                         value={banner.ctaLink}
                                         onChange={(e) => setBanner({ ...banner, ctaLink: e.target.value })}
                                         placeholder="/products"
@@ -225,199 +212,160 @@ export default function AdminCmsPage() {
                                 </div>
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                Mô tả ngắn dưới tiêu đề
-                            </label>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Mô tả ngắn dưới tiêu đề</label>
                             <textarea
-                                className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-medium text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all outline-none min-h-[100px]"
+                                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all min-h-[90px] resize-none"
                                 value={banner.subtitle}
                                 onChange={(e) => setBanner({ ...banner, subtitle: e.target.value })}
                                 placeholder="LIKEFOOD mang đến hơn 100 loại đặc sản tinh túy nhất từ mọi miền Việt Nam..."
                             />
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
 
                 {/* Con số ấn tượng */}
-                <Card className="rounded-[2.5rem] border-slate-100 shadow-sm overflow-hidden">
-                    <CardHeader className="bg-slate-50/60 p-8 border-b border-slate-100 flex flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
-                                <Info className="w-5 h-5 text-primary" />
-                            </div>
-                            <div>
-                        <CardTitle className="font-outfit font-black text-xs uppercase tracking-widest">
-                            Con số ấn tượng
-                        </CardTitle>
-                                <CardDescription className="text-xs text-slate-500 font-medium mt-1">
-                                    Điều chỉnh các số liệu hiển thị như 111+ sản phẩm, 5 danh mục, 24/7 hỗ trợ...
-                                </CardDescription>
-                            </div>
+                <div className="rounded-2xl border border-zinc-800 bg-[#111113] overflow-hidden">
+                    <div className="bg-zinc-900/60 px-6 py-4 border-b border-zinc-800 flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+                            <Info className="w-4 h-4 text-teal-400" />
                         </div>
-                    </CardHeader>
-                    <CardContent className="p-8 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                    Số sản phẩm hiển thị
-                                </label>
+                        <div>
+                            <p className="text-xs font-black uppercase tracking-widest text-zinc-100">Con số ấn tượng</p>
+                            <p className="text-xs text-zinc-500 font-medium mt-0.5">Điều chỉnh các số liệu như 111+ sản phẩm, 5 danh mục, 24/7 hỗ trợ...</p>
+                        </div>
+                    </div>
+                    <div className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Số sản phẩm hiển thị</label>
                                 <input
                                     type="number"
-                                    className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all outline-none"
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all"
                                     value={settings.STAT_PRODUCTS_COUNT || 0}
                                     onChange={(e) => updateSetting("STAT_PRODUCTS_COUNT", Number(e.target.value || 0))}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                    Số danh mục
-                                </label>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Số danh mục</label>
                                 <input
                                     type="number"
-                                    className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all outline-none"
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all"
                                     value={settings.STAT_CATEGORIES_COUNT || 0}
                                     onChange={(e) => updateSetting("STAT_CATEGORIES_COUNT", Number(e.target.value || 0))}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                    Số giờ hỗ trợ (vd: 24/7)
-                                </label>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Số giờ hỗ trợ (vd: 24/7)</label>
                                 <input
-                                    className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all outline-none"
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all"
                                     value={settings.STAT_SUPPORT_TEXT || ""}
                                     onChange={(e) => updateSetting("STAT_SUPPORT_TEXT", e.target.value)}
                                     placeholder="24/7"
                                 />
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
 
-                {/* Static pages content */}
-                <Card className="rounded-[2.5rem] border-slate-100 shadow-sm overflow-hidden">
-                    <CardHeader className="bg-slate-50/60 p-8 border-b border-slate-100 flex flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
-                                <FileText className="w-5 h-5 text-primary" />
-                            </div>
-                            <div>
-                                <CardTitle className="font-outfit font-black text-xs uppercase tracking-widest">
-                                    Nội dung trang tĩnh
-                                </CardTitle>
-                                <CardDescription className="text-xs text-slate-500 font-medium mt-1">
-                                    Chỉnh sửa nội dung các trang About, Chính sách vận chuyển, Bảo mật và Điều khoản dịch vụ.
-                                </CardDescription>
-                            </div>
+                {/* Nội dung trang tĩnh */}
+                <div className="rounded-2xl border border-zinc-800 bg-[#111113] overflow-hidden">
+                    <div className="bg-zinc-900/60 px-6 py-4 border-b border-zinc-800 flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+                            <FileText className="w-4 h-4 text-teal-400" />
                         </div>
-                    </CardHeader>
-                    <CardContent className="p-8 space-y-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                    Câu chuyện / giới thiệu ABOUT (ABOUT_STORY_TEXT)
-                                </label>
+                        <div>
+                            <p className="text-xs font-black uppercase tracking-widest text-zinc-100">Nội dung trang tĩnh</p>
+                            <p className="text-xs text-zinc-500 font-medium mt-0.5">Chỉnh sửa nội dung các trang About, Chính sách vận chuyển, Bảo mật và Điều khoản.</p>
+                        </div>
+                    </div>
+                    <div className="p-6 space-y-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Câu chuyện About</label>
                                 <textarea
-                                    className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-medium text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all outline-none min-h-[140px] text-sm"
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all min-h-[130px] resize-none"
                                     value={settings.ABOUT_STORY_TEXT || ""}
                                     onChange={(e) => updateSetting("ABOUT_STORY_TEXT", e.target.value)}
-                                    placeholder="Nhập đoạn giới thiệu chính cho trang About (có thể xuống dòng, sẽ hiển thị dạng văn bản đẹp)."
+                                    placeholder="Nhập đoạn giới thiệu chính cho trang About..."
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                    Nội dung Chính sách vận chuyển (SHIPPING_POLICY_CONTENT)
-                                </label>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Chính sách vận chuyển</label>
                                 <textarea
-                                    className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-medium text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all outline-none min-h-[140px] text-sm"
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all min-h-[130px] resize-none"
                                     value={settings.SHIPPING_POLICY_CONTENT || ""}
                                     onChange={(e) => updateSetting("SHIPPING_POLICY_CONTENT", e.target.value)}
-                                    placeholder="Nhập toàn bộ nội dung chính sách vận chuyển. Xuống dòng sẽ được giữ nguyên khi hiển thị."
+                                    placeholder="Nhập toàn bộ nội dung chính sách vận chuyển..."
                                 />
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                    Nội dung Chính sách bảo mật (PRIVACY_POLICY_CONTENT)
-                                </label>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Chính sách bảo mật</label>
                                 <textarea
-                                    className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-medium text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all outline-none min-h-[140px] text-sm"
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all min-h-[130px] resize-none"
                                     value={settings.PRIVACY_POLICY_CONTENT || ""}
                                     onChange={(e) => updateSetting("PRIVACY_POLICY_CONTENT", e.target.value)}
-                                    placeholder="Nhập toàn bộ nội dung chính sách bảo mật."
+                                    placeholder="Nhập toàn bộ nội dung chính sách bảo mật..."
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                    Nội dung Điều khoản dịch vụ (TERMS_OF_SERVICE_CONTENT)
-                                </label>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Điều khoản dịch vụ</label>
                                 <textarea
-                                    className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-medium text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all outline-none min-h-[140px] text-sm"
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all min-h-[130px] resize-none"
                                     value={settings.TERMS_OF_SERVICE_CONTENT || ""}
                                     onChange={(e) => updateSetting("TERMS_OF_SERVICE_CONTENT", e.target.value)}
-                                    placeholder="Nhập toàn bộ nội dung điều khoản dịch vụ."
+                                    placeholder="Nhập toàn bộ nội dung điều khoản dịch vụ..."
                                 />
                             </div>
                         </div>
-                        <p className="text-[11px] text-slate-400 font-medium">
-                            Gợi ý: Bạn có thể copy nội dung hiện tại của các trang này, chỉnh sửa lại rồi dán vào đây. Hệ thống sẽ tự động hiển thị nội dung mới ra
-                            ngoài website với định dạng đẹp (giữ xuống dòng).
+                        <p className="text-[11px] text-zinc-500">
+                            Gợi ý: Copy nội dung hiện tại của các trang, chỉnh sửa rồi dán vào đây. Hệ thống sẽ tự hiển thị nội dung mới với định dạng đẹp.
                         </p>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
 
-                {/* Navigation & Footer Links */}
-                <Card className="rounded-[2.5rem] border-slate-100 shadow-sm overflow-hidden">
-                    <CardHeader className="bg-slate-50/60 p-8 border-b border-slate-100 flex flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
-                                <FileText className="w-5 h-5 text-primary" />
-                            </div>
-                            <div>
-                                <CardTitle className="font-outfit font-black text-xs uppercase tracking-widest">
-                                    Menu &amp; footer links
-                                </CardTitle>
-                                <CardDescription className="text-xs text-slate-500 font-medium mt-1">
-                                    Cấu hình menu chính (trên navbar) và các nhóm link ở footer bằng JSON.
-                                </CardDescription>
-                            </div>
+                {/* Menu & Footer Links */}
+                <div className="rounded-2xl border border-zinc-800 bg-[#111113] overflow-hidden">
+                    <div className="bg-zinc-900/60 px-6 py-4 border-b border-zinc-800 flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+                            <FileText className="w-4 h-4 text-teal-400" />
                         </div>
-                    </CardHeader>
-                    <CardContent className="p-8 space-y-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                    Menu chính trên navbar (NAV_PRIMARY_LINKS)
-                                </label>
+                        <div>
+                            <p className="text-xs font-black uppercase tracking-widest text-zinc-100">Menu & footer links</p>
+                            <p className="text-xs text-zinc-500 font-medium mt-0.5">Cấu hình menu chính (trên navbar) và các nhóm link ở footer bằng JSON.</p>
+                        </div>
+                    </div>
+                    <div className="p-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Menu chính trên navbar (NAV_PRIMARY_LINKS)</label>
                                 <textarea
-                                    className="w-full bg-slate-50 border-none rounded-2xl px-4 py-4 font-mono text-[11px] text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all outline-none min-h-[180px]"
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 font-mono text-[11px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all min-h-[160px] resize-none"
                                     value={settings.NAV_PRIMARY_LINKS || ""}
                                     onChange={(e) => updateSetting("NAV_PRIMARY_LINKS", e.target.value)}
                                     placeholder={`Ví dụ:\n[\n  { "label": "Trang chủ", "href": "/", "icon": "🏠", "highlight": false },\n  { "label": "Flash Sale", "href": "/products?sale=true", "icon": "🔥", "highlight": true }\n]`}
                                 />
-                                <p className="text-[11px] text-slate-400 font-medium">
-                                    Danh sách JSON các item: <code>label</code>, <code>href</code>, <code>icon</code> (emoji tuỳ chọn), <code>highlight</code> (true/false).
+                                <p className="text-[11px] text-zinc-500">
+                                    Danh sách JSON: <code className="text-teal-400">label</code>, <code className="text-teal-400">href</code>, <code className="text-teal-400">icon</code>, <code className="text-teal-400">highlight</code>.
                                 </p>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                    Nhóm link dưới footer (FOOTER_LINK_GROUPS)
-                                </label>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Nhóm link dưới footer (FOOTER_LINK_GROUPS)</label>
                                 <textarea
-                                    className="w-full bg-slate-50 border-none rounded-2xl px-4 py-4 font-mono text-[11px] text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/10 transition-all outline-none min-h-[180px]"
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 font-mono text-[11px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/20 transition-all min-h-[160px] resize-none"
                                     value={settings.FOOTER_LINK_GROUPS || ""}
                                     onChange={(e) => updateSetting("FOOTER_LINK_GROUPS", e.target.value)}
-                                    placeholder={`Ví dụ:\n[\n  {\n    "title": "Sản phẩm",\n    "links": [\n      { "label": "Tất cả đặc sản", "href": "/products" },\n      { "label": "Hải sản khô", "href": "/products?category=seafood" }\n    ]\n  },\n  {\n    "title": "Công ty",\n    "links": [\n      { "label": "Về LIKEFOOD", "href": "/about" },\n      { "label": "Chính sách vận chuyển", "href": "/policies/shipping" }\n    ]\n  }\n]`}
+                                    placeholder={`Ví dụ:\n[\n  {\n    "title": "Sản phẩm",\n    "links": [\n      { "label": "Tất cả đặc sản", "href": "/products" }\n    ]\n  }\n]`}
                                 />
-                                <p className="text-[11px] text-slate-400 font-medium">
-                                    Nếu để trống, hệ thống sẽ dùng các nhóm link mặc định đang có trong footer.
+                                <p className="text-[11px] text-zinc-500">
+                                    Để trống sẽ dùng các nhóm link mặc định trong footer.
                                 </p>
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
             </motion.div>
         </div>
     );

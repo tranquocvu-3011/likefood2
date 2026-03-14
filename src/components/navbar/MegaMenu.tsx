@@ -13,7 +13,7 @@ import Image from "next/image";
 import { ChevronRight, ArrowRight, Package } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/context";
 import { useState, useEffect } from "react";
-import { formatPrice } from "@/lib/currency";
+import PriceDisplay from "@/components/ui/price-display";
 
 interface MegaMenuProps {
     isOpen: boolean;
@@ -26,6 +26,7 @@ interface MenuProduct {
     name: string;
     price: number;
     salePrice: number | null;
+    originalPrice: number | null;
     image: string | null;
 }
 
@@ -147,7 +148,7 @@ export default function MegaMenu({ isOpen, onClose }: MegaMenuProps) {
                                                     {activeCategory.name}
                                                 </h3>
                                                 <p className="text-[11px] text-slate-400 mt-0.5">
-                                                    {activeCategory.products.length} sản phẩm nổi bật
+                                                    {activeCategory.products.length} {t("common.products")}
                                                 </p>
                                             </div>
                                             <Link
@@ -155,14 +156,20 @@ export default function MegaMenu({ isOpen, onClose }: MegaMenuProps) {
                                                 onClick={onClose}
                                                 className="text-[11px] font-bold text-primary hover:text-primary/75 flex items-center gap-1 transition-colors"
                                             >
-                                                Xem tất cả <ArrowRight className="w-3 h-3" />
+                                                {t("common.viewAll")} <ArrowRight className="w-3 h-3" />
                                             </Link>
                                         </div>
 
                                         {/* 4-product grid */}
                                         <div className="grid grid-cols-4 gap-3">
                                             {activeCategory.products.map((product) => {
-                                                const displayPrice = product.salePrice ?? product.price;
+                                                const isOnSale = product.salePrice != null && product.salePrice < product.price;
+                                                const displayPrice = isOnSale ? product.salePrice! : product.price;
+                                                const comparePrice = product.originalPrice && product.originalPrice > displayPrice
+                                                    ? product.originalPrice
+                                                    : isOnSale
+                                                        ? product.price
+                                                        : undefined;
                                                 return (
                                                     <Link
                                                         key={product.id}
@@ -197,9 +204,15 @@ export default function MegaMenu({ isOpen, onClose }: MegaMenuProps) {
                                                             <p className="text-[11px] font-semibold text-slate-800 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                                                                 {product.name}
                                                             </p>
-                                                            <p className="text-[11px] font-bold text-primary mt-1">
-                                                                {formatPrice(displayPrice)}
-                                                            </p>
+                                                            <PriceDisplay
+                                                                currentPrice={displayPrice}
+                                                                originalPrice={comparePrice}
+                                                                salePrice={isOnSale ? displayPrice : undefined}
+                                                                isOnSale={isOnSale}
+                                                                size="sm"
+                                                                showDiscountBadge={false}
+                                                                className="mt-1 !gap-1"
+                                                            />
                                                         </div>
                                                     </Link>
                                                 );

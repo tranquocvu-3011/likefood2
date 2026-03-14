@@ -15,18 +15,58 @@ interface FeaturedProductPreviewProps {
     image: string | null;
     onClick: () => void;
     side: 'left' | 'right';
+    direction: number;
 }
 
-export default function FeaturedProductPreview({ image, onClick, side }: FeaturedProductPreviewProps) {
+const previewVariants = {
+    enter: (params: { side: 'left' | 'right'; direction: number }) => {
+        const { direction } = params;
+        // NEXT (dir=1): everything enters from RIGHT (+x)
+        // PREV (dir=-1): everything enters from LEFT (-x)
+        return {
+            opacity: 0,
+            x: direction > 0 ? 80 : -80,
+            scale: 0.85,
+        };
+    },
+    center: {
+        opacity: 1,
+        x: 0,
+        scale: 1,
+    },
+    exit: (params: { side: 'left' | 'right'; direction: number }) => {
+        const { direction } = params;
+        // NEXT (dir=1): everything exits to LEFT (-x)
+        // PREV (dir=-1): everything exits to RIGHT (+x)
+        return {
+            opacity: 0,
+            x: direction > 0 ? -80 : 80,
+            scale: 0.85,
+        };
+    },
+};
+
+export default function FeaturedProductPreview({ image, onClick, side, direction }: FeaturedProductPreviewProps) {
     return (
         <motion.div
-            initial={{ opacity: 0, x: side === 'left' ? -30 : 30 }}
-            animate={{ opacity: 1, x: 0 }}
+            key={`preview-${side}-${image}`}
+            custom={{ side, direction }}
+            variants={previewVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{
+                type: "tween",
+                duration: 0.4,
+                ease: [0.25, 0.46, 0.45, 0.94],
+                opacity: { duration: 0.3 },
+            }}
             className="hidden lg:flex absolute top-1/2 -translate-y-1/2 z-0"
             style={{
-                width: 'clamp(250px, 35vw, 380px)',
-                left: side === 'left' ? '5%' : 'auto',
-                right: side === 'right' ? '5%' : 'auto'
+                width: 'clamp(160px, 22vw, 250px)',
+                left: side === 'left' ? '6%' : 'auto',
+                right: side === 'right' ? '6%' : 'auto',
+                willChange: 'transform, opacity',
             }}
         >
             <div className="w-full cursor-pointer opacity-100" onClick={onClick}>

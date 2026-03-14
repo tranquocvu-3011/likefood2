@@ -172,8 +172,8 @@ export function shouldEscalate(
 
 export function getEscalationResponse(language: "vi" | "en"): string {
   return language === "vi"
-    ? "Để được hỗ trợ nhanh và chính xác hơn, bạn có thể liên hệ support@likefood.com hoặc để lại nội dung để đội ngũ LIKEFOOD tiếp nhận."
-    : "For faster and more precise support, please contact support@likefood.com or leave your message for the LIKEFOOD team.";
+    ? "Để được hỗ trợ nhanh và chính xác hơn, bạn có thể liên hệ tranquocvu3011@gmail.com hoặc để lại nội dung để đội ngũ LIKEFOOD tiếp nhận."
+    : "For faster and more precise support, please contact tranquocvu3011@gmail.com or leave your message for the LIKEFOOD team.";
 }
 
 export function validateResponse(response: string): { isValid: boolean; issues: string[] } {

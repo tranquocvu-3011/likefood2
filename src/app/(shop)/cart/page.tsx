@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 
 export default function CartPage() {
     const { items, removeItem, updateQuantity, addItem } = useCart();
-    const { t, language } = useLanguage();
+    const { t, language, isVietnamese } = useLanguage();
     const [couponCode, setCouponCode] = useState("");
     const [couponApplied, setCouponApplied] = useState(false);
     const [couponDiscount, setCouponDiscount] = useState(0);

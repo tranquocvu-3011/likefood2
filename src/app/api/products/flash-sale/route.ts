@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LIKEFOOD - Vietnamese Specialty Marketplace
  * Copyright (c) 2026 LIKEFOOD Team
  * Licensed under the MIT License
@@ -25,6 +25,13 @@ export async function GET() {
                 saleEndAt: { gte: now },
                 inventory: { gt: 0 }
             },
+            include: {
+                productImages: {
+                    orderBy: { order: "asc" },
+                    take: 1,
+                    select: { imageUrl: true }
+                }
+            },
             orderBy: [{ saleStartAt: 'desc' }, { createdAt: 'desc' }],
             take: 20
         });
@@ -38,7 +45,7 @@ export async function GET() {
             },
             include: {
                 products: {
-                    include: { product: true }
+            include: { product: { include: { productImages: { orderBy: { order: "asc" }, take: 1, select: { imageUrl: true } } } } }
                 }
             }
         });
@@ -78,7 +85,7 @@ export async function GET() {
             merged.push({
                 id: p.id, slug: p.slug || p.id, name: p.name,
                 originalPrice: p.price, salePrice, discount,
-                image: p.image, category: p.category,
+                image: p.image || p.productImages?.[0]?.imageUrl || null, category: p.category,
                 inventory: p.inventory,
                 soldCount: campaignMap.get(p.id)?.soldCount ?? 0,
                 badgeText: p.badgeText, saleEndAt: endAt,
@@ -99,7 +106,7 @@ export async function GET() {
                 merged.push({
                     id: p.id, slug: p.slug || p.id, name: p.name,
                     originalPrice: p.price, salePrice: fp.flashSalePrice, discount,
-                    image: p.image, category: p.category,
+                    image: p.image || p.productImages?.[0]?.imageUrl || null, category: p.category,
                     inventory: p.inventory, soldCount: fp.soldCount,
                     badgeText: p.badgeText, saleEndAt: campaign.endAt,
                     isHot: discount >= 30

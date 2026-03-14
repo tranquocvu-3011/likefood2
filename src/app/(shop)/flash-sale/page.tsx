@@ -19,6 +19,7 @@ import { useLanguage } from "@/lib/i18n/context";
 import { formatPrice } from "@/lib/currency";
 import LoadingState from "@/components/ui/loading-state";
 import EmptyState from "@/components/ui/empty-state";
+import PriceDisplay from "@/components/ui/price-display";
 
 interface FlashProduct {
     id: string;
@@ -39,7 +40,7 @@ interface FlashProduct {
 // sortOptions moved inside component for i18n
 
 export default function FlashSalePage() {
-    const { t, language } = useLanguage();
+    const { t, language, isVietnamese } = useLanguage();
     const { addItem } = useCart();
 
     const sortOptions = [
@@ -157,11 +158,15 @@ export default function FlashSalePage() {
             toast.error(language === "vi" ? "Sản phẩm đã hết hàng" : "Product is out of stock");
             return;
         }
+        const hasDiscount = product.originalPrice > product.salePrice;
         addItem({
             productId: product.id,
             slug: product.slug || undefined,
             name: product.name,
             price: product.salePrice,
+            originalPrice: hasDiscount ? product.originalPrice : undefined,
+            salePrice: hasDiscount ? product.salePrice : undefined,
+            isOnSale: hasDiscount,
             image: product.image || undefined,
             inventory: product.inventory,
             category: product.category || undefined,
@@ -377,7 +382,7 @@ export default function FlashSalePage() {
 
                                             {/* Luxury Badge */}
                                             <div className="absolute top-4 left-4 px-4 py-2 bg-slate-900/90 backdrop-blur-md text-amber-400 text-[10px] font-black uppercase tracking-[0.2em] rounded-none border border-amber-400/30">
-                                                -{product.discount}% OFF
+                                                -{product.discount}%
                                             </div>
 
                                             {/* Hot Badge */}
@@ -417,9 +422,15 @@ export default function FlashSalePage() {
                                             </Link>
 
                                             {/* Price */}
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <span className="text-2xl font-black text-red-500">{formatPrice(product.salePrice)}</span>
-                                                <span className="text-sm font-medium text-slate-400 line-through">{formatPrice(product.originalPrice)}</span>
+                                            <div className="mb-4">
+                                                <PriceDisplay
+                                                    currentPrice={product.salePrice}
+                                                    originalPrice={product.originalPrice}
+                                                    salePrice={product.salePrice}
+                                                    isOnSale={product.originalPrice > product.salePrice}
+                                                    size="md"
+                                                    showDiscountBadge={false}
+                                                />
                                             </div>
 
                                             {/* Stock Progress */}
@@ -427,7 +438,7 @@ export default function FlashSalePage() {
                                                 <div className="flex items-center justify-between text-xs font-bold mb-1.5">
                                                     <span className={isAlmostSoldOut ? "text-red-500" : "text-slate-500"}>
                                                         {isAlmostSoldOut && <AlertTriangle className="w-3 h-3 inline mr-1" />}
-                                                        {t("shop.remaining")} {product.inventory} {t("shop.productsCount")}
+                                                        {isAlmostSoldOut ? (language === "vi" ? "Sắp hết hàng" : "Low stock") : t("shop.inStock")}
                                                     </span>
                                                     <span className={isAlmostSoldOut ? "text-red-500" : "text-amber-600"}>
                                                         {Math.round(soldPercent)}% {t("shop.sold")}

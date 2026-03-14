@@ -222,7 +222,7 @@ export function SecuritySection({ session }: SecuritySectionProps) {
                 toast.error(d.error || (language === "vi" ? "Xóa tài khoản thất bại" : "Account deletion failed"));
             }
         } catch {
-            toast.error("Lỗi kết nối.");
+            toast.error(language === "vi" ? "Lỗi kết nối." : "Connection error.");
         } finally {
             setDeleteLoading(false);
         }

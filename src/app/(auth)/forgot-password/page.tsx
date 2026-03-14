@@ -18,7 +18,8 @@ import { useLanguage } from "@/lib/i18n/context";
 import { CaptchaField } from "@/components/auth/CaptchaField";
 
 export default function ForgotPasswordPage() {
-    const { t } = useLanguage();
+    const { t, isVietnamese } = useLanguage();
+    const tr = (viText: string, enKey: string) => (isVietnamese ? viText : t(enKey));
     const router = useRouter();
     const [step, setStep] = useState<"email" | "otp">("email");
     const [email, setEmail] = useState("");
@@ -50,7 +51,7 @@ export default function ForgotPasswordPage() {
         }
 
         if (!isCaptchaValid) {
-            setError("Vui lòng hoàn thành xác thực bảo mật.");
+            setError(tr("Vui lòng hoàn thành xác thực bảo mật.", "auth.completeSecurityCheck"));
             setIsLoading(false);
             return;
         }
@@ -66,8 +67,7 @@ export default function ForgotPasswordPage() {
                 setStep("otp");
                 setCountdown(60);
             } else {
-                const data = await res.json();
-                setError(data.error || t("auth.connError"));
+                setError(tr("Không thể gửi yêu cầu. Vui lòng thử lại.", "auth.sendFailedTryAgain"));
             }
         } catch {
             setError(t("auth.connError"));
@@ -95,7 +95,7 @@ export default function ForgotPasswordPage() {
             if (res.ok) {
                 router.push(`/reset-password?token=${data.resetToken}`);
             } else {
-                setError(data.error || t("auth.wrongOTP"));
+                setError(t("auth.wrongOTP"));
             }
         } catch {
             setError(t("auth.connError"));
@@ -155,11 +155,11 @@ export default function ForgotPasswordPage() {
 
                     <div className="flex gap-8">
                         <div className="flex flex-col gap-1">
-                            <span className="text-xl font-black">6 Ký tự</span>
+                            <span className="text-xl font-black">{tr("6 ký tự", "auth.otpLengthValue")}</span>
                             <span className="text-[10px] font-bold uppercase text-slate-400">{t("auth.otpLength")}</span>
                         </div>
                         <div className="flex flex-col gap-1">
-                            <span className="text-xl font-black text-emerald-600">30 Giây</span>
+                            <span className="text-xl font-black text-emerald-600">{tr("30 giây", "auth.avgTimeValue")}</span>
                             <span className="text-[10px] font-bold uppercase text-slate-400">{t("auth.avgTime")}</span>
                         </div>
                     </div>

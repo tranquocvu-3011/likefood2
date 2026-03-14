@@ -12,10 +12,12 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { WishlistProvider } from "@/contexts/WishlistContext";
+import { useLanguage } from "@/lib/i18n/context";
 
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
+    const { language } = useLanguage();
 
     useEffect(() => {
         // Setup BroadcastChannel to listen for login events from other tabs
@@ -23,7 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         channel.onmessage = (event) => {
             if (event.data?.type === "LOGIN_SUCCESS") {
-                toast.success("Đã đăng nhập thành công! Đang chuyển hướng...");
+                toast.success(language === "vi" ? "Đã đăng nhập thành công! Đang chuyển hướng..." : "Logged in successfully! Redirecting...");
                 router.replace("/");
                 // Optional: router.refresh() or window.location.reload() to ensure session is refreshed
                 router.refresh();
@@ -33,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return () => {
             channel.close();
         };
-    }, [router]);
+    }, [router, language]);
 
     return (
         <SessionProvider>

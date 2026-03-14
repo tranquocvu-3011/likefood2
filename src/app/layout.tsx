@@ -14,7 +14,6 @@ import { ChatOpenProvider } from "@/contexts/ChatOpenContext";
 import { AuthProvider } from "@/components/shared/AuthProvider";
 import { LanguageProvider } from "@/lib/i18n/context";
 import { ThemeProvider } from "@/lib/theme/ThemeContext";
-import { CompareProvider } from "@/contexts/CompareContext";
 import LiveSalesPopup from "@/components/shared/LiveSalesPopup";
 
 const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
@@ -26,7 +25,7 @@ export const metadata: Metadata = {
     template: "%s | LIKEFOOD"
   },
   description: "Nền tảng thương mại điện tử chuyên cung cấp đặc sản Việt Nam chất lượng cao tại Hoa Kỳ. Giao hàng nhanh, đảm bảo vệ sinh ATTP, hỗ trợ tư vấn 24/7.",
-  keywords: ["đặc sản Việt Nam", "vận chuyển Mỹ", "LIKEFOOD", "cá khô miền tây", "tôm khô cà mau", "thực phẩm Việt tại Mỹ"],
+  keywords: ["đặc sản Việt Nam", "Vietnamese specialty food", "LIKEFOOD", "cá khô miền tây", "tôm khô cà mau", "mực khô", "khô bò", "thực phẩm Việt tại Mỹ", "Vietnamese food in USA", "dried fish", "dried shrimp"],
   authors: [{ name: "Trần Quốc Vũ", url: "https://www.facebook.com/profile.php?id=100076170558548" }],
   creator: "Trần Quốc Vũ",
   publisher: "LIKEFOOD",
@@ -34,8 +33,8 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
     languages: {
-      'vi': 'https://likefood.vn',
-      'en': 'https://likefood.vn?lang=en',
+      'vi': '/',
+      'x-default': '/',
     },
   },
   robots: {
@@ -57,7 +56,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "vi_VN",
-    url: "https://weblikefood.com",
+    url: process.env.NEXT_PUBLIC_BASE_URL || "https://likefood.com",
     siteName: "LIKEFOOD",
     title: "LIKEFOOD | Đặc sản Việt Nam tại Mỹ",
     description: "Nền tảng thương mại điện tử chuyên cung cấp đặc sản Việt Nam chất lượng cao tại Hoa Kỳ. Giao hàng nhanh, đảm bảo vệ sinh ATTP.",
@@ -112,72 +111,62 @@ export default async function RootLayout({
 
   return (
     <html lang="vi" data-scroll-behavior="smooth" suppressHydrationWarning>
-      {gaId && (
-        <head>
-          {/* GA4 base script */}
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
-            strategy="afterInteractive"
-          />
-          <Script
-            id="ga4-init"
-            strategy="afterInteractive"
-          >
-            {`
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', '${gaId}', { send_page_view: true });
-            `}
-          </Script>
-        </head>
-      )}
-
-      {/* Google Tag Manager */}
-      {gtmId && (
-        <head>
-          <Script id="gtm-head" strategy="afterInteractive">
-            {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+      <head>
+        <Script id="lang-sync" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
+          try {
+            var lang = localStorage.getItem('language') || 
+              document.cookie.split(';').find(function(c){return c.trim().startsWith('language=')})?.split('=')[1]?.trim();
+            if (lang === 'en') document.documentElement.lang = 'en';
+          } catch(e) {}
+        `}} />
+        {gaId && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+              strategy="afterInteractive"
+            />
+            <Script
+              id="ga4-init"
+              strategy="afterInteractive"
+              dangerouslySetInnerHTML={{
+                __html: `
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', '${gaId}', { send_page_view: true });
+                `
+              }}
+            />
+          </>
+        )}
+        {gtmId && (
+          <Script id="gtm-head" strategy="afterInteractive" dangerouslySetInnerHTML={{
+            __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
             new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
             j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-            })(window,document,'script','dataLayer','${gtmId}');`}
-          </Script>
-        </head>
-      )}
-
-      {/* Facebook Pixel */}
-      {fbPixelId && (
-        <head>
-          <Script id="fb-pixel" strategy="afterInteractive">
-            {`!function(f,b,e,v,n,t,s)
-            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-            n.queue=[];t=b.createElement(e);t.async=!0;
-            t.src=v;s=b.getElementsByTagName(e)[0];
-            s.parentNode.insertBefore(t,s)}(window, document,'script',
-            'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '${fbPixelId}');
-            fbq('track', 'PageView');`}
-          </Script>
-          <noscript>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              height="1"
-              width="1"
-              style={{ display: 'none' }}
-              src={`https://www.facebook.com/tr?id=${fbPixelId}&ev=PageView&noscript=1`}
-              alt=""
-            />
-          </noscript>
-        </head>
-      )}
-
-      {shouldRegisterSw && (
-        <head>
-          <Script id="register-sw" strategy="afterInteractive">
-            {`
+            })(window,document,'script','dataLayer','${gtmId}');`
+          }} />
+        )}
+        {fbPixelId && (
+          <>
+            <Script id="fb-pixel" strategy="afterInteractive" dangerouslySetInnerHTML={{
+              __html: `!function(f,b,e,v,n,t,s)
+              {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+              n.queue=[];t=b.createElement(e);t.async=!0;
+              t.src=v;s=b.getElementsByTagName(e)[0];
+              s.parentNode.insertBefore(t,s)}(window, document,'script',
+              'https://connect.facebook.net/en_US/fbevents.js');
+              fbq('init', '${fbPixelId}');
+              fbq('track', 'PageView');`
+            }} />
+          </>
+        )}
+        {shouldRegisterSw && (
+          <Script id="register-sw" strategy="afterInteractive" dangerouslySetInnerHTML={{
+            __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
                   navigator.serviceWorker.register('/sw.js').then(function(registration) {
@@ -187,10 +176,10 @@ export default async function RootLayout({
                   });
                 });
               }
-            `}
-          </Script>
-        </head>
-      )}
+            `
+          }} />
+        )}
+      </head>
       {/* Google Tag Manager (noscript) */}
       {gtmId && (
         <noscript>
@@ -204,22 +193,20 @@ export default async function RootLayout({
       )}
 
       <body className={`${inter.variable} ${outfit.variable} font-sans antialiased text-slate-900 bg-[#fdfdff]`}>
-        <AuthProvider>
-          <LanguageProvider>
+        <LanguageProvider>
+          <AuthProvider>
             <ThemeProvider>
-              <CompareProvider>
-                <CartProvider>
-                  <ChatOpenProvider>
-                    {children}
-                    <LiveSalesPopup />
-                  </ChatOpenProvider>
-                  {/* Đã xóa BottomNav và ChatWidgetClient ở đây vì gây trùng lặp với ShopLayout */}
-                  <Toaster position="top-center" richColors />
-                </CartProvider>
-              </CompareProvider>
+              <CartProvider>
+                <ChatOpenProvider>
+                  {children}
+                  <LiveSalesPopup />
+                </ChatOpenProvider>
+                {/* Đã xóa BottomNav và ChatWidgetClient ở đây vì gây trùng lặp với ShopLayout */}
+                <Toaster position="top-center" richColors />
+              </CartProvider>
             </ThemeProvider>
-          </LanguageProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

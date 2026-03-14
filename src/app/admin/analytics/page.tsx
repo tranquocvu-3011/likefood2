@@ -260,7 +260,7 @@ function StatusRow({ label, value, color, total }: {
       <div className={`w-2 h-2 rounded-full ${color}`} />
       <span className="flex-1 text-sm text-zinc-400">{label}</span>
       <span className="text-sm font-medium text-zinc-200">{value}</span>
-      <span className="text-xs text-zinc-600 w-12 text-right">{percentage.toFixed(0)}%</span>
+      <span className="text-xs text-zinc-400 w-12 text-right">{percentage.toFixed(0)}%</span>
     </div>
   );
 }

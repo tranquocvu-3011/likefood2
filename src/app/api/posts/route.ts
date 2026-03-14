@@ -37,13 +37,24 @@ export async function GET(req: Request) {
                 select: {
                     id: true,
                     title: true,
+                    titleEn: true,
                     slug: true,
                     summary: true,
+                    summaryEn: true,
                     image: true,
                     authorName: true,
                     category: true,
                     publishedAt: true,
-                    content: true, // For read time calculation
+                    content: true,
+                    images: {
+                        orderBy: { order: "asc" },
+                        select: {
+                            id: true,
+                            imageUrl: true,
+                            altText: true,
+                            order: true,
+                        },
+                    },
                 }
             }),
             prisma.post.count({ where }),

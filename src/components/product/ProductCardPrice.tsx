@@ -22,6 +22,9 @@ interface ProductCardPriceProps {
         slug?: string;
         name: string;
         price: number;
+        originalPrice?: number | null;
+        salePrice?: number | null;
+        isOnSale?: boolean;
         image?: string | null;
         inventory: number;
     };
@@ -40,7 +43,7 @@ function ProductCardPriceComponent({
         <div className="flex items-center justify-between w-full gap-2 pt-1 border-t border-slate-100 mt-0.5">
             <PriceDisplay
                 currentPrice={currentPrice}
-                originalPrice={hasDiscount ? basePriceForDiscount : undefined}
+                originalPrice={hasDiscount ? (originalPrice ?? basePriceForDiscount) : undefined}
                 salePrice={salePrice}
                 isOnSale={isOnSale}
                 size="sm"

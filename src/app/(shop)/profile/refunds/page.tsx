@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { logger } from "@/lib/logger";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface OrderItem {
     id: string;
@@ -52,18 +53,21 @@ interface RefundRequest {
     order: Order;
 }
 
-const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-    PENDING: { label: "Đang chờ", color: "bg-orange-500", icon: Clock },
-    APPROVED: { label: "Đã duyệt", color: "bg-blue-500", icon: CheckCircle2 },
-    REJECTED: { label: "Từ chối", color: "bg-red-500", icon: X },
-    PROCESSING: { label: "Đang xử lý", color: "bg-purple-500", icon: RefreshCw },
-    COMPLETED: { label: "Hoàn thành", color: "bg-green-500", icon: CheckCircle2 },
-    CANCELLED: { label: "Đã hủy", color: "bg-slate-500", icon: X },
-};
+const getStatusConfig = (vi: boolean) => ({
+    PENDING: { label: vi ? "Đang chờ" : "Pending", color: "bg-orange-500", icon: Clock },
+    APPROVED: { label: vi ? "Đã duyệt" : "Approved", color: "bg-blue-500", icon: CheckCircle2 },
+    REJECTED: { label: vi ? "Từ chối" : "Rejected", color: "bg-red-500", icon: X },
+    PROCESSING: { label: vi ? "Đang xử lý" : "Processing", color: "bg-purple-500", icon: RefreshCw },
+    COMPLETED: { label: vi ? "Hoàn thành" : "Completed", color: "bg-green-500", icon: CheckCircle2 },
+    CANCELLED: { label: vi ? "Đã hủy" : "Cancelled", color: "bg-slate-500", icon: X },
+});
 
 export default function RefundsPage() {
     const router = useRouter();
     const { status: sessionStatus } = useSession();
+    const { t, isVietnamese, language } = useLanguage();
+    const vi = language === "vi";
+    const statusConfig = getStatusConfig(vi);
     const [refunds, setRefunds] = useState<RefundRequest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<string>("all");
@@ -98,14 +102,14 @@ export default function RefundsPage() {
     }, [sessionStatus, router, filter, fetchRefunds]);
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString("vi-VN", {
+        return new Date(dateString).toLocaleDateString(vi ? "vi-VN" : "en-US", {
             year: "numeric",
             month: "long",
             day: "numeric",
         });
     };
 
-    const getStatusConfig = (status: string) => {
+    const getStatusForRefund = (status: string) => {
         return statusConfig[status] || { label: status, color: "bg-slate-500", icon: Clock };
     };
 
@@ -124,25 +128,25 @@ export default function RefundsPage() {
                 <div className="mb-12">
                     <Link href="/profile" className="inline-flex items-center gap-2 text-slate-500 hover:text-primary transition-colors mb-4">
                         <ArrowLeft className="w-4 h-4" />
-                        <span className="font-medium">Quay lại hồ sơ</span>
+                        <span className="font-medium">{vi ? "Quay lại hồ sơ" : "Back to profile"}</span>
                     </Link>
                     <h1 className="text-4xl font-black uppercase tracking-tighter mb-4">
-                        Yêu cầu hoàn tiền
+                        {vi ? "Yêu cầu hoàn tiền" : "Refund Requests"}
                     </h1>
                     <p className="text-slate-500 font-medium">
-                        Theo dõi trạng thái hoàn tiền của bạn
+                        {vi ? "Theo dõi trạng thái hoàn tiền của bạn" : "Track your refund status"}
                     </p>
                 </div>
 
                 {/* Filters */}
                 <div className="mb-8 flex flex-wrap gap-3">
                     {[
-                        { value: "all", label: "Tất cả" },
-                        { value: "PENDING", label: "Đang chờ" },
-                        { value: "APPROVED", label: "Đã duyệt" },
-                        { value: "PROCESSING", label: "Đang xử lý" },
-                        { value: "COMPLETED", label: "Hoàn thành" },
-                        { value: "REJECTED", label: "Từ chối" },
+                        { value: "all", label: isVietnamese ? "Tất cả" : "All" },
+                        { value: "PENDING", label: isVietnamese ? "Đang chờ" : "Pending" },
+                        { value: "APPROVED", label: isVietnamese ? "Đã duyệt" : "Approved" },
+                        { value: "PROCESSING", label: isVietnamese ? "Đang xử lý" : "Processing" },
+                        { value: "COMPLETED", label: isVietnamese ? "Hoàn thành" : "Completed" },
+                        { value: "REJECTED", label: isVietnamese ? "Từ chối" : "Rejected" },
                     ].map((option) => (
                         <button
                             key={option.value}
@@ -166,14 +170,14 @@ export default function RefundsPage() {
                                 <RefreshCw className="w-10 h-10 text-slate-300" />
                             </div>
                             <h3 className="text-xl font-black uppercase tracking-tighter mb-2">
-                                Chưa có yêu cầu hoàn tiền
+                                {vi ? "Chưa có yêu cầu hoàn tiền" : "No refund requests"}
                             </h3>
                             <p className="text-slate-400 font-medium mb-8">
-                                Các yêu cầu hoàn tiền của bạn sẽ xuất hiện tại đây
+                                {vi ? "Các yêu cầu hoàn tiền của bạn sẽ xuất hiện tại đây" : "Your refund requests will appear here"}
                             </p>
                             <Link href="/profile/orders">
                                 <button className="px-8 py-4 bg-primary text-white rounded-full font-black uppercase tracking-widest hover:bg-primary/90 transition-all">
-                                    Xem đơn hàng
+                                    {vi ? "Xem đơn hàng" : "View orders"}
                                 </button>
                             </Link>
                         </CardContent>
@@ -181,7 +185,7 @@ export default function RefundsPage() {
                 ) : (
                     <div className="space-y-4">
                         {refunds.map((refund) => {
-                            const status = getStatusConfig(refund.status);
+                            const status = getStatusForRefund(refund.status);
                             
                             return (
                                 <Card 
@@ -196,10 +200,10 @@ export default function RefundsPage() {
                                                 </div>
                                                 <div>
                                                     <p className="font-bold text-slate-900">
-                                                        Yêu cầu hoàn tiền #{refund.id.slice(-8).toUpperCase()}
+                                                        {vi ? "Yêu cầu hoàn tiền" : "Refund request"} #{refund.id.slice(-8).toUpperCase()}
                                                     </p>
                                                     <p className="text-sm text-slate-500">
-                                                        Đơn hàng #{refund.order.id.slice(-8).toUpperCase()}
+                                                        {vi ? "Đơn hàng" : "Order"} #{refund.order.id.slice(-8).toUpperCase()}
                                                     </p>
                                                 </div>
                                             </div>
@@ -212,7 +216,7 @@ export default function RefundsPage() {
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                                 <div>
                                                     <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
-                                                        Số tiền
+                                                        {vi ? "Số tiền" : "Amount"}
                                                     </p>
                                                     <p className="font-bold text-primary text-lg">
                                                         ${refund.amount.toFixed(2)}
@@ -220,7 +224,7 @@ export default function RefundsPage() {
                                                 </div>
                                                 <div>
                                                     <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
-                                                        Ngày yêu cầu
+                                                        {vi ? "Ngày yêu cầu" : "Request date"}
                                                     </p>
                                                     <p className="font-medium text-slate-700">
                                                         {formatDate(refund.createdAt)}
@@ -228,15 +232,15 @@ export default function RefundsPage() {
                                                 </div>
                                                 <div>
                                                     <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
-                                                        Phương thức
+                                                        {vi ? "Phương thức" : "Method"}
                                                     </p>
                                                     <p className="font-medium text-slate-700">
-                                                        {refund.refundMethod === "ORIGINAL" ? "Hoàn về thanh toán ban đầu" : "Chuyển khoản ngân hàng"}
+                                                        {refund.refundMethod === "ORIGINAL" ? (vi ? "Hoàn về thanh toán ban đầu" : "Refund to original payment") : (vi ? "Chuyển khoản ngân hàng" : "Bank transfer")}
                                                     </p>
                                                 </div>
                                                 <div>
                                                     <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
-                                                        Lý do
+                                                        {vi ? "Lý do" : "Reason"}
                                                     </p>
                                                     <p className="font-medium text-slate-700 line-clamp-1">
                                                         {refund.reason}
@@ -250,7 +254,7 @@ export default function RefundsPage() {
                                                 <AlertCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                                                 <div>
                                                     <p className="text-xs font-black uppercase tracking-widest text-blue-600 mb-1">
-                                                        Phản hồi từ admin
+                                                        {vi ? "Phản hồi từ admin" : "Admin response"}
                                                     </p>
                                                     <p className="text-sm text-blue-800">
                                                         {refund.adminNote}
@@ -261,7 +265,7 @@ export default function RefundsPage() {
 
                                         <Link href={`/profile/orders/${refund.orderId}`}>
                                             <button className="w-full py-3 bg-slate-100 text-slate-700 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-slate-200 transition-all flex items-center justify-center gap-2">
-                                                Xem chi tiết đơn hàng
+                                                {vi ? "Xem chi tiết đơn hàng" : "View order details"}
                                                 <ChevronRight className="w-4 h-4" />
                                             </button>
                                         </Link>

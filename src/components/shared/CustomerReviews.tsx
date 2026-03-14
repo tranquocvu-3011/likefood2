@@ -9,8 +9,9 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Star, Quote } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { logger } from "@/lib/logger";
+import { useLanguage } from "@/lib/i18n/context";
 
 type Testimonial = {
     id: string;
@@ -21,8 +22,8 @@ type Testimonial = {
     location: string;
 };
 
-export default function CustomerReviews() {
-    const [reviews, setReviews] = useState<Testimonial[]>([
+const STATIC_REVIEWS: Record<"vi" | "en", Testimonial[]> = {
+    vi: [
         {
             id: "rev-1",
             name: "Trần Quốc Vũ",
@@ -63,14 +64,71 @@ export default function CustomerReviews() {
             avatar: "👨‍💻",
             location: "Atlanta, Georgia"
         }
-    ]);
+    ],
+    en: [
+        {
+            id: "rev-1",
+            name: "Tran Quoc Vu",
+            quote: "The dried fish package arrived in Texas fresh and aromatic. The vacuum sealing and careful packaging were excellent. My family is very happy with the quality.",
+            rating: 5,
+            avatar: "👩‍💼",
+            location: "Houston, Texas"
+        },
+        {
+            id: "rev-2",
+            name: "Le Huynh Nhien",
+            quote: "My first time ordering dried squid here and I was impressed. Thick texture, great flavor when grilled, and very reliable quality. I will definitely order again.",
+            rating: 5,
+            avatar: "👨‍🍳",
+            location: "Orange County, California"
+        },
+        {
+            id: "rev-3",
+            name: "Vo Truong Thanh Dan",
+            quote: "The dried fruit is not overly sweet and still tastes natural. Shipping was fast, and customer support was friendly and attentive.",
+            rating: 5,
+            avatar: "👵",
+            location: "Seattle, Washington"
+        },
+        {
+            id: "rev-4",
+            name: "Huynh Nhat Phat",
+            quote: "I bought Tet sweets as gifts for my American in-laws and they loved them. The gift box looked premium and beautifully represented Vietnamese culture.",
+            rating: 5,
+            avatar: "👩‍🎓",
+            location: "Chicago, Illinois"
+        },
+        {
+            id: "rev-5",
+            name: "Hoang Cong Huy",
+            quote: "The seasoning tastes just like home. A single bowl of pho brought back memories of Hanoi. Thank you for delivering authentic Vietnamese flavors to the U.S.",
+            rating: 5,
+            avatar: "👨‍💻",
+            location: "Atlanta, Georgia"
+        }
+    ]
+};
+
+export default function CustomerReviews() {
+    const { language } = useLanguage();
+    const locale = language === "en" ? "en" : "vi";
+    const isVi = locale === "vi";
+    const [dynamicReviews, setDynamicReviews] = useState<Testimonial[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    const reviews = useMemo(() => {
+        const base = STATIC_REVIEWS[locale];
+        const ids = new Set(base.map((r) => r.id));
+        const dynamicUnique = dynamicReviews.filter((r) => !ids.has(r.id));
+        return [...base, ...dynamicUnique].slice(0, 10);
+    }, [dynamicReviews, locale]);
 
     // Fetch dynamic reviews
     useEffect(() => {
         const fetchReviews = async () => {
+            setLoading(true);
             try {
                 const res = await fetch('/api/reviews/featured');
                 if (res.ok) {
@@ -80,11 +138,17 @@ export default function CustomerReviews() {
                             .filter((item): item is Record<string, unknown> => !!item && typeof item === "object")
                             .map((item, index) => {
                                 const safeId = typeof item.id === "string" && item.id.length > 0 ? item.id : `review-${index}`;
-                                const safeName = typeof item.name === "string" ? item.name : "Ẩn danh";
-                                const safeQuote = typeof item.quote === "string" ? item.quote : "";
+                                const safeName = locale === "en"
+                                    ? (typeof item.nameEn === "string" ? item.nameEn : (typeof item.name === "string" ? item.name : "Anonymous"))
+                                    : (typeof item.name === "string" ? item.name : "Ẩn danh");
+                                const safeQuote = locale === "en"
+                                    ? (typeof item.quoteEn === "string" ? item.quoteEn : (typeof item.quote === "string" ? item.quote : ""))
+                                    : (typeof item.quote === "string" ? item.quote : "");
                                 const safeRating = typeof item.rating === "number" ? item.rating : Number(item.rating ?? 5);
                                 const safeAvatar = typeof item.avatar === "string" ? item.avatar : "😊";
-                                const safeLocation = typeof item.location === "string" ? item.location : "";
+                                const safeLocation = locale === "en"
+                                    ? (typeof item.locationEn === "string" ? item.locationEn : (typeof item.location === "string" ? item.location : ""))
+                                    : (typeof item.location === "string" ? item.location : "");
 
                                 return {
                                     id: safeId,
@@ -97,12 +161,7 @@ export default function CustomerReviews() {
                             });
 
                         if (normalized.length > 0) {
-                            // Merge with static ones or replace
-                            setReviews(prev => {
-                                const existingIds = new Set(prev.map(r => r.id));
-                                const news = normalized.filter(r => !existingIds.has(r.id));
-                                return [...prev, ...news].slice(0, 10); // Keep max 10
-                            });
+                            setDynamicReviews(normalized);
                         }
                     }
                 }
@@ -113,7 +172,11 @@ export default function CustomerReviews() {
             }
         };
         fetchReviews();
-    }, []);
+    }, [locale]);
+
+    useEffect(() => {
+        setCurrentIndex(0);
+    }, [locale]);
 
     // Auto-play
     useEffect(() => {
@@ -150,8 +213,8 @@ export default function CustomerReviews() {
         return (
             <section className="bg-gradient-to-b from-white to-slate-50 py-6 md:py-10">
                 <div className="w-full mx-auto px-6 text-center">
-                    <h2 className="text-3xl font-bold text-slate-900 mb-4">💬 Khách hàng <span className="text-primary">nói gì?</span></h2>
-                    <p className="text-slate-600 italic">Chưa có đánh giá nào. Hãy là người đầu tiên!</p>
+                    <h2 className="text-3xl font-bold text-slate-900 mb-4">💬 {isVi ? "Khách hàng" : "What customers"} <span className="text-primary">{isVi ? "nói gì?" : "say?"}</span></h2>
+                    <p className="text-slate-600 italic">{isVi ? "Chưa có đánh giá nào. Hãy là người đầu tiên!" : "No reviews yet. Be the first one!"}</p>
                 </div>
             </section>
         );
@@ -165,10 +228,10 @@ export default function CustomerReviews() {
                 {/* Section Header */}
                 <div className="text-center mb-8">
                     <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3">
-                        💬 Khách hàng <span className="text-primary">nói gì?</span>
+                        💬 {isVi ? "Khách hàng" : "What customers"} <span className="text-primary">{isVi ? "nói gì?" : "say?"}</span>
                     </h2>
                     <p className="text-lg text-slate-600 font-medium">
-                        Hàng nghìn đánh giá 5 sao từ cộng đồng người Việt ở Mỹ
+                        {isVi ? "Hàng nghìn đánh giá 5 sao từ cộng đồng người Việt ở Mỹ" : "Thousands of 5-star reviews from Vietnamese communities in the U.S."}
                     </p>
                 </div>
 
@@ -323,7 +386,7 @@ export default function CustomerReviews() {
                             whileTap={{ scale: 0.95 }}
                             onClick={previousSlide}
                             className="absolute left-2 lg:left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-gradient-to-br from-white to-slate-50 shadow-xl flex items-center justify-center transition-all duration-300 border-2 border-slate-100"
-                            aria-label="Previous review"
+                            aria-label={isVi ? "Đánh giá trước" : "Previous review"}
                         >
                             <ChevronLeft className="w-6 h-6 text-slate-700" />
                         </motion.button>
@@ -331,7 +394,7 @@ export default function CustomerReviews() {
                             whileTap={{ scale: 0.95 }}
                             onClick={nextSlide}
                             className="absolute right-2 lg:right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-gradient-to-br from-white to-slate-50 shadow-xl flex items-center justify-center transition-all duration-300 border-2 border-slate-100"
-                            aria-label="Next review"
+                            aria-label={isVi ? "Đánh giá tiếp theo" : "Next review"}
                         >
                             <ChevronRight className="w-6 h-6 text-slate-700" />
                         </motion.button>
@@ -350,7 +413,7 @@ export default function CustomerReviews() {
                                     ? 'w-8 bg-primary'
                                     : 'w-2 bg-slate-300'
                                     }`}
-                                aria-label={`Go to review ${index + 1}`}
+                                aria-label={isVi ? `Xem đánh giá ${index + 1}` : `Go to review ${index + 1}`}
                             />
                         ))}
                     </div>

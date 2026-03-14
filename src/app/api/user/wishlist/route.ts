@@ -23,6 +23,8 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const isEn = req.cookies.get("language")?.value === "en";
+
     try {
         const wishlist = await prisma.wishlist.findMany({
             where: {
@@ -34,13 +36,25 @@ export async function GET(req: NextRequest) {
                     select: {
                         id: true,
                         name: true,
+                        nameEn: true,
                         slug: true,
                         price: true,
                         salePrice: true,
                         image: true,
                         category: true,
+                        categoryRel: {
+                            select: {
+                                name: true,
+                                nameEn: true,
+                            },
+                        },
                         inventory: true,
                         ratingAvg: true,
+                        productImages: {
+                            orderBy: { order: "asc" },
+                            take: 1,
+                            select: { imageUrl: true }
+                        },
                     },
                 },
             },
@@ -49,7 +63,23 @@ export async function GET(req: NextRequest) {
             },
         });
 
-        return NextResponse.json(wishlist.map(item => item.product));
+        return NextResponse.json(wishlist.map(item => {
+            const localizedName = isEn && item.product.nameEn ? item.product.nameEn : item.product.name;
+            const localizedCategory = item.product.categoryRel
+                ? (isEn && item.product.categoryRel.nameEn
+                    ? item.product.categoryRel.nameEn
+                    : item.product.categoryRel.name)
+                : item.product.category;
+
+            return {
+                ...item.product,
+                name: localizedName,
+                category: localizedCategory,
+                image: item.product.image || item.product.productImages?.[0]?.imageUrl || null,
+                productImages: undefined,
+                categoryRel: undefined,
+            };
+        }));
     } catch (error) {
         logger.error("Wishlist fetch error", error as Error, { context: "user-wishlist-api-get", userId: session?.user?.id });
         return NextResponse.json({ error: "Failed to fetch wishlist" }, { status: 500 });

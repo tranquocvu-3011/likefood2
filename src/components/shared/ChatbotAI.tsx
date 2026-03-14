@@ -12,6 +12,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useChatOpen } from "@/contexts/ChatOpenContext";
 import { analytics } from "@/lib/analytics/sdk";
 import { useLanguage } from "@/lib/i18n/context";
+import DOMPurify from "isomorphic-dompurify";
 import {
   ArrowUp,
   RotateCcw,
@@ -30,20 +31,34 @@ interface Message {
   timestamp: Date;
 }
 
-/* ─── Constants ─── */
-const INITIAL_MESSAGE: Message = {
+const INITIAL_MESSAGE_VI = {
   id: "initial",
-  role: "model",
+  role: "model" as const,
   content:
     "Xin chào! 👋 Mình là **LIKEFOOD AI** — trợ lý ẩm thực thông minh của bạn.\n\n🛒 Gợi ý sản phẩm phù hợp\n📦 Theo dõi đơn hàng\n🎁 Tư vấn combo & quà biếu\n💬 Giải đáp mọi thắc mắc\n\nBạn cần mình giúp gì nào? 😊",
   timestamp: new Date(),
 };
 
-const QUICK_REPLIES = [
+const INITIAL_MESSAGE_EN = {
+  id: "initial",
+  role: "model" as const,
+  content:
+    "Hello! 👋 I'm **LIKEFOOD AI** — your smart food shopping assistant.\n\n🛒 Product recommendations\n📦 Order tracking\n🎁 Gift combos & suggestions\n💬 Answer your questions\n\nHow can I help you today? 😊",
+  timestamp: new Date(),
+};
+
+const QUICK_REPLIES_VI = [
   { emoji: "🍵", text: "Gợi ý trà & cà phê" },
   { emoji: "🎁", text: "Combo quà biếu" },
   { emoji: "🚚", text: "Phí giao hàng" },
   { emoji: "📦", text: "Theo dõi đơn hàng" },
+];
+
+const QUICK_REPLIES_EN = [
+  { emoji: "🍵", text: "Tea & Coffee suggestions" },
+  { emoji: "🎁", text: "Gift combos" },
+  { emoji: "🚚", text: "Shipping fees" },
+  { emoji: "📦", text: "Track order" },
 ];
 
 /* ─── Helpers ─── */
@@ -54,12 +69,19 @@ function formatTime(date: Date) {
   });
 }
 
-/**  Simple markdown → HTML (bold, italic, links, line breaks) */
+/**  Simple markdown → HTML (bold, italic, links, line breaks) - SANITIZED */
 function renderMarkdown(text: string) {
-  return text
+  // First convert markdown to HTML
+  const rawHtml = text
     .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/\n/g, '<br/>');
+  
+  // Then sanitize to prevent XSS
+  return DOMPurify.sanitize(rawHtml, {
+    ALLOWED_TAGS: ['br', 'strong', 'em'],
+    ALLOWED_ATTR: ['class'],
+  });
 }
 
 /* ─── Typing Indicator (Messenger-style dots) ─── */
@@ -150,11 +172,11 @@ function MessageBubble({ message, isLast }: { message: Message; isLast: boolean 
 /* ─── Main Component ─── */
 export default function ChatbotAI() {
   const { setChatOpen } = useChatOpen();
-  const { t, language } = useLanguage();
+  const { t, language, isVietnamese } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
+  const [messages, setMessages] = useState<Message[]>([isVietnamese ? INITIAL_MESSAGE_VI : INITIAL_MESSAGE_EN]);
   const [isLoading, setIsLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -206,7 +228,7 @@ export default function ChatbotAI() {
   }, [setChatOpen]);
 
   const resetConversation = () => {
-    setMessages([INITIAL_MESSAGE]);
+    setMessages([isVietnamese ? INITIAL_MESSAGE_VI : INITIAL_MESSAGE_EN]);
     setInput("");
     setShowQuickReplies(true);
   };
@@ -245,10 +267,10 @@ export default function ChatbotAI() {
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data?.error || "Không thể kết nối. Vui lòng thử lại!");
+        throw new Error(data?.error || (isVietnamese ? "Không thể kết nối. Vui lòng thử lại!" : "Connection failed. Please try again!"));
       }
 
-      const replyContent = data.content ?? data.response ?? "Mình chưa có câu trả lời phù hợp. Bạn thử hỏi lại cụ thể hơn nhé! 😊";
+      const replyContent = data.content ?? data.response ?? (isVietnamese ? "Mình chưa có câu trả lời phù hợp. Bạn thử hỏi lại cụ thể hơn nhé! 😊" : "I don't have a suitable answer. Try asking more specifically! 😊");
 
       // Typing delay — giống người thật (1-2.5s dựa theo độ dài)
       const typingDelay = Math.min(800 + replyContent.length * 8, 2500);
@@ -268,7 +290,7 @@ export default function ChatbotAI() {
         {
           id: `${Date.now()}-error`,
           role: "model",
-          content: error instanceof Error ? error.message : "Kết nối tạm gián đoạn. Thử lại sau ít phút nhé! 🙏",
+          content: error instanceof Error ? error.message : (isVietnamese ? "Kết nối tạm gián đoạn. Thử lại sau ít phút nhé! 🙏" : "Connection interrupted. Try again later! 🙏"),
           timestamp: new Date(),
         },
       ]);
@@ -300,7 +322,7 @@ export default function ChatbotAI() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 24 }}
           transition={{ duration: 0.25 }}
-          className="fixed bottom-5 right-4 z-[110] sm:bottom-4 sm:right-4"
+          className="fixed bottom-24 right-4 z-[110] sm:bottom-20 sm:right-4 lg:bottom-4"
         >
           {/* ═══════ FAB Button ═══════ */}
           {!isOpen && (
@@ -360,21 +382,21 @@ export default function ChatbotAI() {
                         <Sparkles className="h-3.5 w-3.5 text-amber-300" />
                       </div>
                       <p className="text-[11px] text-emerald-100/90 font-medium">
-                        {isLoading ? "Đang soạn tin nhắn..." : "Trực tuyến • Sẵn sàng hỗ trợ"}
+                        {isLoading ? (isVietnamese ? "Đang soạn tin nhắn..." : "Typing...") : (isVietnamese ? "Trực tuyến • Sẵn sàng hỗ trợ" : "Online • Ready to help")}
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setIsMinimized(true)}
                         className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition hover:bg-white/15 hover:text-white"
-                        aria-label="Thu nhỏ"
+                        aria-label={isVietnamese ? "Thu nhỏ" : "Minimize"}
                       >
                         <Minus className="h-4 w-4" />
                       </button>
                       <button
                         onClick={closeAssistant}
                         className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition hover:bg-white/15 hover:text-white"
-                        aria-label="Đóng"
+                        aria-label={isVietnamese ? "Đóng" : "Close"}
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -384,12 +406,12 @@ export default function ChatbotAI() {
 
                 {isMinimized ? (
                   <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-sm text-slate-600">Cuộc trò chuyện đang chờ...</span>
+                    <span className="text-sm text-slate-600">{isVietnamese ? "Cuộc trò chuyện đang chờ..." : "Conversation on hold..."}</span>
                     <button
                       onClick={() => setIsMinimized(false)}
                       className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition"
                     >
-                      Mở lại
+                      {isVietnamese ? "Mở lại" : "Resume"}
                     </button>
                   </div>
                 ) : (
@@ -418,10 +440,10 @@ export default function ChatbotAI() {
                           className="pt-2"
                         >
                           <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2 pl-10">
-                            Gợi ý nhanh
+                            {isVietnamese ? "Gợi ý nhanh" : "Quick suggestions"}
                           </p>
                           <div className="flex flex-wrap gap-1.5 pl-10">
-                            {QUICK_REPLIES.map((qr) => (
+                            {(isVietnamese ? QUICK_REPLIES_VI : QUICK_REPLIES_EN).map((qr) => (
                               <button
                                 key={qr.text}
                                 onClick={() => void sendMessage(qr.text)}
@@ -444,7 +466,7 @@ export default function ChatbotAI() {
                           onClick={resetConversation}
                           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
                           aria-label={t("chat.newConversation")}
-                          title="Cuộc trò chuyện mới"
+                          title={isVietnamese ? "Cuộc trò chuyện mới" : "New conversation"}
                         >
                           <RotateCcw className="h-4 w-4" />
                         </button>
@@ -456,7 +478,7 @@ export default function ChatbotAI() {
                             value={input}
                             onChange={handleInputChange}
                             onKeyDown={handleKeyDown}
-                            placeholder="Nhắn tin cho LIKEFOOD AI..."
+                            placeholder={isVietnamese ? "Nhắn tin cho LIKEFOOD AI..." : "Message LIKEFOOD AI..."}
                             rows={1}
                             className="flex-1 resize-none border-0 bg-transparent text-sm leading-6 text-slate-700 outline-none placeholder:text-slate-400 max-h-[120px]"
                             style={{ height: "auto" }}

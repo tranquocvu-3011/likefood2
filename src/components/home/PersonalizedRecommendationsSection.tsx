@@ -16,11 +16,14 @@ import { ProductCardSkeleton } from "@/components/ui/product-skeleton";
 import { useLanguage } from "@/lib/i18n/context";
 
 interface RecommendedProduct {
-  id: string;
+  id?: string;
+  productId?: string;
   slug: string;
   name: string;
   price: number;
   originalPrice?: number;
+  salePrice?: number;
+  isOnSale?: boolean;
   image: string | null;
   category: string;
   brand?: string;
@@ -110,25 +113,38 @@ export default function PersonalizedRecommendationsSection() {
       <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
         {isLoading
           ? Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)
-          : products.slice(0, 6).map((p, i) => (
-              <ProductCard
-                key={p.id || p.slug || `rec-${i}`}
-                product={{
-                  id: p.id,
-                  slug: p.slug,
-                  name: p.name,
-                  price: p.price,
-                  originalPrice: p.originalPrice ?? null,
-                  category: p.category,
-                  image: p.image || null,
-                  inventory: p.stock ?? p.inventory ?? 99,
-                  ratingAvg: p.rating,
-                  ratingCount: p.reviewCount,
-                  isOnSale: p.originalPrice != null && p.originalPrice > p.price,
-                  salePrice: p.originalPrice != null && p.originalPrice > p.price ? p.price : null,
-                }}
-              />
-            ))}
+          : products.slice(0, 6).map((p, i) => {
+              const productId = p.id || p.productId || p.slug || `rec-${i}`;
+              const hasSalePrice = p.salePrice != null && p.salePrice < p.price;
+              const currentPrice = (hasSalePrice ? p.salePrice : p.price) ?? p.price;
+              const comparePrice =
+                p.originalPrice != null && p.originalPrice > currentPrice
+                  ? p.originalPrice
+                  : hasSalePrice
+                    ? p.price
+                    : null;
+              const onSale = !!p.isOnSale || !!comparePrice;
+
+              return (
+                <ProductCard
+                  key={productId}
+                  product={{
+                    id: productId,
+                    slug: p.slug,
+                    name: p.name,
+                    price: currentPrice,
+                    originalPrice: comparePrice,
+                    category: p.category,
+                    image: p.image || null,
+                    inventory: p.stock ?? p.inventory ?? 99,
+                    ratingAvg: p.rating,
+                    ratingCount: p.reviewCount,
+                    isOnSale: onSale,
+                    salePrice: onSale ? currentPrice : null,
+                  }}
+                />
+              );
+            })}
       </div>
     </section>
   );

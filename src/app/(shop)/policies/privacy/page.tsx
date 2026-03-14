@@ -8,123 +8,222 @@
 import { ShieldCheck, Mail, MapPin, Phone } from "lucide-react";
 import Link from "next/link";
 import { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Button } from "@/components/ui/button";
+import { getContactInfo } from "@/lib/contact-info";
 
 export const revalidate = 86400; // 24 hours for static content
 
-export const metadata: Metadata = {
-    title: "Chính Sách Bảo Mật | LIKEFOOD",
-    description: "Chính sách bảo mật thông tin và quyền riêng tư của khách hàng tại LIKEFOOD.",
-};
+const PRIVACY_COPY = {
+    vi: {
+        title: "Chính Sách Bảo Mật | LIKEFOOD",
+        description: "Chính sách bảo mật thông tin và quyền riêng tư của khách hàng tại LIKEFOOD.",
+        heroTitle: "Chính Sách Bảo Mật",
+        heroDesc: "Quyền riêng tư và an toàn dữ liệu của bạn là ưu tiên hàng đầu tại LIKEFOOD. Dưới đây là cách chúng tôi thu thập, sử dụng và bảo vệ thông tin cá nhân của bạn.",
+        updated: "Ngày cập nhật hiệu lực:",
+        intro: "Chào mừng bạn đến với LIKEFOOD. Việc bạn truy cập và sử dụng website đồng nghĩa với việc bạn đồng ý với các điều khoản bảo mật dưới đây.",
+        sections: [
+            {
+                heading: "1. Mục đích và phạm vi thu thập thông tin",
+                paragraphs: [
+                    "LIKEFOOD không bán, chia sẻ hay trao đổi thông tin cá nhân của khách hàng cho bên thứ ba không liên quan.",
+                    "Thông tin thu thập được sử dụng nội bộ để xử lý đơn hàng, chăm sóc khách hàng và cải thiện trải nghiệm mua sắm.",
+                ],
+                bullets: [
+                    "Họ và tên",
+                    "Địa chỉ email",
+                    "Số điện thoại",
+                    "Địa chỉ giao hàng",
+                ],
+            },
+            {
+                heading: "2. Phạm vi sử dụng thông tin",
+                paragraphs: [
+                    "Dữ liệu chỉ được dùng cho các mục đích vận hành đơn hàng, hỗ trợ sau bán và thông báo liên quan đến giao dịch.",
+                    "Trong trường hợp cần giao hàng, thông tin liên hệ và địa chỉ có thể được chia sẻ với đơn vị vận chuyển.",
+                ],
+            },
+            {
+                heading: "3. Thời gian lưu trữ thông tin",
+                paragraphs: [
+                    "Dữ liệu cá nhân được lưu trữ cho đến khi khách hàng yêu cầu xóa hoặc tự thực hiện xóa tài khoản.",
+                    "Tài khoản đóng sẽ được xử lý xóa dữ liệu vĩnh viễn theo quy trình nội bộ và quy định pháp lý hiện hành.",
+                ],
+            },
+            {
+                heading: "4. Quyền của người dùng",
+                paragraphs: [
+                    "Khách hàng có quyền truy cập, cập nhật, điều chỉnh hoặc yêu cầu xóa thông tin cá nhân.",
+                    "Các thao tác nhạy cảm như đổi email hoặc xóa tài khoản có thể yêu cầu xác thực bổ sung để đảm bảo an toàn.",
+                ],
+            },
+            {
+                heading: "5. Bảo mật hệ thống",
+                paragraphs: [
+                    "Chúng tôi áp dụng các lớp bảo vệ cho phiên đăng nhập, request và xử lý thanh toán để giảm rủi ro.",
+                    "Hệ thống được giám sát để phát hiện và ngăn chặn hành vi bất thường, truy cập trái phép hoặc tấn công.",
+                ],
+            },
+            {
+                heading: "6. Cập nhật chính sách",
+                paragraphs: [
+                    "LIKEFOOD có thể cập nhật chính sách theo thay đổi pháp lý hoặc công nghệ.",
+                    "Mọi cập nhật sẽ được công bố trên website và có hiệu lực từ thời điểm được nêu rõ.",
+                ],
+            },
+        ],
+        contactTitle: "Hệ thống đặc sản LIKEFOOD",
+        hotline: "Hotline hỗ trợ 24/7",
+        backHome: "Quay lại trang chủ",
+        gotoTerms: "Đến Điều Khoản Dịch Vụ",
+    },
+    en: {
+        title: "Privacy Policy | LIKEFOOD",
+        description: "How LIKEFOOD collects, uses, and protects customer personal data.",
+        heroTitle: "Privacy Policy",
+        heroDesc: "Your privacy and data safety are top priorities at LIKEFOOD. This page explains how we protect and use your personal information.",
+        updated: "Effective update date:",
+        intro: "Welcome to LIKEFOOD. By accessing and using our website, you agree to the privacy terms below.",
+        sections: [
+            {
+                heading: "1. Data collection purpose and scope",
+                paragraphs: [
+                    "LIKEFOOD does not sell, trade, or share customer personal data with unrelated third parties.",
+                    "Collected data is used internally to process orders, support customers, and improve shopping experience.",
+                ],
+                bullets: [
+                    "Full name",
+                    "Email address",
+                    "Phone number",
+                    "Shipping address",
+                ],
+            },
+            {
+                heading: "2. Data usage scope",
+                paragraphs: [
+                    "Data is used only for order operations, after-sales support, and transaction-related notifications.",
+                    "When required for delivery, contact details and shipping address may be shared with delivery partners.",
+                ],
+            },
+            {
+                heading: "3. Data retention",
+                paragraphs: [
+                    "Personal data is retained until the customer requests deletion or deletes their account.",
+                    "Closed accounts are processed for permanent deletion according to internal procedures and applicable regulations.",
+                ],
+            },
+            {
+                heading: "4. User rights",
+                paragraphs: [
+                    "Customers may access, update, correct, or request deletion of their personal data.",
+                    "Sensitive actions such as changing email or deleting account may require additional verification for security.",
+                ],
+            },
+            {
+                heading: "5. Platform security",
+                paragraphs: [
+                    "We apply layered protection for sessions, requests, and payment flows to reduce risk.",
+                    "The platform is monitored to detect and block abnormal behavior, unauthorized access, and attacks.",
+                ],
+            },
+            {
+                heading: "6. Policy updates",
+                paragraphs: [
+                    "LIKEFOOD may update this policy to reflect legal or technology changes.",
+                    "All updates will be published on our website and become effective as stated.",
+                ],
+            },
+        ],
+        contactTitle: "LIKEFOOD Specialty Marketplace",
+        hotline: "24/7 support hotline",
+        backHome: "Back to home",
+        gotoTerms: "Go to Terms of Service",
+    },
+} as const;
 
-export default function PrivacyPage() {
+export async function generateMetadata(): Promise<Metadata> {
+    const cookieStore = await cookies();
+    const locale = cookieStore.get("language")?.value === "en" ? "en" : "vi";
+    const copy = PRIVACY_COPY[locale];
+
+    return {
+        title: copy.title,
+        description: copy.description,
+        alternates: { canonical: "/policies/privacy" },
+    };
+}
+
+export default async function PrivacyPage() {
+    const cookieStore = await cookies();
+    const locale = cookieStore.get("language")?.value === "en" ? "en" : "vi";
+    const copy = PRIVACY_COPY[locale];
+    const contact = await getContactInfo();
+
     return (
         <div className="min-h-screen bg-slate-50 py-12 md:py-20 lg:py-24">
             <div className="page-container-wide">
-                <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
-                    {/* Header */}
-                    <div className="relative bg-emerald-600 px-8 py-16 text-center overflow-hidden">
-                        <div className="absolute inset-0 bg-[url('/pattern-light.svg')] opacity-10"></div>
+                <div className="overflow-hidden rounded-3xl bg-white shadow-xl">
+                    <div className="relative overflow-hidden bg-emerald-600 px-8 py-16 text-center">
+                        <div className="absolute inset-0 bg-[url('/pattern-light.svg')] opacity-10" />
                         <div className="relative z-10">
-                            <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-6">
-                                <ShieldCheck className="w-8 h-8 text-white" />
+                            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md">
+                                <ShieldCheck className="h-8 w-8 text-white" />
                             </div>
-                            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 tracking-tight">
-                                Chính Sách Bảo Mật
-                            </h1>
-                            <p className="text-emerald-50 text-base md:text-lg max-w-2xl mx-auto font-medium">
-                                Sự riêng tư và an toàn dữ liệu của bạn là ưu tiên hàng đầu tại LIKEFOOD. Dưới đây là cách chúng tôi bảo vệ thông tin cá nhân của bạn.
-                            </p>
+                            <h1 className="mb-4 text-3xl font-black tracking-tight text-white md:text-4xl lg:text-5xl">{copy.heroTitle}</h1>
+                            <p className="mx-auto max-w-2xl text-base font-medium text-emerald-50 md:text-lg">{copy.heroDesc}</p>
                         </div>
                     </div>
 
-                    {/* Content */}
-                    <div className="p-8 md:p-12 lg:p-16 prose prose-slate prose-emerald max-w-none prose-headings:font-black prose-headings:tracking-tight prose-a:text-emerald-600 hover:prose-a:text-emerald-700">
-                        <p className="lead text-lg text-slate-600 font-medium mb-8">
-                            Ngày cập nhật hiệu lực: <strong>01/01/2026</strong>.
+                    <div className="prose prose-emerald prose-slate max-w-none p-8 md:p-12 lg:p-16 prose-headings:tracking-tight prose-headings:font-black">
+                        <p className="mb-8 text-lg font-medium text-slate-600">
+                            {copy.updated} <strong>01/01/2026</strong>.
                             <br />
-                            Chào mừng bạn đến với <strong>LIKEFOOD</strong>. Việc bạn truy cập và sử dụng Website đồng nghĩa với việc bạn đồng ý với các điều khoản bảo mật dưới đây.
+                            {copy.intro}
                         </p>
 
-                        <h2>1. Mục đích và phạm vi thu thập thông tin</h2>
-                        <p>
-                            LIKEFOOD không bán, chia sẻ hay trao đổi thông tin cá nhân của khách hàng thu thập trên trang web cho một bên thứ ba nào khác. Thông tin cá nhân thu thập được sẽ chỉ được sử dụng trong nội bộ công ty.
-                        </p>
-                        <p>Khi bạn đăng ký tài khoản hoặc mua hàng tại LIKEFOOD, thông tin cá nhân mà chúng tôi thu thập bao gồm:</p>
-                        <ul>
-                            <li>Họ và Tên</li>
-                            <li>Địa chỉ Email</li>
-                            <li>Số Điện Thoại</li>
-                            <li>Địa chỉ giao hàng</li>
-                        </ul>
-                        <p>
-                            Những thông tin trên sẽ được sử dụng cho một hoặc tất cả các mục đích sau đây:
-                        </p>
-                        <ul>
-                            <li>Giao hàng nguyên bản đặc sản quý khách đã mua tại LIKEFOOD.</li>
-                            <li>Thông báo về việc giao hàng và hỗ trợ khách hàng.</li>
-                            <li>Cung cấp thông tin liên quan đến sản phẩm.</li>
-                            <li>Xử lý đơn đặt hàng và cung cấp dịch vụ, phần mềm qua trang web của chúng tôi theo yêu cầu của quý khách.</li>
-                        </ul>
+                        {copy.sections.map((section) => (
+                            <section key={section.heading}>
+                                <h2>{section.heading}</h2>
+                                {section.paragraphs.map((paragraph) => (
+                                    <p key={paragraph}>{paragraph}</p>
+                                ))}
+                                {section.bullets && (
+                                    <ul>
+                                        {section.bullets.map((bullet) => (
+                                            <li key={bullet}>{bullet}</li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </section>
+                        ))}
 
-                        <h2>2. Phạm vi sử dụng thông tin</h2>
-                        <p>
-                            Thông tin cá nhân thu thập được sẽ chỉ được LIKEFOOD sử dụng trong nội bộ dự án và cho một hoặc tất cả các mục đích như đã nêu trên. Chúng tôi có thể chia sẻ tên, số điện thoại và địa chỉ của quý khách cho dịch vụ chuyển phát nhanh để có thể giao hàng cho quý khách.
-                        </p>
-
-                        <h2>3. Thời gian lưu trữ thông tin</h2>
-                        <p>
-                            Dữ liệu cá nhân của Khách hàng sẽ được lưu trữ định kỳ cho đến khi có yêu cầu hủy bỏ hoặc tự khách hàng đăng nhập và thực hiện hủy bỏ tại <Link href="/profile">Trang Thông tin cá nhân</Link>. Đối với tài khoản bị đóng, thông tin sẽ được xóa hoàn toàn khỏi cơ sở dữ liệu sau 30 ngày.
-                        </p>
-
-                        <h2>4. Địa chỉ của đơn vị thu thập và quản lý thông tin cá nhân</h2>
-                        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 mt-6 not-prose space-y-4">
-                            <h3 className="font-black text-lg text-slate-800 uppercase tracking-wide">HỆ THỐNG ĐẶC SẢN LIKEFOOD</h3>
-                            <div className="flex items-start gap-4 text-slate-600 font-medium">
-                                <MapPin className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                                <p>Phân khu Mỹ Gia 01, Vinhomes Ocean Park 2, Văn Giang, Hưng Yên</p>
+                        <div className="not-prose mt-10 space-y-4 rounded-2xl border border-slate-100 bg-slate-50 p-6">
+                            <h3 className="text-lg font-black uppercase tracking-wide text-slate-800">{copy.contactTitle}</h3>
+                            <div className="flex items-start gap-4 font-medium text-slate-600">
+                                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                                <p>{contact.address}</p>
                             </div>
-                            <div className="flex items-center gap-4 text-slate-600 font-medium">
-                                <Phone className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                                <p>02-315-8105 (Hotline hỗ trợ 24/7)</p>
+                            <div className="flex items-center gap-4 font-medium text-slate-600">
+                                <Phone className="h-5 w-5 shrink-0 text-emerald-600" />
+                                <p>{contact.phone} ({copy.hotline})</p>
                             </div>
-                            <div className="flex items-center gap-4 text-slate-600 font-medium">
-                                <Mail className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                                <a href="mailto:tranquocvu3011@gmail.com" className="hover:text-emerald-600 transition-colors">tranquocvu3011@gmail.com</a>
+                            <div className="flex items-center gap-4 font-medium text-slate-600">
+                                <Mail className="h-5 w-5 shrink-0 text-emerald-600" />
+                                <a href={`mailto:${contact.email}`} className="transition-colors hover:text-emerald-600">{contact.email}</a>
                             </div>
                         </div>
-
-                        <h2>5. Phương tiện và công cụ để người dùng tiếp cận và chỉnh sửa dữ liệu cá nhân</h2>
-                        <p>
-                            Khách hàng có quyền tự kiểm tra, cập nhật, điều chỉnh hoặc hủy bỏ thông tin cá nhân của mình bằng cách đăng nhập vào tài khoản trên website LIKEFOOD và chỉnh sửa thông tin cá nhân. Đối với việc thay đổi email hoặc xóa tài khoản vĩnh viễn, khách hàng sẽ cần phải cung cấp mật khẩu hoặc mã OTP xác thực 2 lớp (2FA) nhằm đảm bảo an toàn tuyệt đối.
-                        </p>
-
-                        <h2>6. Cơ chế Hệ thống Xác thực Đa tầng (2FA) & Mã Hóa Hệ Thống</h2>
-                        <p>
-                            Chúng tôi ứng dụng các tiêu chuẩn an ninh phần mềm cao nhất bao gồm:
-                        </p>
-                        <ul>
-                            <li><strong>Session Caching 15 Phút:</strong> Đối với các vùng dữ liệu nhạy cảm hoặc giao diện thanh toán.</li>
-                            <li><strong>Phòng chống Hacker (XSS, CSRF, DDoS):</strong> Bảo vệ bởi lớp lá chắn Firewall cấp độ Vercel Edge.</li>
-                            <li><strong>Xác thực 2 Bước Tự chọn (2FA):</strong> Ngăn ngừa kẻ gian truy cập dữ liệu khi bị lộ mật khẩu. Bất cứ hành động đăng nhập từ môi trường lạ nào cũng sẽ kích hoạt Email Cảnh Báo.</li>
-                        </ul>
-
-                        <h2>7. Cập nhật Chính sách</h2>
-                        <p>
-                            LIKEFOOD có quyền thay đổi, chỉnh sửa Chính sách Bảo mật này bất kỳ lúc nào để phù hợp với định luật pháp hiện hành hoặc sự thay đổi của công nghệ. Mọi thay đổi sẽ được công bố chính thức công khai trên trang web của chúng tôi.
-                        </p>
                     </div>
                 </div>
 
-                <div className="mt-8 text-center flex items-center justify-center gap-4">
+                <div className="mt-8 flex items-center justify-center gap-4 text-center">
                     <Link href="/">
-                        <Button variant="ghost" className="font-bold text-slate-500 hover:bg-slate-200 rounded-2xl h-12 px-6">
-                            Quay lại Trang chủ
+                        <Button variant="ghost" className="h-12 rounded-2xl px-6 font-bold text-slate-500 hover:bg-slate-200">
+                            {copy.backHome}
                         </Button>
                     </Link>
-                    <Link href="/terms">
-                        <Button variant="outline" className="font-bold text-emerald-600 border-emerald-200 hover:bg-emerald-50 rounded-2xl h-12 px-6">
-                            Đến Điều Khoản Dịch Vụ
+                    <Link href="/policies/terms">
+                        <Button variant="outline" className="h-12 rounded-2xl border-emerald-200 px-6 font-bold text-emerald-600 hover:bg-emerald-50">
+                            {copy.gotoTerms}
                         </Button>
                     </Link>
                 </div>

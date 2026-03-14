@@ -20,7 +20,7 @@ export default function ErrorState({
     title,
     message,
     onRetry,
-    retryLabel = "Thử lại",
+    retryLabel = "↻",
     className,
 }: ErrorStateProps) {
     return (

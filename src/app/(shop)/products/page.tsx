@@ -38,7 +38,10 @@ const CATEGORY_TO_DB_STATIC: Record<string, string> = {
 };
 
 // Fallback category names (used when /api/categories is unavailable)
-const FALLBACK_CATEGORY_NAMES = ["Cá khô", "Tôm & Mực khô", "Trái cây sấy", "Trà & Bánh mứt", "Gia vị Việt"];
+const FALLBACK_CATEGORY_NAMES = {
+    vi: ["Cá khô", "Tôm & Mực khô", "Trái cây sấy", "Trà & Bánh mứt", "Gia vị Việt"],
+    en: ["Dried fish", "Dried shrimp & squid", "Dried fruits", "Tea & preserves", "Vietnamese spices"],
+} as const;
 
 type DbCategory = { id: string; name: string; slug: string };
 
@@ -59,10 +62,10 @@ function ProductCatalogContent() {
             .catch(() => {});
     }, []);
 
-    // Build category list from DB; fallback to static list if API unavailable
+    // Build category list from DB; fallback to locale list if API unavailable
     const categoryNames = dbCategories.length > 0
         ? dbCategories.map(c => c.name)
-        : FALLBACK_CATEGORY_NAMES;
+        : FALLBACK_CATEGORY_NAMES[language === "en" ? "en" : "vi"];
 
     const CATEGORIES = [t("shopPage.allCategories"), ...categoryNames];
 

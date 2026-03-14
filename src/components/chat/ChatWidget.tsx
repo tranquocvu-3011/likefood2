@@ -10,42 +10,47 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Loader2 } from "lucide-react";
 import { trackEvent } from "@/lib/tracking";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
 }
 
-const QUICK_QUESTIONS = [
-  "Hướng dẫn mua hàng trên LIKEFOOD",
-  "Chính sách vận chuyển đi các bang tại Mỹ",
-  "Các phương thức thanh toán đang hỗ trợ",
-  "Gợi ý đặc sản phù hợp làm quà biếu",
-];
-
 export default function ChatWidget() {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      content:
-        "Xin chào, mình là trợ lý AI của LIKEFOOD. Mình có thể hỗ trợ bạn về sản phẩm đặc sản, cách đặt hàng, vận chuyển và thanh toán. Bạn đang quan tâm điều gì?",
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
+  // Set greeting when opening for the first time
   useEffect(() => {
-    if (open) {
-      trackEvent("view_home"); // dùng tạm event đã có cho việc mở chatbot
+    if (open && !initialized) {
+      setMessages([
+        {
+          role: "assistant",
+          content: t("chatWidget.greeting"),
+        },
+      ]);
+      setInitialized(true);
+      trackEvent("view_home");
     }
-  }, [open]);
+  }, [open, initialized, t]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  const QUICK_QUESTIONS = [
+    t("chatWidget.quickQ1"),
+    t("chatWidget.quickQ2"),
+    t("chatWidget.quickQ3"),
+    t("chatWidget.quickQ4"),
+  ];
 
   const sendMessage = async (text?: string) => {
     const content = (text ?? input).trim();
@@ -77,7 +82,7 @@ export default function ChatWidget() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Không thể gửi tin nhắn. Vui lòng thử lại.");
+        setError(data.error || t("chatWidget.sendError"));
         return;
       }
 
@@ -86,7 +91,7 @@ export default function ChatWidget() {
         { role: "assistant", content: data.reply || "..." },
       ]);
     } catch {
-      setError("Không thể kết nối máy chủ. Vui lòng thử lại sau.");
+      setError(t("chatWidget.connectionError"));
     } finally {
       setLoading(false);
     }
@@ -99,7 +104,7 @@ export default function ChatWidget() {
 
   return (
     <div className="fixed bottom-20 right-4 z-40 md:bottom-6 md:right-6">
-      {/* Nút floating */}
+      {/* Floating button */}
       {!open && (
         <button
           type="button"
@@ -108,12 +113,12 @@ export default function ChatWidget() {
         >
           <MessageCircle className="w-5 h-5" />
           <span className="hidden md:inline text-xs font-semibold">
-            Chat ngay
+            {t("chatWidget.chatNow")}
           </span>
         </button>
       )}
 
-      {/* Hộp chat */}
+      {/* Chat box */}
       {open && (
         <div className="w-[320px] max-w-[90vw] h-[420px] rounded-3xl shadow-2xl bg-white border border-slate-200 flex flex-col overflow-hidden ring-4 ring-slate-900/5">
           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-gradient-to-br from-emerald-600 via-teal-600 to-slate-800 text-white">
@@ -122,13 +127,14 @@ export default function ChatWidget() {
                 LIKEFOOD
               </p>
               <p className="text-[11px] text-white/80">
-                Trợ lý 24/7 về mua hàng & đặc sản Việt Nam
+                {t("chatWidget.subtitle")}
               </p>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
               className="p-1.5 rounded-full hover:bg-white/20 transition-colors"
+              aria-label="Close chat"
             >
               <X className="w-4 h-4" />
             </button>
@@ -159,7 +165,7 @@ export default function ChatWidget() {
             {loading && (
               <div className="flex items-center gap-2 text-[11px] text-slate-500">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Đang soạn trả lời...
+                {t("chatWidget.typing")}
               </div>
             )}
 
@@ -167,10 +173,10 @@ export default function ChatWidget() {
               <p className="text-[11px] text-red-500 mt-1">{error}</p>
             )}
 
-            {/* Quick questions — chips nhỏ gọn */}
+            {/* Quick questions */}
             <div className="pt-1 space-y-1">
               <p className="text-[10px] text-slate-400 uppercase tracking-wide font-semibold">
-                Gợi ý nhanh
+                {t("chatWidget.quickSuggestions")}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {QUICK_QUESTIONS.map((q) => (
@@ -196,13 +202,14 @@ export default function ChatWidget() {
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Nhập câu hỏi của bạn..."
+              placeholder={t("chatWidget.placeholder")}
               className="flex-1 text-[13px] px-3 py-2 rounded-full bg-slate-50 border border-slate-100 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 outline-none transition-all"
             />
             <button
               type="submit"
               disabled={!input.trim() || loading}
               className="p-2.5 rounded-full bg-slate-800 text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors shadow-md"
+              aria-label="Send message"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -216,4 +223,3 @@ export default function ChatWidget() {
     </div>
   );
 }
-

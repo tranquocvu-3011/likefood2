@@ -20,7 +20,8 @@ import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/context";
 
 function ResendVerifyContent() {
-    const { t } = useLanguage();
+    const { t, isVietnamese } = useLanguage();
+    const tr = (viText: string, enKey: string) => (isVietnamese ? viText : t(enKey));
     const searchParams = useSearchParams();
     const router = useRouter();
     const initialEmail = searchParams.get("email") || "";
@@ -56,12 +57,12 @@ function ResendVerifyContent() {
             if (res.ok) {
                 if (data.alreadyVerified) {
                     // Account is already verified — redirect to login
-                    router.push("/login?message=" + encodeURIComponent("Tài khoản đã xác thực. Hãy đăng nhập."));
+                    router.push("/login?message=" + encodeURIComponent(tr("Tài khoản đã xác thực. Hãy đăng nhập.", "auth.accountVerifiedLogin")));
                     return;
                 }
                 setStep("otp");
             } else {
-                setError(data.error || t("auth.connError"));
+                setError(tr("Không thể gửi yêu cầu. Vui lòng thử lại.", "auth.sendFailedTryAgain"));
             }
         } catch {
             setError(t("auth.connError"));
@@ -88,8 +89,8 @@ function ResendVerifyContent() {
             if (res.ok) {
                 setIsSuccess(true);
             } else {
-                const data = await res.json();
-                setError(data.error || t("auth.wrongOTP"));
+                await res.json();
+                setError(t("auth.wrongOTP"));
             }
         } catch {
             setError(t("auth.connError"));
@@ -291,8 +292,8 @@ function ResendVerifyContent() {
                     <div className="mt-16 pt-8 border-t border-slate-50 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300">
                         <span>&copy; 2026 LIKEFOOD</span>
                         <div className="flex gap-4">
-                            <Link href="/terms" className="hover:text-emerald-500 transition-colors">Điều khoản</Link>
-                            <Link href="/privacy" className="hover:text-emerald-500 transition-colors">Bảo mật</Link>
+                            <Link href="/terms" className="hover:text-emerald-500 transition-colors">{t("auth.footerTerms")}</Link>
+                            <Link href="/privacy" className="hover:text-emerald-500 transition-colors">{t("auth.footerPrivacy")}</Link>
                         </div>
                     </div>
                 </div>

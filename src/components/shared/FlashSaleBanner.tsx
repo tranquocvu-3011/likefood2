@@ -14,7 +14,7 @@ import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/context";
 
 export default function FlashSaleBanner() {
-    const { language } = useLanguage();
+    const { language, t } = useLanguage();
     const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
 
     useEffect(() => {
@@ -154,12 +154,12 @@ export default function FlashSaleBanner() {
 
                         <div className="min-w-0">
                             <div className="flex items-center gap-3 mb-1">
-                                <span className="bg-rose-500/10 text-rose-600 border border-rose-500/20 text-[10px] md:text-xs font-black px-3 py-1 rounded-sm uppercase tracking-[0.2em] flex-shrink-0">{language === "vi" ? "Ưu đãi" : "Exclusive"}</span>
+                                <span className="bg-rose-500/10 text-rose-600 border border-rose-500/20 text-[10px] md:text-xs font-black px-3 py-1 rounded-sm uppercase tracking-[0.2em] flex-shrink-0">{t('shop.exclusive')}</span>
                                 <h3 className="text-slate-900 font-extrabold text-2xl md:text-3xl tracking-widest truncate">
                                     FLASH <span className="text-rose-600 font-black hidden sm:inline">SALE</span>
                                 </h3>
                             </div>
-                            <p className="text-slate-600 text-xs md:text-sm font-medium tracking-wide line-clamp-1">Giảm đến 50% đặc sản tuyển chọn. Nhanh tay kẻo lỡ!</p>
+                            <p className="text-slate-600 text-xs md:text-sm font-medium tracking-wide line-clamp-1">{t('shop.flashSalePromo')}</p>
                         </div>
                     </div>
 
@@ -168,17 +168,17 @@ export default function FlashSaleBanner() {
                         <div className="flex-1 lg:flex-none flex items-center justify-center gap-4 md:gap-6 bg-white/80 backdrop-blur-md rounded-2xl p-4 px-6 md:p-5 md:px-10 border border-rose-100 shadow-xl shadow-rose-50">
                             <div className="flex flex-col items-center">
                                 <span className="text-slate-900 font-black text-4xl md:text-5xl tabular-nums leading-none tracking-widest">{formatNum(timeLeft.hours)}</span>
-                                <span className="text-xs text-rose-500 font-bold uppercase tracking-widest mt-2">{language === "vi" ? "Giờ" : "Hrs"}</span>
+                                <span className="text-xs text-rose-500 font-bold uppercase tracking-widest mt-2">{t('shop.hours')}</span>
                             </div>
                             <span className="text-rose-300 font-black text-3xl md:text-4xl mb-5 md:mb-6 relative -top-1">:</span>
                             <div className="flex flex-col items-center">
                                 <span className="text-slate-900 font-black text-4xl md:text-5xl tabular-nums leading-none tracking-widest">{formatNum(timeLeft.minutes)}</span>
-                                <span className="text-xs text-rose-500 font-bold uppercase tracking-widest mt-2">{language === "vi" ? "Phút" : "Min"}</span>
+                                <span className="text-xs text-rose-500 font-bold uppercase tracking-widest mt-2">{t('shop.minutes')}</span>
                             </div>
                             <span className="text-rose-300 font-black text-3xl md:text-4xl mb-5 md:mb-6 relative -top-1">:</span>
                             <div className="flex flex-col items-center">
                                 <span className="text-slate-900 font-black text-4xl md:text-5xl tabular-nums leading-none tracking-widest">{formatNum(timeLeft.seconds)}</span>
-                                <span className="text-xs text-rose-500 font-bold uppercase tracking-widest mt-2">{language === "vi" ? "Giây" : "Sec"}</span>
+                                <span className="text-xs text-rose-500 font-bold uppercase tracking-widest mt-2">{t('shop.seconds')}</span>
                             </div>
                         </div>
 
@@ -188,7 +188,7 @@ export default function FlashSaleBanner() {
                                 whileTap={{ scale: 0.98 }}
                                 className="w-full bg-slate-900 text-white p-4 md:px-8 md:py-4 rounded-2xl shadow-lg shadow-slate-900/20 font-bold flex items-center justify-center gap-2 md:gap-3 transition-colors text-xs md:text-sm uppercase tracking-[0.2em]"
                             >
-                                <span>{language === "vi" ? "XEM CHI TIẾT" : "VIEW DEALS"}</span>
+                                <span>{t('shop.viewDeals')}</span>
                                 <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
                             </motion.button>
                         </Link>

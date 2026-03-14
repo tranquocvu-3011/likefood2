@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle, XCircle, Loader2, ShoppingBag, ArrowRight } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface SessionStatus {
     status: string;
@@ -24,6 +25,7 @@ export default function CheckoutReturnPage() {
 
     const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(null);
     const [loading, setLoading] = useState(true);
+    const { t } = useLanguage();
 
     useEffect(() => {
         if (!sessionId) {
@@ -60,7 +62,7 @@ export default function CheckoutReturnPage() {
             <div className="min-h-screen flex items-center justify-center bg-white">
                 <div className="text-center">
                     <Loader2 className="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-4" />
-                    <p className="text-sm text-slate-500">Đang xác nhận thanh toán...</p>
+                    <p className="text-sm text-slate-500">{t("checkoutReturn.verifyingPayment")}</p>
                 </div>
             </div>
         );
@@ -71,13 +73,13 @@ export default function CheckoutReturnPage() {
             <div className="min-h-screen flex items-center justify-center bg-white">
                 <div className="text-center max-w-md px-6">
                     <XCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-                    <h1 className="text-xl font-bold text-slate-900 mb-2">Không tìm thấy phiên thanh toán</h1>
+                    <h1 className="text-xl font-bold text-slate-900 mb-2">{t("checkoutReturn.sessionNotFound")}</h1>
                     <p className="text-sm text-slate-500 mb-6">
-                        Phiên thanh toán không hợp lệ hoặc đã hết hạn.
+                        {t("checkoutReturn.sessionInvalid")}
                     </p>
                     <Link href="/products" className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 transition">
                         <ShoppingBag className="w-4 h-4" />
-                        Tiếp tục mua sắm
+                        {t("checkoutReturn.continueShopping")}
                     </Link>
                 </div>
             </div>
@@ -98,23 +100,23 @@ export default function CheckoutReturnPage() {
                     </div>
 
                     <h1 className="text-2xl font-extrabold text-slate-900 mb-3">
-                        Thanh toán thành công! 🎉
+                        {t("checkoutReturn.paymentSuccess")}
                     </h1>
 
                     <p className="text-sm text-slate-500 mb-2 leading-relaxed">
-                        Cảm ơn bạn đã đặt hàng tại <strong className="text-slate-700">LIKEFOOD</strong>.
+                        {t("checkoutReturn.thankYou")} <strong className="text-slate-700">LIKEFOOD</strong>.
                     </p>
 
                     {sessionStatus.customer_email && (
                         <p className="text-sm text-slate-500 mb-6">
-                            Email xác nhận sẽ được gửi đến{" "}
+                            {t("checkoutReturn.emailConfirmation")}{" "}
                             <strong className="text-slate-700">{sessionStatus.customer_email}</strong>
                         </p>
                     )}
 
                     {(orderId || sessionStatus.orderId) && (
                         <div className="inline-block bg-slate-50 border border-slate-100 rounded-xl px-5 py-3 mb-8">
-                            <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Mã đơn hàng</span>
+                            <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">{t("checkoutReturn.orderNumber")}</span>
                             <p className="text-sm font-bold text-slate-800 mt-1 font-mono">
                                 {orderId || sessionStatus.orderId}
                             </p>
@@ -127,7 +129,7 @@ export default function CheckoutReturnPage() {
                                 href={`/profile/orders/${orderId || sessionStatus.orderId}`}
                                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 transition shadow-lg shadow-emerald-500/20"
                             >
-                                Xem đơn hàng
+                                {t("checkoutReturn.viewOrder")}
                                 <ArrowRight className="w-4 h-4" />
                             </Link>
                         )}
@@ -136,7 +138,7 @@ export default function CheckoutReturnPage() {
                             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-slate-100 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-200 transition"
                         >
                             <ShoppingBag className="w-4 h-4" />
-                            Tiếp tục mua sắm
+                            {t("checkoutReturn.continueShopping")}
                         </Link>
                     </div>
                 </div>
@@ -149,12 +151,12 @@ export default function CheckoutReturnPage() {
         <div className="min-h-screen flex items-center justify-center bg-white">
             <div className="text-center max-w-md px-6">
                 <XCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-                <h1 className="text-xl font-bold text-slate-900 mb-2">Thanh toán chưa hoàn tất</h1>
+                <h1 className="text-xl font-bold text-slate-900 mb-2">{t("checkoutReturn.paymentIncomplete")}</h1>
                 <p className="text-sm text-slate-500 mb-6">
-                    Đã xảy ra lỗi trong quá trình thanh toán. Vui lòng thử lại.
+                    {t("checkoutReturn.paymentError")}
                 </p>
                 <Link href="/checkout" className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 transition">
-                    Thử lại
+                    {t("checkoutReturn.retry")}
                 </Link>
             </div>
         </div>

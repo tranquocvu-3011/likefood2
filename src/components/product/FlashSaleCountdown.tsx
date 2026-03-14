@@ -8,6 +8,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface FlashSaleCountdownProps {
     endDate: Date | string;
@@ -22,6 +23,8 @@ interface TimeLeft {
 }
 
 export default function FlashSaleCountdown({ endDate, compact = false }: FlashSaleCountdownProps) {
+    const { t } = useLanguage();
+
     const calculateTimeLeft = useCallback((): TimeLeft => {
         const end = new Date(endDate).getTime();
         const now = new Date().getTime();
@@ -56,7 +59,7 @@ export default function FlashSaleCountdown({ endDate, compact = false }: FlashSa
     if (timeLeft.isExpired) {
         return (
             <div className={`text-xs font-bold text-gray-400 ${compact ? '' : 'text-center'}`}>
-                Đã kết thúc
+                {t("flashSaleCountdown.ended")}
             </div>
         );
     }
@@ -79,21 +82,21 @@ export default function FlashSaleCountdown({ endDate, compact = false }: FlashSa
                 <div className="bg-gradient-to-br from-red-500 to-rose-600 text-white font-black text-lg px-3 py-2 rounded-lg shadow-lg min-w-[50px] text-center">
                     {String(timeLeft.hours).padStart(2, '0')}
                 </div>
-                <span className="text-[10px] text-gray-500 mt-1 font-bold uppercase">Giờ</span>
+                <span className="text-[10px] text-gray-500 mt-1 font-bold uppercase">{t("flashSaleCountdown.hours")}</span>
             </div>
             <span className="text-2xl font-black text-gray-400">:</span>
             <div className="flex flex-col items-center">
                 <div className="bg-gradient-to-br from-red-500 to-rose-600 text-white font-black text-lg px-3 py-2 rounded-lg shadow-lg min-w-[50px] text-center">
                     {String(timeLeft.minutes).padStart(2, '0')}
                 </div>
-                <span className="text-[10px] text-gray-500 mt-1 font-bold uppercase">Phút</span>
+                <span className="text-[10px] text-gray-500 mt-1 font-bold uppercase">{t("flashSaleCountdown.minutes")}</span>
             </div>
             <span className="text-2xl font-black text-gray-400">:</span>
             <div className="flex flex-col items-center">
                 <div className="bg-gradient-to-br from-red-500 to-rose-600 text-white font-black text-lg px-3 py-2 rounded-lg shadow-lg min-w-[50px] text-center">
                     {String(timeLeft.seconds).padStart(2, '0')}
                 </div>
-                <span className="text-[10px] text-gray-500 mt-1 font-bold uppercase">Giây</span>
+                <span className="text-[10px] text-gray-500 mt-1 font-bold uppercase">{t("flashSaleCountdown.seconds")}</span>
             </div>
         </div>
     );

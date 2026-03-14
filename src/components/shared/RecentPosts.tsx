@@ -13,6 +13,7 @@ import Link from "next/link";
 import { Calendar, ArrowRight, Clock, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { logger } from "@/lib/logger";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface Post {
     id: string;
@@ -29,6 +30,10 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string; dot: string }>
     "Tin tức": { bg: "bg-blue-50 border-blue-200", text: "text-blue-700", dot: "bg-blue-400" },
     "Sức khoẻ": { bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700", dot: "bg-emerald-400" },
     "Mẹo hay": { bg: "bg-violet-50 border-violet-200", text: "text-violet-700", dot: "bg-violet-400" },
+    "News": { bg: "bg-blue-50 border-blue-200", text: "text-blue-700", dot: "bg-blue-400" },
+    "Guides": { bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700", dot: "bg-emerald-400" },
+    "Hiring": { bg: "bg-violet-50 border-violet-200", text: "text-violet-700", dot: "bg-violet-400" },
+    "Promotions": { bg: "bg-orange-50 border-orange-200", text: "text-orange-700", dot: "bg-orange-400" },
 };
 
 function getCategoryStyle(cat?: string) {
@@ -43,6 +48,7 @@ function readingTime(summary?: string) {
 }
 
 export default function RecentPosts() {
+    const { t, language } = useLanguage();
     const [posts, setPosts] = useState<Post[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -75,7 +81,7 @@ export default function RecentPosts() {
             </div>
 
             <div className="relative page-container-wide">
-                {/* Section Header — compact */}
+                {/* Section Header */}
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
                     <div className="space-y-2">
                         <motion.div
@@ -85,7 +91,7 @@ export default function RecentPosts() {
                             className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary rounded-full px-3 py-1 text-xs font-semibold"
                         >
                             <BookOpen className="w-3.5 h-3.5" />
-                            <span>Góc ẩm thực & Đặc sản</span>
+                            <span>{t("shopPage.recentPostsTitle")}</span>
                         </motion.div>
                         <motion.h2
                             initial={{ opacity: 0, y: 15 }}
@@ -94,9 +100,9 @@ export default function RecentPosts() {
                             transition={{ delay: 0.1 }}
                             className="text-2xl md:text-3xl font-black text-slate-900 leading-tight"
                         >
-                            Bài viết{" "}
+                            {t("shopPage.recentPostsHeading")}{" "}
                             <span className="bg-gradient-to-r from-primary to-cyan-500 bg-clip-text text-transparent">
-                                mới nhất
+                                {t("shopPage.recentPostsHighlight")}
                             </span>
                         </motion.h2>
                     </div>
@@ -109,13 +115,13 @@ export default function RecentPosts() {
                             href="/posts"
                             className="group inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-primary text-white rounded-full font-bold text-xs transition-all duration-300 shadow-lg shadow-slate-900/20 hover:shadow-primary/30 hover:scale-105"
                         >
-                            Xem tất cả
+                            {t("shopPage.viewAllPosts")}
                             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                         </Link>
                     </motion.div>
                 </div>
 
-                {/* Posts Grid — 2 cột đều nhau */}
+                {/* Posts Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {posts.slice(0, 4).map((post, idx) => (
                         <motion.div
@@ -125,7 +131,7 @@ export default function RecentPosts() {
                             viewport={{ once: true }}
                             transition={{ duration: 0.5, delay: 0.1 * idx, ease: [0.25, 0.46, 0.45, 0.94] }}
                         >
-                            <CompactPostCard post={post} />
+                            <CompactPostCard post={post} language={language} t={t} />
                         </motion.div>
                     ))}
                 </div>
@@ -135,7 +141,7 @@ export default function RecentPosts() {
 }
 
 /* ── Compact Post Card (horizontal, nhỏ gọn) ── */
-function CompactPostCard({ post }: { post: Post }) {
+function CompactPostCard({ post, language, t }: { post: Post; language: string; t: (key: string) => string }) {
     const cat = getCategoryStyle(post.category);
     const mins = readingTime(post.summary);
 
@@ -163,7 +169,7 @@ function CompactPostCard({ post }: { post: Post }) {
                 <div className="absolute top-2 left-2">
                     <span className={`inline-flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border backdrop-blur-sm ${cat.bg} ${cat.text}`}>
                         <span className={`w-1 h-1 rounded-full ${cat.dot}`} />
-                        {post.category || "Tin tức"}
+                        {post.category || t("shopPage.postCatNews")}
                     </span>
                 </div>
             </div>
@@ -180,15 +186,15 @@ function CompactPostCard({ post }: { post: Post }) {
                     <div className="flex items-center gap-3 text-[10px] text-slate-400 font-medium">
                         <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            {new Date(post.publishedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                            {new Date(post.publishedAt).toLocaleDateString(language === "vi" ? "vi-VN" : "en-US", { day: "2-digit", month: "2-digit", year: "numeric" })}
                         </span>
                         <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            {mins} phút
+                            {mins} {t("shopPage.minuteShort")}
                         </span>
                     </div>
                     <span className="flex items-center gap-1 text-primary font-bold text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">
-                        Đọc <ArrowRight className="w-3 h-3" />
+                        {t("shopPage.readAction")} <ArrowRight className="w-3 h-3" />
                     </span>
                 </div>
             </div>

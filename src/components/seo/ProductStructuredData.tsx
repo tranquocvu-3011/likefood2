@@ -1,131 +1,107 @@
-"use client";
-
 /**
- * LIKEFOOD - Vietnamese Specialty Marketplace
- * Copyright (c) 2026 LIKEFOOD Team
- * Licensed under the MIT License
- * https://github.com/tranquocvu-3011/likefood
+ * LIKEFOOD - Product Structured Data (Server Component)
+ * Renders Product JSON-LD server-side for Google rich results.
  */
 
-import Script from "next/script";
-import { useEffect, useState } from "react";
+const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://likefood.vn";
 
 interface ProductForSchema {
-  id: string;
-  slug?: string | null;
-  name: string;
-  description?: string | null;
-  price: number;
-  salePrice?: number | null;
-  image?: string | null;
-  category?: string;
-  avgRating?: number;
-  reviewCount?: number;
-}
-
-interface PublicSettings {
-  SEO_SITE_URL?: string;
+    name: string;
+    slug?: string | null;
+    description?: string;
+    price: number;
+    salePrice?: number | null;
+    images?: string[];
+    stock?: number;
+    avgRating?: number | null;
+    reviewCount?: number;
+    category?: { name: string; slug?: string | null } | null;
+    brand?: { name: string } | null;
 }
 
 interface Props {
-  product: ProductForSchema;
+    product: ProductForSchema;
 }
 
 export default function ProductStructuredData({ product }: Props) {
-  const [siteUrl, setSiteUrl] = useState<string | null>(null);
+    const url = `${SITE_URL}/products/${product.slug || ""}`;
+    const imageUrl = product.images?.[0]
+        ? (product.images[0].startsWith("http") ? product.images[0] : `${SITE_URL}${product.images[0]}`)
+        : `${SITE_URL}/og-image.png`;
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await fetch("/api/public/settings");
-        if (!res.ok) {
-          throw new Error("settings failed");
-        }
-        const data: PublicSettings = await res.json();
-        if (data.SEO_SITE_URL) {
-          setSiteUrl(data.SEO_SITE_URL);
-          return;
-        }
-      } catch {
-        // fallback: use window location on client
-        if (typeof window !== "undefined") {
-          setSiteUrl(window.location.origin);
-        }
-      }
+    const price = product.salePrice || product.price;
+    const availability = (product.stock ?? 0) > 0
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock";
+
+    const schema: Record<string, unknown> = {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "@id": url,
+        name: product.name,
+        description: product.description || product.name,
+        image: imageUrl,
+        url,
+        brand: {
+            "@type": "Brand",
+            name: product.brand?.name || "LIKEFOOD",
+        },
+        seller: {
+            "@type": "Organization",
+            name: "LIKEFOOD",
+        },
+        offers: {
+            "@type": "Offer",
+            url,
+            priceCurrency: "USD",
+            price: price.toFixed(2),
+            availability,
+            itemCondition: "https://schema.org/NewCondition",
+            seller: { "@type": "Organization", name: "LIKEFOOD" },
+        },
     };
-    load();
-  }, []);
 
-  if (!siteUrl) return null;
-
-  const url = `${siteUrl}/products/${product.slug || product.id}`;
-  const images = product.image ? [product.image.startsWith("http") ? product.image : `${siteUrl}${product.image}`] : [];
-  const currentPrice = product.salePrice && product.salePrice > 0 ? product.salePrice : product.price;
-
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    image: images,
-    description: product.description || "",
-    sku: product.id,
-    category: product.category || undefined,
-    aggregateRating:
-      product.avgRating && product.reviewCount && product.reviewCount > 0
-        ? {
+    if (product.avgRating && (product.reviewCount ?? 0) > 0) {
+        schema.aggregateRating = {
             "@type": "AggregateRating",
             ratingValue: product.avgRating.toFixed(1),
             reviewCount: product.reviewCount,
-          }
-        : undefined,
-    offers: {
-      "@type": "Offer",
-      priceCurrency: "USD",
-      price: currentPrice.toFixed(2),
-      availability: currentPrice > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      url,
-    },
-  };
+            bestRating: "5",
+            worstRating: "1",
+        };
+    }
 
-  // Breadcrumb schema for this product
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
+    const breadcrumbItems = [
+        { "@type": "ListItem", position: 1, name: "Trang chủ", item: SITE_URL },
+        { "@type": "ListItem", position: 2, name: "Sản phẩm", item: `${SITE_URL}/products` },
+    ];
+
+    if (product.category) {
+        breadcrumbItems.push({
+            "@type": "ListItem",
+            position: 3,
+            name: product.category.name,
+            item: `${SITE_URL}/products?category=${product.category.slug || ""}`,
+        });
+    }
+
+    breadcrumbItems.push({
         "@type": "ListItem",
-        position: 1,
-        name: "Home",
-        item: siteUrl,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Products",
-        item: `${siteUrl}/products`,
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
+        position: breadcrumbItems.length + 1,
         name: product.name,
         item: url,
-      },
-    ],
-  };
+    });
 
-  return (
-    <>
-      <Script
-        id={`product-schema-${product.id}`}
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-      />
-      <Script
-        id={`breadcrumb-schema-${product.id}`}
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
-    </>
-  );
+    const breadcrumbSchema = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: breadcrumbItems,
+    };
+
+    return (
+        <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify([schema, breadcrumbSchema]) }}
+        />
+    );
 }
-

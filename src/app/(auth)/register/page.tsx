@@ -11,6 +11,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import DOMPurify from "isomorphic-dompurify";
 import {
     Lock, Mail, User, Phone, ChevronDown,
     Loader2, ChefHat, ShieldCheck, Zap, AlertCircle,
@@ -29,12 +30,13 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const countries = [
-    { code: "+84", name: "Việt Nam", flag: "🇻🇳", length: 10 },
-    { code: "+1", name: "Hoa Kỳ", flag: "🇺🇸", length: 10 },
+    { code: "+84", name: "Vietnam", nameVi: "Việt Nam", flag: "🇻🇳", length: 10 },
+    { code: "+1", name: "USA", nameVi: "Hoa Kỳ", flag: "🇺🇸", length: 10 },
 ];
 
 export default function RegisterPage() {
-    const { t } = useLanguage();
+    const { t, isVietnamese } = useLanguage();
+    const tr = (viText: string, enKey: string) => (isVietnamese ? viText : t(enKey));
     const router = useRouter();
     const [formData, setFormData] = useState({
         name: "",
@@ -58,20 +60,20 @@ export default function RegisterPage() {
 
         // Ràng buộc số điện thoại theo quốc gia
         if (formData.phone.length !== country.length) {
-            setError(`Số điện thoại ${country.name} phải có đúng ${country.length} chữ số.`);
+            setError(isVietnamese ? `Số điện thoại ${country.nameVi} phải có đúng ${country.length} chữ số.` : `Phone number for ${country.name} must be exactly ${country.length} digits.`);
             return;
         }
 
         if (!acceptTerms) {
-            setError("Vui lòng đồng ý với điều khoản dịch vụ.");
+            setError(t('auth.agreeToTerms'));
             return;
         }
         if (formData.password !== formData.confirmPassword) {
-            setError("Mật khẩu xác nhận không khớp.");
+            setError(t('auth.passwordMismatch'));
             return;
         }
         if (!isStrongPassword(formData.password)) {
-            setError("Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và chữ số.");
+            setError(t('auth.passwordWeak'));
             return;
         }
 
@@ -82,12 +84,12 @@ export default function RegisterPage() {
         }
 
         if (isDisposableEmail(formData.email)) {
-            setError("Chúng tôi không chấp nhận dịch vụ email rác. Vui lòng dùng email thật.");
+            setError(tr("Chúng tôi không chấp nhận dịch vụ email rác. Vui lòng dùng email thật.", "auth.disposableEmailError"));
             return;
         }
 
         if (!isCaptchaValid) {
-            setError("Vui lòng hoàn thành xác thực bảo mật.");
+            setError(tr("Vui lòng hoàn thành xác thực bảo mật.", "auth.completeSecurityCheck"));
             return;
         }
 
@@ -107,16 +109,17 @@ export default function RegisterPage() {
                     turnstileToken
                 }),
             });
+            const data = await res.json();
 
-            if (res.ok) {
-                // Redirect to the beautiful verify-pending page
+            if (res.ok && !data.error && (data.ok || data.status === "PENDING_EMAIL_VERIFY")) {
                 router.push(`/verify-pending?email=${encodeURIComponent(formData.email)}`);
+            } else if (res.ok && data.error) {
+                setError(tr("Tài khoản đã tồn tại. Vui lòng đăng nhập hoặc khôi phục mật khẩu.", "auth.accountExistsOrRecover"));
             } else {
-                const data = await res.json();
-                setError(data.error || "Đã có lỗi xảy ra.");
+                setError(tr("Không thể gửi yêu cầu. Vui lòng thử lại.", "auth.sendFailedTryAgain"));
             }
         } catch {
-            setError("Lỗi kết nối server.");
+            setError(t('auth.connError'));
         } finally {
             setIsLoading(false);
         }
@@ -144,7 +147,7 @@ export default function RegisterPage() {
                     <div className="max-w-xl">
                         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-6">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100/50 border border-emerald-200 text-emerald-700 text-[10px] font-bold uppercase tracking-widest">
-                                <Zap className="w-3 h-3 fill-emerald-500" /> Đặc sản tinh hoa
+                                <Zap className="w-3 h-3 fill-emerald-500" /> {tr("Đặc sản tinh hoa", "auth.premiumSpecialties")}
                             </div>
                             <h2 className="text-5xl xl:text-6xl font-black text-slate-900 leading-[1.1] tracking-tighter uppercase">
                                 {t("auth.startJourney")} <br />
@@ -267,7 +270,7 @@ export default function RegisterPage() {
                                                     setFormData({ ...formData, phone: val });
                                                 }}
                                                 className="w-full pl-14 pr-6 py-4 bg-slate-50 border-slate-100 border rounded-2xl outline-none focus:bg-white focus:border-emerald-500/30 focus:ring-4 focus:ring-emerald-500/5 transition-all font-medium text-sm"
-                                                placeholder="987 654 321"
+                                                placeholder={isVietnamese ? "987 654 321" : "987 654 321"}
                                             />
                                         </div>
                                     </div>
@@ -313,7 +316,7 @@ export default function RegisterPage() {
                                                 ))}
                                             </div>
                                             <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-400 px-1">
-                                                <span>{t("auth.strength")} <span className={cn(passwordStrength <= 1 ? "text-red-500" : passwordStrength <= 3 ? "text-amber-500" : "text-emerald-500")}>{passwordStrength <= 1 ? t("auth.weak") : passwordStrength <= 2 ? t("auth.moderate") : passwordStrength <= 3 ? t("auth.good") : t("auth.veryStrong")}</span></span>
+                                                <span>{t("auth.strength")} <span className={cn(passwordStrength <= 1 ? "text-red-500" : passwordStrength <= 3 ? "text-amber-500" : "text-emerald-500")}>{passwordStrength <= 1 ? t("auth.weak") : passwordStrength <= 2 ? t("auth.medium") : passwordStrength <= 3 ? t("auth.fair") : t("auth.veryStrong")}</span></span>
                                                 <span>{t("auth.min8Chars")}</span>
                                             </div>
                                         </div>
@@ -340,7 +343,7 @@ export default function RegisterPage() {
                                         <span className="w-full border-t border-slate-100" />
                                     </div>
                                     <div className="relative flex justify-center text-[10px] uppercase tracking-widest font-bold">
-                                        <span className="px-4 text-slate-400 bg-white">Hoặc</span>
+                                        <span className="px-4 text-slate-400 bg-white">{tr("Hoặc", "auth.or")}</span>
                                     </div>
                                 </div>
 
@@ -355,7 +358,7 @@ export default function RegisterPage() {
                                         <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                                         <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                                     </svg>
-                                    Tiếp tục với Google
+                                    {tr("Tiếp tục với Google", "auth.continueWithGoogle")}
                                 </button>
 
                                 <button
@@ -364,7 +367,7 @@ export default function RegisterPage() {
                                     className="w-full h-14 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-2xl flex items-center justify-center gap-3 transition-all outline-none focus:ring-4 focus:ring-slate-100 shadow-sm mt-3"
                                 >
                                     <Mail className="w-5 h-5 text-emerald-500" />
-                                    Đăng ký bằng Magic Link
+                                    {tr("Đăng ký bằng Magic Link", "auth.registerWithMagicLink")}
                                 </button>
 
                                 <p className="text-center text-sm text-slate-500 font-medium pt-2">

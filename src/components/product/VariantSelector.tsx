@@ -9,6 +9,7 @@
 
 import { useState } from "react";
 import { Check, Package } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface ProductVariant {
     id: string;
@@ -34,6 +35,7 @@ export default function VariantSelector({
 }: VariantSelectorProps) {
     const weights = [...new Set(variants.map(v => v.weight).filter((w): w is string => Boolean(w)))];
     const flavors = [...new Set(variants.map(v => v.flavor).filter((f): f is string => Boolean(f)))];
+    const { isVietnamese } = useLanguage();
 
     const [selectedWeight, setSelectedWeight] = useState<string | null>(
         selectedVariant?.weight || (weights.length > 0 ? weights[0]! : null)
@@ -113,7 +115,7 @@ export default function VariantSelector({
                                         </div>
                                         {isOutOfStock && (
                                             <div className="text-[10px] font-bold text-rose-500 mt-0.5">
-                                                Hết hàng
+                                                {isVietnamese ? "Hết hàng" : "Out of Stock"}
                                             </div>
                                         )}
                                     </div>
@@ -133,7 +135,7 @@ export default function VariantSelector({
             {flavors.length > 0 && (
                 <div>
                     <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-3 block px-1">
-                        🌶️ Hương vị
+                        {isVietnamese ? "🌶️ Hương vị" : "🌶️ Flavor"}
                     </label>
                     <div className="flex flex-wrap gap-2.5">
                         {flavors.map((flavor) => {
@@ -156,7 +158,7 @@ export default function VariantSelector({
                                 >
                                     {flavor}
                                     {isOutOfStock && (
-                                        <span className="ml-1.5 text-[10px] opacity-70">(Hết)</span>
+                                        <span className="ml-1.5 text-[10px] opacity-70">({isVietnamese ? "Hết" : "Out"})</span>
                                     )}
                                     {isSelected && (
                                         <Check className="w-3.5 h-3.5 inline ml-1.5 -mt-0.5" strokeWidth={3} />
@@ -172,13 +174,13 @@ export default function VariantSelector({
             {currentVariant && (
                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-emerald-50/50 rounded-2xl border border-slate-100/80">
                     <div>
-                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Giá đã chọn</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{isVietnamese ? "Giá đã chọn" : "Selected Price"}</div>
                         <div className="text-2xl font-black text-emerald-600">${(finalPrice || 0).toFixed(2)}</div>
                     </div>
                     <div className="text-right">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Còn lại</div>
-                        <div className={`text-lg font-black ${currentVariant.stock > 10 ? "text-emerald-600" : currentVariant.stock > 0 ? "text-amber-600" : "text-rose-600"}`}>
-                            {currentVariant.stock} sản phẩm
+                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{isVietnamese ? "Trạng thái" : "Status"}</div>
+                        <div className={`text-lg font-black ${currentVariant.stock > 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                            {currentVariant.stock > 0 ? (isVietnamese ? "Còn hàng" : "In Stock") : (isVietnamese ? "Hết hàng" : "Out of Stock")}
                         </div>
                     </div>
                 </div>

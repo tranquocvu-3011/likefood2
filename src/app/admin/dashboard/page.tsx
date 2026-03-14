@@ -130,7 +130,7 @@ export default function AdminDashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-zinc-100">{greeting()}, {session?.user?.name || 'Admin'}</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">Here's what's happening today</p>
+          <p className="text-sm text-zinc-500 mt-0.5">Here&apos;s what&apos;s happening today</p>
         </div>
         <div className="flex items-center gap-2">
           <button 

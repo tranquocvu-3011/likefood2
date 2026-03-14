@@ -14,7 +14,8 @@ import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/contexts/CartContext";
-import { formatPrice } from "@/lib/currency";
+import { useLanguage } from "@/lib/i18n/context";
+import PriceDisplay from "@/components/ui/price-display";
 
 interface QuickViewModalProps {
     product: {
@@ -38,29 +39,24 @@ interface QuickViewModalProps {
 export default function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps) {
     const { addItem } = useCart();
     const [quantity, setQuantity] = useState(1);
+    const { t, isVietnamese } = useLanguage();
 
     if (!product) return null;
 
     const { name, price, originalPrice, salePrice, isOnSale, category, description, image, rating = 5 } = product;
 
-    const currentPrice =
-        isOnSale && salePrice != null
-            ? salePrice
-            : price;
+    const hasSalePrice = salePrice != null && salePrice < price;
+
+    const currentPrice = hasSalePrice ? salePrice : price;
 
     const basePriceForDiscount =
-        originalPrice && originalPrice > currentPrice ? originalPrice : undefined;
+        originalPrice && originalPrice > currentPrice
+            ? originalPrice
+            : hasSalePrice
+                ? price
+                : undefined;
 
     const hasDiscount = !!basePriceForDiscount && basePriceForDiscount > currentPrice;
-
-    const formatPriceDisplay = (value: number | null | undefined) => {
-        if (value == null) return "$0";
-        const rounded = Math.round((value + Number.EPSILON) * 100) / 100;
-        return `$${rounded.toLocaleString("en-US", {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-        })}`;
-    };
 
     const handleQuantityChange = (type: "plus" | "minus") => {
         if (type === "plus") {
@@ -120,10 +116,10 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
 
                                 <div className="absolute bottom-8 sm:bottom-12 left-1/2 -translate-x-1/2 flex gap-3 sm:gap-4 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
                                     <Button variant="secondary" className="rounded-2xl sm:rounded-2xl shadow-xl shadow-slate-200/50 bg-white/90 backdrop-blur-md hover:bg-white text-slate-700 font-bold transition-all px-4 sm:px-6">
-                                        <Share2 className="w-4 h-4 mr-2" /> <span className="hidden xs:inline">Chia sẻ</span>
+                                        <Share2 className="w-4 h-4 mr-2" /> <span className="hidden xs:inline">{t('shop.share')}</span>
                                     </Button>
                                     <Button variant="secondary" className="rounded-2xl sm:rounded-2xl shadow-xl shadow-slate-200/50 bg-white/90 backdrop-blur-md hover:bg-rose-50 hover:text-rose-500 text-slate-700 font-bold transition-all px-4 sm:px-6">
-                                        <Heart className="w-4 h-4 mr-2" /> <span className="hidden xs:inline">Yêu thích</span>
+                                        <Heart className="w-4 h-4 mr-2" /> <span className="hidden xs:inline">{t('shop.addToWishlist')}</span>
                                     </Button>
                                 </div>
                             </div>
@@ -145,21 +141,25 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                                             <Star key={i} className={`w-4 h-4 sm:w-5 sm:h-5 ${i < rating ? "fill-orange-400 text-orange-400" : "text-slate-200"}`} />
                                         ))}
                                     </div>
-                                    <span className="text-sm font-bold text-slate-400 mt-0.5">4.9 (127 đánh giá)</span>
+                                    <span className="text-sm font-bold text-slate-400 mt-0.5">4.9 ({isVietnamese ? "127 đánh giá" : "127 reviews"})</span>
                                 </div>
 
-                                <div className="text-3xl sm:text-4xl font-black text-slate-900 mb-6 flex items-baseline gap-3">
-                                    <span>{formatPriceDisplay(currentPrice)}</span>
-                                    {hasDiscount && basePriceForDiscount && (
-                                        <span className="text-base text-slate-400 line-through">
-                                            {formatPriceDisplay(basePriceForDiscount)}
-                                        </span>
-                                    )}
+                                <div className="mb-6">
+                                    <PriceDisplay
+                                        currentPrice={currentPrice}
+                                        originalPrice={hasDiscount ? basePriceForDiscount : undefined}
+                                        salePrice={hasDiscount ? currentPrice : undefined}
+                                        isOnSale={hasDiscount}
+                                        size="lg"
+                                        showDiscountBadge={false}
+                                    />
                                 </div>
 
                                 <div className="prose prose-slate mb-10 text-lg text-slate-500 leading-relaxed max-h-48 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-slate-200">
                                     <p className="whitespace-pre-line">
-                                        {description || "Đặc sản chính gốc Việt Nam, được tuyển chọn kỹ lưỡng và đóng gói theo tiêu chuẩn khắt khe để giữ trọn vẹn hương vị truyền thống. Sản phẩm hiện đang có sẵn tại các kho hàng của LIKEFOOD tại Mỹ."}
+                                        {description || (isVietnamese 
+                                            ? "Đặc sản chính gốc Việt Nam, được tuyển chọn kỹ lưỡng và đóng gói theo tiêu chuẩn khắt khe để giữ trọn vẹn hương vị truyền thống. Sản phẩm hiện đang có sẵn tại các kho hàng của LIKEFOOD tại Mỹ."
+                                            : "Authentic Vietnamese specialty, carefully selected and packaged to preserve traditional flavors. Products are available at LIKEFOOD warehouses in the USA.")}
                                     </p>
                                 </div>
 
@@ -189,6 +189,9 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                                                     slug: product.slug || undefined,
                                                     name: product.name,
                                                     price: currentPrice,
+                                                    originalPrice: hasDiscount ? basePriceForDiscount : undefined,
+                                                    salePrice: hasDiscount ? currentPrice : undefined,
+                                                    isOnSale: Boolean(isOnSale || hasDiscount),
                                                     quantity,
                                                     image: product.image || undefined,
                                                 });
@@ -198,7 +201,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                                             disabled={product.inventory !== undefined && product.inventory <= 0}
                                             className="flex-[2] h-[52px] rounded-2xl bg-slate-900 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/0 hover:shadow-emerald-500/25 font-bold uppercase tracking-widest disabled:opacity-50 transition-all duration-300"
                                         >
-                                            {product.inventory !== undefined && product.inventory <= 0 ? "Hết hàng" : "Thêm vào giỏ"}
+                                            {product.inventory !== undefined && product.inventory <= 0 ? t('shop.outOfStock') : t('shop.addToCart')}
                                         </Button>
                                     </div>
 

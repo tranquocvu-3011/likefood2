@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Clock, X, ShoppingBag, Flame } from "lucide-react";
+import { Clock, X, ShoppingBag } from "lucide-react";
 import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import Link from "next/link";
 import { logger } from "@/lib/logger";
@@ -57,11 +57,17 @@ export default function RecentlyViewed() {
                     ids.map(async (id) => {
                         try {
                             const res = await fetch(`/api/products/${id}`, { 
-                                cache: "no-store" // Tránh cache và log không cần thiết
+                                cache: "no-store"
                             });
                             if (!res.ok || res.status === 404) return null;
                             const data = await res.json();
-                            return data?.id ? data : null; // Đảm bảo có id mới return
+                            if (!data?.id) return null;
+                            // Fallback ảnh: image → productImages → images (alias từ API)
+                            const resolvedImage = data.image 
+                                || data.productImages?.[0]?.imageUrl 
+                                || data.images?.[0]?.imageUrl 
+                                || null;
+                            return { ...data, image: resolvedImage };
                         } catch {
                             return null;
                         }
@@ -124,15 +130,15 @@ export default function RecentlyViewed() {
                     style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
                     {products.map((product, idx) => {
-                        const isOnSale = product.onSale || product.isOnSale;
-                        const currentPrice = isOnSale && product.salePrice != null ? product.salePrice : product.price;
-                        const basePrice = product.originalPrice && product.originalPrice > currentPrice
-                            ? product.originalPrice
-                            : product.price;
-                        const hasDiscount = basePrice > currentPrice;
-                        const discountPct = hasDiscount
-                            ? Math.round(((basePrice - currentPrice) / basePrice) * 100)
-                            : 0;
+                        const hasSalePrice = product.salePrice != null && product.salePrice < product.price;
+                        const isOnSale = Boolean(product.onSale || product.isOnSale || hasSalePrice);
+                        const currentPrice = hasSalePrice ? product.salePrice! : product.price;
+                        const comparePrice =
+                            product.originalPrice != null && product.originalPrice > currentPrice
+                                ? product.originalPrice
+                                : hasSalePrice
+                                    ? product.price
+                                    : undefined;
                         const url = `/products/${product.slug || product.id}`;
 
                         return (
@@ -145,20 +151,6 @@ export default function RecentlyViewed() {
                                 <div className="rounded-2xl border border-slate-100 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
                                     {/* Image */}
                                     <div className="relative aspect-square overflow-hidden bg-slate-50">
-                                        {(product.badgeText || hasDiscount) && (
-                                            <div className="absolute top-1.5 left-1.5 z-10">
-                                                {product.badgeText ? (
-                                                    <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow">
-                                                        {product.badgeText}
-                                                    </span>
-                                                ) : (
-                                                    <span className="bg-gradient-to-r from-red-500 to-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow">
-                                                        <Flame className="w-2 h-2" />
-                                                        -{discountPct}%
-                                                    </span>
-                                                )}
-                                            </div>
-                                        )}
                                         {product.image ? (
                                             <ImageWithFallback
                                                 src={product.image}
@@ -186,10 +178,10 @@ export default function RecentlyViewed() {
                                         </p>
                                         <div className="mt-auto">
                                             <PriceDisplay
-                                                currentPrice={product.price}
-                                                originalPrice={product.originalPrice}
-                                                salePrice={product.salePrice}
-                                                isOnSale={product.onSale || product.isOnSale}
+                                                currentPrice={currentPrice}
+                                                originalPrice={comparePrice}
+                                                salePrice={isOnSale ? currentPrice : undefined}
+                                                isOnSale={isOnSale}
                                                 size="sm"
                                                 showDiscountBadge={false}
                                                 className="!gap-1.5"

@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { logger } from "@/lib/logger";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface PointTransaction {
     id: string;
@@ -35,13 +36,6 @@ interface Pagination {
     pages: number;
 }
 
-const typeConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
-    EARN: { label: "Tích điểm", color: "text-green-600", bgColor: "bg-green-50", icon: Plus },
-    SPEND: { label: "Sử dụng điểm", color: "text-red-600", bgColor: "bg-red-50", icon: Minus },
-    REFUND: { label: "Hoàn điểm", color: "text-blue-600", bgColor: "bg-blue-50", icon: CheckCircle2 },
-    EXPIRED: { label: "Hết hạn", color: "text-slate-500", bgColor: "bg-slate-50", icon: Clock },
-};
-
 export default function PointsHistoryPage() {
     const router = useRouter();
     const { status: sessionStatus } = useSession();
@@ -51,6 +45,22 @@ export default function PointsHistoryPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<string>("all");
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const { t, language } = useLanguage();
+
+    const typeConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
+        EARN: { label: t("points.typeEarn"), color: "text-green-600", bgColor: "bg-green-50", icon: Plus },
+        SPEND: { label: t("points.typeSpend"), color: "text-red-600", bgColor: "bg-red-50", icon: Minus },
+        REFUND: { label: t("points.typeRefund"), color: "text-blue-600", bgColor: "bg-blue-50", icon: CheckCircle2 },
+        EXPIRED: { label: t("points.typeExpired"), color: "text-slate-500", bgColor: "bg-slate-50", icon: Clock },
+    };
+
+    const filterOptions = [
+        { value: "all", label: t("points.filterAll") },
+        { value: "EARN", label: t("points.filterEarn") },
+        { value: "SPEND", label: t("points.filterSpend") },
+        { value: "REFUND", label: t("points.filterRefund") },
+        { value: "EXPIRED", label: t("points.filterExpired") },
+    ];
 
     const fetchTransactions = useCallback(async () => {
         try {
@@ -82,7 +92,8 @@ export default function PointsHistoryPage() {
     }, [sessionStatus, router, filter, fetchTransactions]);
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString("vi-VN", {
+        const locale = language === "vi" ? "vi-VN" : "en-US";
+        return new Date(dateString).toLocaleDateString(locale, {
             year: "numeric",
             month: "long",
             day: "numeric",
@@ -118,13 +129,13 @@ export default function PointsHistoryPage() {
                 <div className="mb-8">
                     <Link href="/profile" className="inline-flex items-center gap-2 text-slate-500 hover:text-primary transition-colors mb-4">
                         <ArrowLeft className="w-4 h-4" />
-                        <span className="font-medium">Quay lại hồ sơ</span>
+                        <span className="font-medium">{t("points.backToProfile")}</span>
                     </Link>
                     <h1 className="text-4xl font-black uppercase tracking-tighter mb-4">
-                        Lịch sử điểm LIKEFOOD
+                        {t("points.title")}
                     </h1>
                     <p className="text-slate-500 font-medium">
-                        Theo dõi lịch sử tích và sử dụng điểm của bạn
+                        {t("points.subtitle")}
                     </p>
                 </div>
 
@@ -132,9 +143,9 @@ export default function PointsHistoryPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <Card className="rounded-3xl border-none shadow-xl shadow-amber-100/40 bg-gradient-to-br from-amber-400 to-amber-500 overflow-hidden">
                         <CardContent className="p-8 text-white">
-                            <p className="text-white/80 font-medium mb-2">Số dư hiện tại</p>
+                            <p className="text-white/80 font-medium mb-2">{t("points.currentBalance")}</p>
                             <p className="text-5xl font-black tracking-tighter">{currentPoints}</p>
-                            <p className="text-white/70 font-medium mt-2">LIKEFOOD Xu</p>
+                            <p className="text-white/70 font-medium mt-2">{t("points.likefoodXu")}</p>
                         </CardContent>
                     </Card>
 
@@ -144,7 +155,7 @@ export default function PointsHistoryPage() {
                                 <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
                                     <Plus className="w-5 h-5 text-green-600" />
                                 </div>
-                                <p className="text-slate-500 font-medium">Tổng tích lũy</p>
+                                <p className="text-slate-500 font-medium">{t("points.totalEarned")}</p>
                             </div>
                             <p className="text-3xl font-black text-green-600">+{totalEarned}</p>
                         </CardContent>
@@ -156,7 +167,7 @@ export default function PointsHistoryPage() {
                                 <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
                                     <Minus className="w-5 h-5 text-red-600" />
                                 </div>
-                                <p className="text-slate-500 font-medium">Tổng đã sử dụng</p>
+                                <p className="text-slate-500 font-medium">{t("points.totalSpent")}</p>
                             </div>
                             <p className="text-3xl font-black text-red-600">-{totalSpent}</p>
                         </CardContent>
@@ -165,13 +176,7 @@ export default function PointsHistoryPage() {
 
                 {/* Filters */}
                 <div className="mb-6 flex flex-wrap gap-3">
-                    {[
-                        { value: "all", label: "Tất cả" },
-                        { value: "EARN", label: "Tích điểm" },
-                        { value: "SPEND", label: "Sử dụng" },
-                        { value: "REFUND", label: "Hoàn điểm" },
-                        { value: "EXPIRED", label: "Hết hạn" },
-                    ].map((option) => (
+                    {filterOptions.map((option) => (
                         <button
                             key={option.value}
                             onClick={() => setFilter(option.value)}
@@ -194,14 +199,14 @@ export default function PointsHistoryPage() {
                                 <Gift className="w-10 h-10 text-slate-300" />
                             </div>
                             <h3 className="text-xl font-black uppercase tracking-tighter mb-2">
-                                Chưa có giao dịch
+                                {t("points.noTransactions")}
                             </h3>
                             <p className="text-slate-400 font-medium mb-8">
-                                Lịch sử điểm của bạn sẽ xuất hiện tại đây
+                                {t("points.historyWillAppear")}
                             </p>
                             <Link href="/products">
                                 <button className="px-8 py-4 bg-primary text-white rounded-full font-black uppercase tracking-widest hover:bg-primary/90 transition-all">
-                                    Mua sắm ngay
+                                    {t("points.shopNow")}
                                 </button>
                             </Link>
                         </CardContent>
@@ -259,7 +264,7 @@ export default function PointsHistoryPage() {
                                                             href={`/profile/orders/${transaction.orderId}`}
                                                             className="inline-block mt-2 text-sm text-primary hover:underline"
                                                         >
-                                                            Xem đơn hàng
+                                                            {t("points.viewOrder")}
                                                         </Link>
                                                     )}
                                                 </div>

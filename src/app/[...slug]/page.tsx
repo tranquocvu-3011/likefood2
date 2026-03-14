@@ -6,6 +6,8 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import prisma from "@/lib/prisma";
+import { sanitizeHtml } from "@/lib/sanitize";
+import { cookies } from "next/headers";
 
 interface Props {
   params: Promise<{ slug: string[] }>;
@@ -31,8 +33,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 
   if (!page) {
+    const cookieStore = await cookies();
+    const locale = cookieStore.get("locale")?.value || "vi";
     return {
-      title: "Không tìm thấy trang",
+      title: locale === "en" ? "Page not found" : "Không tìm thấy trang",
     };
   }
 
@@ -76,7 +80,7 @@ export default async function DynamicPage({ params }: Props) {
         <div className="page-container-wide">
           <div 
             className="prose max-w-4xl mx-auto bg-white rounded-3xl p-8 lg:p-12 shadow-lg"
-            dangerouslySetInnerHTML={{ __html: page.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(page.content) }}
           />
         </div>
       </section>

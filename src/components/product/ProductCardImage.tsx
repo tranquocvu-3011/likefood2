@@ -8,11 +8,9 @@
 import Image from "next/image";
 import { memo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, ArrowRight, Flame, Sparkles, Zap, Ticket, Truck, Package } from "lucide-react";
+import { Eye, ArrowRight, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import WishlistButton from "./WishlistButton";
-import FlashSaleCountdown from "./FlashSaleCountdown";
 import { useLanguage } from "@/lib/i18n/context";
 
 interface ProductCardImageProps {
@@ -20,21 +18,7 @@ interface ProductCardImageProps {
     name: string;
     image?: string | null;
     inventory: number;
-    // Badges
-    isNewProduct: boolean;
-    isHot?: boolean;
-    isCurrentlyFlashSale: boolean;
-    hasDiscount: boolean;
-    discountPercent: number;
-    badgeText?: string | null;
-    hasVoucher?: boolean;
-    hasFreeship?: boolean;
-    saleEndAt?: Date | string | null;
-    // Sale progress
-    soldCount: number;
-    soldPercentage: number;
     // Interactions
-    productUrl: string;
     onQuickView: (e: React.MouseEvent) => void;
     onNavigate: () => void;
     lastAddedId: string | null;
@@ -45,18 +29,6 @@ function ProductCardImageComponent({
     name,
     image,
     inventory,
-    isNewProduct,
-    isHot,
-    isCurrentlyFlashSale,
-    hasDiscount,
-    discountPercent,
-    badgeText,
-    hasVoucher,
-    hasFreeship,
-    saleEndAt,
-    soldCount,
-    soldPercentage,
-    productUrl,
     onQuickView,
     onNavigate,
     lastAddedId,
@@ -65,11 +37,6 @@ function ProductCardImageComponent({
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imgError, setImgError] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
-
-    const formatCompactNumber = (num: number) => {
-        if (num >= 1000) return `${(num / 1000).toFixed(num >= 10000 ? 0 : 1)}k`;
-        return `${num}`;
-    };
 
     return (
         <div
@@ -81,68 +48,6 @@ function ProductCardImageComponent({
                 {/* Wishlist Button */}
                 <div className="absolute top-2 right-2 z-20">
                     <WishlistButton productId={productId} />
-                </div>
-
-                {/* Badges Container */}
-                <div className="absolute top-2 left-2 z-20 flex flex-col gap-1">
-                    {/* New Badge */}
-                    {isNewProduct && !hasDiscount && (
-                        <Badge variant="new" className="px-2 py-0.5 text-[9px]">
-                            <Sparkles className="w-2.5 h-2.5" />
-                            {t("shop.new")}
-                        </Badge>
-                    )}
-
-                    {/* Custom Badge */}
-                    {badgeText && (
-                        <Badge variant="sale" className="px-2 py-0.5 text-[9px] bg-gradient-to-r from-rose-500 to-pink-500">
-                            {badgeText}
-                        </Badge>
-                    )}
-
-                    {/* Flash Sale Badge */}
-                    {isCurrentlyFlashSale && saleEndAt && (
-                        <div className="bg-red-600 px-2 py-1 rounded-lg flex flex-col gap-0.5 shadow-md">
-                            <span className="text-[9px] font-black text-white uppercase flex items-center gap-0.5">
-                                <Flame className="w-2.5 h-2.5" />
-                                FLASH
-                            </span>
-                            <FlashSaleCountdown endDate={saleEndAt} compact={true} />
-                        </div>
-                    )}
-
-                    {/* Discount Badge */}
-                    {!isCurrentlyFlashSale && hasDiscount && (
-                        <Badge variant="sale" className="px-2 py-0.5 text-[9px]">
-                            -{discountPercent}%
-                        </Badge>
-                    )}
-
-                    {/* Hot Badge */}
-                    {isHot && !hasDiscount && !badgeText && !isNewProduct && (
-                        <Badge variant="sale" className="px-2 py-0.5 text-[9px] bg-gradient-to-r from-orange-500 to-red-500">
-                            <Zap className="w-2.5 h-2.5 fill-white" />
-                            {t("shop.hot")}
-                        </Badge>
-                    )}
-
-                    {/* Voucher & Freeship */}
-                    {(hasVoucher || hasFreeship) && (
-                        <div className="flex flex-col gap-1">
-                            {hasVoucher && (
-                                <Badge variant="sale" className="px-2 py-0.5 text-[9px] bg-amber-500">
-                                    <Ticket className="w-2.5 h-2.5" />
-                                    {t("shop.voucher")}
-                                </Badge>
-                            )}
-                            {hasFreeship && (
-                                <Badge variant="info" className="px-2 py-0.5 text-[9px] bg-sky-500">
-                                    <Truck className="w-2.5 h-2.5" />
-                                    {t("shop.freeship")}
-                                </Badge>
-                            )}
-                        </div>
-                    )}
                 </div>
 
                 {/* Out of Stock Overlay */}
@@ -247,27 +152,6 @@ function ProductCardImageComponent({
                         )}
                     </AnimatePresence>
                 </div>
-
-                {/* Sold Progress Bar */}
-                {(hasDiscount || isHot) && soldCount > 0 && (
-                    <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/60 to-transparent pt-8 pb-3 px-4">
-                        <div className="flex items-center justify-between text-white text-[10px] font-bold mb-1.5">
-                            <span className="flex items-center gap-1">
-                                <Package className="w-3 h-3" />
-                                {t("shop.soldCount")} {formatCompactNumber(soldCount)}
-                            </span>
-                            <span className="opacity-80">{t("shop.leftCount")} {inventory}</span>
-                        </div>
-                        <div className="h-1.5 bg-white/30 rounded-full overflow-hidden">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${soldPercentage}%` }}
-                                transition={{ duration: 0.8, ease: "easeOut" }}
-                                className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full"
-                            />
-                        </div>
-                    </div>
-                )}
 
                 {/* Fly to Cart Animation */}
                 <AnimatePresence>

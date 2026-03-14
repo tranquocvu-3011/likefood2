@@ -20,6 +20,7 @@ interface LanguageContextType {
     setLanguage: (lang: Language) => void;
     t: (path: string) => string;
     dict: Dictionary;
+    isVietnamese: boolean;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -61,6 +62,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     };
 
     const dict = language === "vi" ? vi : en;
+    const isVietnamese = language === "vi";
 
     const t = (path: string) => {
         const keys = path.split(".");
@@ -73,7 +75,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     };
 
     return (
-        <LanguageContext.Provider value={{ language, setLanguage, t, dict }}>
+        <LanguageContext.Provider value={{ language, setLanguage, t, dict, isVietnamese }}>
             {children}
         </LanguageContext.Provider>
     );

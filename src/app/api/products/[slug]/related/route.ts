@@ -53,6 +53,11 @@ export async function GET(
                 ratingAvg: true,
                 ratingCount: true,
                 soldCount: true,
+                productImages: {
+                    orderBy: { order: "asc" },
+                    take: 1,
+                    select: { imageUrl: true }
+                },
             },
         });
 
@@ -84,6 +89,7 @@ export async function GET(
         const now = new Date();
         const decorated = relatedProducts.slice(0, 4).map((p) => ({
             ...p,
+            image: p.image || p.productImages?.[0]?.imageUrl || null,
             isFlashSale:
                 !!(
                     p.isOnSale &&

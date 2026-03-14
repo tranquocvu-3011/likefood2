@@ -61,7 +61,7 @@ export const authOptions: NextAuthOptions = {
                 });
 
                 if (!user) {
-                    // AUTH-04: User enumeration protection — generic message
+                    // User enumeration protection — generic message
                     throw new Error("INVALID_CREDENTIALS");
                 }
 
@@ -249,7 +249,7 @@ export const authOptions: NextAuthOptions = {
     },
     session: {
         strategy: "jwt",
-        // AUTH-01: Reduced maxAge for security
+        // Reduced maxAge for security
         // Default: 7 days, extended to 30 days only if rememberMe is enabled
         maxAge: 7 * 24 * 60 * 60, // 7 days default
     },

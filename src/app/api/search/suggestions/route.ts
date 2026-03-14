@@ -42,6 +42,11 @@ export async function GET(request: NextRequest) {
                 price: true,
                 salePrice: true,
                 image: true,
+                productImages: {
+                    orderBy: { order: "asc" },
+                    take: 1,
+                    select: { imageUrl: true }
+                },
             },
             take: 6,
             orderBy: { soldCount: "desc" },
@@ -53,7 +58,7 @@ export async function GET(request: NextRequest) {
             slug: p.slug,
             category: p.category,
             price: p.salePrice ?? p.price,
-            image: p.image || null,
+            image: p.image || p.productImages?.[0]?.imageUrl || null,
         }));
 
         const res = NextResponse.json(suggestions);

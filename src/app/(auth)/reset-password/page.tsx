@@ -21,7 +21,8 @@ import { twMerge } from "tailwind-merge";
 import { useLanguage } from "@/lib/i18n/context";
 
 function ResetPasswordContent() {
-    const { t } = useLanguage();
+    const { t, isVietnamese } = useLanguage();
+    const tr = (viText: string, enKey: string) => (isVietnamese ? viText : t(enKey));
     const searchParams = useSearchParams();
     const token = searchParams.get("token");
 
@@ -64,8 +65,8 @@ function ResetPasswordContent() {
             if (res.ok) {
                 setIsSuccess(true);
             } else {
-                const data = await res.json();
-                setError(data.error || t("auth.invalidTokenOrExpired"));
+                await res.json();
+                setError(res.status === 400 ? t("auth.invalidTokenOrExpired") : tr("Không thể gửi yêu cầu. Vui lòng thử lại.", "auth.sendFailedTryAgain"));
             }
         } catch {
             setError(t("auth.connError"));
@@ -131,7 +132,7 @@ function ResetPasswordContent() {
 
                     <div className="flex items-center gap-4">
                         <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
-                            Chuẩn bảo mật LIKEFOOD Security
+                            {tr("Chuẩn bảo mật LIKEFOOD Security", "auth.likefoodSecurity")}
                         </p>
                     </div>
                 </div>
@@ -183,7 +184,7 @@ function ResetPasswordContent() {
                                                 setPasswordStrength(score);
                                             }}
                                             className="w-full pl-12 pr-12 py-4 bg-slate-50 border-slate-100 border rounded-2xl outline-none focus:bg-white focus:border-emerald-500/30 focus:ring-4 focus:ring-emerald-500/5 transition-all font-medium text-sm"
-                                            placeholder="Mật khẩu mới"
+                                            placeholder={t("auth.newPasswordPlaceholder")}
                                         />
                                         <button
                                             type="button"
@@ -267,8 +268,8 @@ function ResetPasswordContent() {
                     <div className="mt-16 pt-8 border-t border-slate-50 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300">
                         <span>&copy; 2026 LIKEFOOD</span>
                         <div className="flex gap-4">
-                            <Link href="/terms" className="hover:text-emerald-500 transition-colors">Điều khoản</Link>
-                            <Link href="/privacy" className="hover:text-emerald-500 transition-colors">Bảo mật</Link>
+                            <Link href="/terms" className="hover:text-emerald-500 transition-colors">{t("auth.footerTerms")}</Link>
+                            <Link href="/privacy" className="hover:text-emerald-500 transition-colors">{t("auth.footerPrivacy")}</Link>
                         </div>
                     </div>
                 </div>

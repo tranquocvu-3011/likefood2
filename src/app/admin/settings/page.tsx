@@ -1003,10 +1003,10 @@ export default function AdminSettingsPage() {
                     <input value={profile.phone} onChange={(event) => setProfile((prev) => ({ ...prev, phone: event.target.value }))} className="admin-input" placeholder="+1 555 000 1234" />
                   </Field>
                   <Field label="Email">
-                    <input value={profile.email} readOnly className="admin-input bg-zinc-800 text-zinc-500" />
+                    <input value={profile.email} readOnly className="admin-input bg-zinc-800 text-zinc-300" />
                   </Field>
                   <Field label="Ngày tham gia">
-                    <input value={profile.createdAt ? new Date(profile.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : ""} readOnly className="admin-input bg-zinc-800 text-zinc-500" />
+                    <input value={profile.createdAt ? new Date(profile.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : ""} readOnly className="admin-input bg-zinc-800 text-zinc-300" />
                   </Field>
                   <Button size="lg" onClick={() => void saveProfile()} disabled={isSavingProfile}>
                     {isSavingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}

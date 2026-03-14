@@ -105,7 +105,7 @@ function ProductCardInfoComponent({
                         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-orange-500" />
                     </div>
                     <span className="text-[10px] font-bold text-orange-600">
-                        {language === "vi" ? `Còn ${inventory}` : `${inventory} left`}
+                        {language === "vi" ? "Sắp hết hàng" : "Low stock"}
                     </span>
                 </div>
             )}

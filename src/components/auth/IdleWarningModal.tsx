@@ -11,6 +11,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Clock, Shield, LogOut } from "lucide-react";
 import { signOut } from "next-auth/react";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface IdleWarningModalProps {
     isOpen: boolean;
@@ -20,10 +21,11 @@ interface IdleWarningModalProps {
 
 export default function IdleWarningModal({ isOpen, onStayLoggedIn, countdown }: IdleWarningModalProps) {
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const { t } = useLanguage();
 
     const handleLogout = async () => {
         setIsLoggingOut(true);
-        await signOut({ callbackUrl: "/login?message=Bạn đã đăng xuất" });
+        await signOut({ callbackUrl: `/login?message=${encodeURIComponent(t("idleWarning.loggedOutMsg"))}` });
     };
 
     return (
@@ -48,13 +50,13 @@ export default function IdleWarningModal({ isOpen, onStayLoggedIn, countdown }: 
                         </div>
 
                         <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-3">
-                            Bạn vẫn đang dùng?
+                            {t("idleWarning.title")}
                         </h2>
                         <p className="text-slate-500 font-medium text-sm leading-relaxed mb-2">
-                            Phiên đăng nhập của bạn sắp hết hạn do không hoạt động.
+                            {t("idleWarning.description")}
                         </p>
                         <p className="text-amber-600 font-black text-base mb-8">
-                            Tự động đăng xuất sau <span className="text-2xl">{countdown}</span> giây
+                            {t("idleWarning.autoLogout")} <span className="text-2xl">{countdown}</span> {t("idleWarning.seconds")}
                         </p>
 
                         {/* Progress bar */}
@@ -71,14 +73,14 @@ export default function IdleWarningModal({ isOpen, onStayLoggedIn, countdown }: 
                                 onClick={onStayLoggedIn}
                                 className="w-full py-4 rounded-2xl bg-slate-900 text-white font-bold uppercase tracking-widest text-sm hover:bg-emerald-600 transition-all flex items-center justify-center gap-2"
                             >
-                                <Shield className="w-4 h-4" /> Vẫn đang dùng
+                                <Shield className="w-4 h-4" /> {t("idleWarning.stayLoggedIn")}
                             </button>
                             <button
                                 onClick={handleLogout}
                                 disabled={isLoggingOut}
                                 className="w-full py-3 rounded-2xl border-2 border-slate-100 text-slate-500 font-bold text-sm hover:border-red-200 hover:text-red-500 transition-all flex items-center justify-center gap-2"
                             >
-                                <LogOut className="w-4 h-4" /> Đăng xuất ngay
+                                <LogOut className="w-4 h-4" /> {t("idleWarning.logoutNow")}
                             </button>
                         </div>
                     </motion.div>

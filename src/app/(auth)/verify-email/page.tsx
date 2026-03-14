@@ -201,8 +201,8 @@ function VerifyEmailContent() {
                     <div className="mt-16 pt-8 border-t border-slate-50 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300">
                         <span>&copy; 2026 LIKEFOOD</span>
                         <div className="flex gap-4">
-                            <Link href="/terms" className="hover:text-emerald-500 transition-colors">Điều khoản</Link>
-                            <Link href="/privacy" className="hover:text-emerald-500 transition-colors">Bảo mật</Link>
+                            <Link href="/terms" className="hover:text-emerald-500 transition-colors">{t("auth.footerTerms")}</Link>
+                            <Link href="/privacy" className="hover:text-emerald-500 transition-colors">{t("auth.footerPrivacy")}</Link>
                         </div>
                     </div>
                 </div>

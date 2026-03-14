@@ -168,7 +168,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           <div className="max-h-[60vh] overflow-y-auto py-2">
             {flatCommands.length === 0 ? (
               <div className="px-4 py-8 text-center text-sm text-zinc-500">
-                No results found for "{search}"
+                No results found for &quot;{search}&quot;
               </div>
             ) : (
               Object.entries(groupedCommands).map(([category, commands]) => (

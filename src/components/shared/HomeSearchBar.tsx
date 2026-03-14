@@ -12,8 +12,9 @@ import { Search, TrendingUp, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useLanguage } from "@/lib/i18n/context";
 
-const POPULAR_SEARCHES = [
+const POPULAR_SEARCHES_VI = [
     "Cá khô",
     "Tôm khô",
     "Mực khô",
@@ -22,10 +23,20 @@ const POPULAR_SEARCHES = [
     "Gia vị Việt"
 ];
 
+const POPULAR_SEARCHES_EN = [
+    "Dried fish",
+    "Dried shrimp",
+    "Dried squid",
+    "Dried fruits",
+    "Tet jam",
+    "Vietnamese spices"
+];
+
 type SearchHint = { id: string; name: string; slug?: string; category?: string; price?: number; image?: string | null };
 
 export default function HomeSearchBar() {
     const router = useRouter();
+    const { isVietnamese } = useLanguage();
     const [query, setQuery] = useState("");
     const [isFocused, setIsFocused] = useState(false);
     const [suggestions, setSuggestions] = useState<SearchHint[]>([]);
@@ -70,6 +81,8 @@ export default function HomeSearchBar() {
         handleSearch(query);
     };
 
+    const popularSearches = isVietnamese ? POPULAR_SEARCHES_VI : POPULAR_SEARCHES_EN;
+
     return (
         <div className="relative max-w-3xl mx-auto mt-0 z-20 px-4 py-4 md:py-5">
             <motion.div
@@ -91,7 +104,7 @@ export default function HomeSearchBar() {
                             onChange={(e) => setQuery(e.target.value)}
                             onFocus={() => setIsFocused(true)}
                             onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-                            placeholder="Tìm cá khô, tôm khô, đặc sản Việt Nam..."
+                            placeholder={isVietnamese ? "Tìm cá khô, tôm khô, đặc sản Việt Nam..." : "Search dried fish, dried shrimp, Vietnamese specialties..."}
                             className="w-full pl-12 md:pl-14 pr-24 md:pr-36 py-3.5 md:py-4 rounded-full text-sm md:text-base font-semibold outline-none placeholder:text-slate-400 bg-transparent text-slate-800"
                         />
 
@@ -111,8 +124,8 @@ export default function HomeSearchBar() {
                             whileTap={{ scale: 0.95 }}
                             className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-5 md:px-8 py-2.5 md:py-3 rounded-full font-bold text-sm md:text-base transition-all shadow-lg flex items-center gap-1.5"
                         >
-                            <span className="hidden leading-none sm:inline">Khám Phá</span>
-                            <span className="sm:hidden leading-none">Tìm</span>
+                            <span className="hidden leading-none sm:inline">{isVietnamese ? "Khám phá" : "Explore"}</span>
+                            <span className="sm:hidden leading-none">{isVietnamese ? "Tìm" : "Go"}</span>
                         </motion.button>
                     </div>
 
@@ -153,22 +166,24 @@ export default function HomeSearchBar() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.4 }}
-                        className="mt-6 flex flex-col md:flex-row flex-wrap items-center justify-center gap-3 md:gap-4 lg:gap-5"
+                        className="mt-6"
                     >
-                        <div className="flex items-center gap-2 mb-2 md:mb-0">
+                        <div className="flex items-center justify-center gap-2 mb-3 md:mb-2">
                             <TrendingUp className="w-5 h-5 text-emerald-500" />
-                            <span className="text-base text-slate-600 font-bold uppercase tracking-wider">Mọi người hay tìm:</span>
+                            <span className="text-base text-slate-600 font-bold uppercase tracking-wider">{isVietnamese ? "Mọi người hay tìm:" : "People often search:"}</span>
                         </div>
-                        {POPULAR_SEARCHES.map((search) => (
-                            <button
-                                key={search}
-                                type="button"
-                                onClick={() => handleSearch(search)}
-                                className="px-4 py-2 bg-white/80 hover:bg-emerald-600 hover:text-white text-sm md:text-base font-semibold text-slate-700 rounded-full border border-slate-200 hover:border-emerald-600 transition-all hover:scale-105 shadow-sm hover:shadow-emerald-200/50"
-                            >
-                                {search}
-                            </button>
-                        ))}
+                        <div className="grid grid-cols-3 gap-2 md:flex md:flex-wrap md:items-center md:justify-center md:gap-4 lg:gap-5 max-w-md md:max-w-none mx-auto">
+                            {popularSearches.map((search) => (
+                                <button
+                                    key={search}
+                                    type="button"
+                                    onClick={() => handleSearch(search)}
+                                    className="px-3 py-2 bg-white/80 hover:bg-emerald-600 hover:text-white text-sm md:text-base font-semibold text-slate-700 rounded-full border border-slate-200 hover:border-emerald-600 transition-all hover:scale-105 shadow-sm hover:shadow-emerald-200/50"
+                                >
+                                    {search}
+                                </button>
+                            ))}
+                        </div>
                     </motion.div>
                 )}
             </motion.div>

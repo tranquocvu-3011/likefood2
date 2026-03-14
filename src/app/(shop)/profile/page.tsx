@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Loader2, LogOut, Package, Sparkles, Ticket,
     LayoutDashboard, ChevronRight, RefreshCw, MapPin,
-    Bell, Lock, Heart, User, Camera, Trash2, Mail, Phone, Edit
+    Bell, Lock, Heart, User, Camera, Trash2, Mail, Phone, Edit, UserPlus
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -326,6 +326,14 @@ export default function ProfilePage() {
             badge: null,
         },
         {
+            href: "/profile/referrals",
+            label: language === "vi" ? "Giới thiệu bạn bè" : "Refer & Earn",
+            desc: language === "vi" ? "Mời bạn bè nhận thưởng" : "Invite friends, earn rewards",
+            icon: <UserPlus className="w-6 h-6" />,
+            color: "bg-emerald-50 text-emerald-500",
+            badge: null,
+        },
+        {
             href: "/profile/points",
             label: "LIKEFOOD Xu",
             desc: language === "vi" ? `${userPoints.toLocaleString()} điểm` : `${userPoints.toLocaleString()} points`,
@@ -488,6 +496,7 @@ export default function ProfilePage() {
                                 {[
                                     { href: "/profile/orders", label: language === "vi" ? "Đơn hàng của tôi" : "My Orders", icon: <Package className="w-4 h-4" /> },
                                     { href: "/profile/wishlist", label: language === "vi" ? "Danh sách yêu thích" : "Wishlist", icon: <Heart className="w-4 h-4" /> },
+                                    { href: "/profile/referrals", label: language === "vi" ? "Giới thiệu bạn bè" : "Refer & Earn", icon: <UserPlus className="w-4 h-4" /> },
                                     { href: "/notifications", label: language === "vi" ? "Thông báo" : "Notifications", icon: <Bell className="w-4 h-4" /> },
                                 ].map((link) => (
                                     <Link key={link.href} href={link.href} className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">

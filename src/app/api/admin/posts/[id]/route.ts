@@ -28,6 +28,11 @@ export async function GET(
         const { id } = await params;
         const post = await prisma.post.findUnique({
             where: { id },
+            include: {
+                images: {
+                    orderBy: { order: "asc" },
+                },
+            },
         });
 
         if (!post) {
@@ -62,7 +67,8 @@ export async function PUT(
             authorName,
             category,
             isPublished,
-            publishedAt
+            publishedAt,
+            galleryImages,
         } = body;
 
         const data: Prisma.postUpdateInput = {};
@@ -79,9 +85,25 @@ export async function PUT(
         if (publishedAt) data.publishedAt = new Date(publishedAt);
 
         const { id } = await params;
+
+        // Update gallery images: delete old ones and create new ones
+        if (galleryImages !== undefined) {
+            await prisma.postimage.deleteMany({ where: { postId: id } });
+            if (galleryImages.length > 0) {
+                await prisma.postimage.createMany({
+                    data: galleryImages.map((url: string, index: number) => ({
+                        postId: id,
+                        imageUrl: url,
+                        order: index,
+                    })),
+                });
+            }
+        }
+
         const post = await prisma.post.update({
             where: { id },
             data,
+            include: { images: { orderBy: { order: "asc" } } },
         });
 
         return NextResponse.json(post);

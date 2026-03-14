@@ -10,12 +10,14 @@
 import { useState, useEffect } from "react";
 import { Sparkles, Loader2, Quote, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface ReviewSummaryAIProps {
     productId: string;
 }
 
 export default function ReviewSummaryAI({ productId }: ReviewSummaryAIProps) {
+    const { t } = useLanguage();
     const [summary, setSummary] = useState<string>("");
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -45,7 +47,7 @@ export default function ReviewSummaryAI({ productId }: ReviewSummaryAIProps) {
         return (
             <div className="p-8 rounded-[2rem] bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-4">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                <p className="text-sm font-black uppercase tracking-widest text-slate-400">Đang phân tích đánh giá...</p>
+                <p className="text-sm font-black uppercase tracking-widest text-slate-400">{t("reviewSummary.analyzing")}</p>
             </div>
         );
     }
@@ -68,8 +70,8 @@ export default function ReviewSummaryAI({ productId }: ReviewSummaryAIProps) {
                         <Sparkles className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                        <h3 className="font-black uppercase tracking-tighter text-sm">Tóm tắt đánh giá</h3>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dựa trên các đánh giá thực tế</p>
+                        <h3 className="font-black uppercase tracking-tighter text-sm">{t("reviewSummary.title")}</h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t("reviewSummary.subtitle")}</p>
                     </div>
                 </div>
 
@@ -89,11 +91,11 @@ export default function ReviewSummaryAI({ productId }: ReviewSummaryAIProps) {
                 <div className="mt-8 pt-6 border-t border-white/10 flex items-center gap-6">
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
                         <CheckCircle2 className="w-3 h-3 text-green-500" />
-                        Trung thực
+                        {t("reviewSummary.honest")}
                     </div>
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
                         <CheckCircle2 className="w-3 h-3 text-green-500" />
-                        Khách quan
+                        {t("reviewSummary.objective")}
                     </div>
                 </div>
             </div>

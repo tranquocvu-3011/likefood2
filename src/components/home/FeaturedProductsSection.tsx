@@ -20,8 +20,11 @@ export default async function FeaturedProductsSection() {
         name: string;
         price: number;
         originalPrice: number | null;
+        salePrice: number | null;
+        isOnSale: boolean | null;
         image: string | null;
         category: string;
+        productImages?: Array<{ imageUrl: string }>;
     }> = [];
 
     try {
@@ -33,10 +36,17 @@ export default async function FeaturedProductsSection() {
                 name: true,
                 price: true,
                 originalPrice: true,
+                salePrice: true,
+                isOnSale: true,
                 image: true,
                 category: true,
+                productImages: {
+                    orderBy: { order: "asc" },
+                    take: 1,
+                    select: { imageUrl: true }
+                },
             },
-            orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+            orderBy: [{ isOnSale: "desc" }, { originalPrice: "desc" }, { createdAt: "desc" }, { id: "asc" }],
             take: 8,
         });
 
@@ -49,10 +59,17 @@ export default async function FeaturedProductsSection() {
                     name: true,
                     price: true,
                     originalPrice: true,
+                    salePrice: true,
+                    isOnSale: true,
                     image: true,
                     category: true,
+                    productImages: {
+                        orderBy: { order: "asc" },
+                        take: 1,
+                        select: { imageUrl: true }
+                    },
                 },
-                orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+                orderBy: [{ isOnSale: "desc" }, { originalPrice: "desc" }, { createdAt: "desc" }, { id: "asc" }],
                 take: 8,
             });
         }
@@ -67,16 +84,27 @@ export default async function FeaturedProductsSection() {
         return <FeaturedStickyShowcase products={[]} />;
     }
 
-    const products = rawProducts.map(p => ({
-        id: p.id,
-        slug: p.slug || p.id,
-        name: p.name,
-        price: p.price,
-        basePrice: p.originalPrice ?? undefined,
-        image: p.image ?? undefined,
-        category: p.category,
-        colorLabel: p.category,
-    }));
+    const products = rawProducts.map((p) => {
+        const hasSalePrice = !!(p.salePrice && p.salePrice > 0 && p.salePrice < p.price);
+        const useSale = !!p.isOnSale && hasSalePrice;
+        const currentPrice = useSale ? (p.salePrice as number) : p.price;
+        const basePrice = p.originalPrice && p.originalPrice > currentPrice
+            ? p.originalPrice
+            : useSale
+                ? p.price
+                : undefined;
+
+        return {
+            id: p.id,
+            slug: p.slug || p.id,
+            name: p.name,
+            price: currentPrice,
+            basePrice,
+            image: p.image || p.productImages?.[0]?.imageUrl || undefined,
+            category: p.category,
+            colorLabel: p.category,
+        };
+    });
 
     return <FeaturedStickyShowcase products={products} />;
 }

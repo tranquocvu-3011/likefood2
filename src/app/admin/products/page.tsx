@@ -404,9 +404,23 @@ export default function AdminProductsPage() {
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 rounded-md bg-zinc-800 overflow-hidden flex items-center justify-center">
+                          <div className="h-12 w-12 rounded-md bg-zinc-800 overflow-hidden flex items-center justify-center flex-shrink-0">
                             {product.image ? (
-                              <Image src={product.image} alt={product.name} width={48} height={48} className="object-cover" />
+                              <Image
+                                src={product.image}
+                                alt={product.name}
+                                width={48}
+                                height={48}
+                                className="object-cover w-full h-full"
+                                unoptimized
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = "none";
+                                  if (target.parentElement) {
+                                    target.parentElement.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-600"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>';
+                                  }
+                                }}
+                              />
                             ) : (
                               <Package className="h-5 w-5 text-zinc-600" />
                             )}

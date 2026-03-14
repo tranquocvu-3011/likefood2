@@ -8,16 +8,29 @@
  */
 
 import { useState, useEffect } from "react";
-import { CheckCircle2, Sparkles, X, Trophy, Star, Gift, Flame } from "lucide-react";
+import { CheckCircle2, Sparkles, X, Trophy, Star, Gift, Flame, Truck, Percent, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface CheckInStatus {
     points: number;
     lastCheckIn: string | null;
     canCheckIn: boolean;
     checkedDaysThisWeek: number[]; // 0=Mon...6=Sun
+    milestones?: {
+        points: number;
+        code: string;
+        discountType: string;
+        discountValue: number;
+        maxDiscount: number;
+        category: string;
+        description: string;
+        descriptionEn: string;
+        reached: boolean;
+        claimed: boolean;
+    }[];
 }
 
 const DAYS = [
@@ -49,6 +62,7 @@ function getTodayIdx(): number {
 }
 
 export default function DailyCheckIn({ onClose }: { onClose?: () => void }) {
+    const { isVietnamese } = useLanguage();
     const [status, setStatus] = useState<CheckInStatus | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isCheckingIn, setIsCheckingIn] = useState(false);
@@ -81,9 +95,22 @@ export default function DailyCheckIn({ onClose }: { onClose?: () => void }) {
             if (res.ok) {
                 setJustCheckedIn(true);
                 toast.success(data.message, {
-                    description: `Bạn vừa nhận được ${data.earned} LIKEFOOD Xu!`,
+                    description: isVietnamese
+                        ? `Bạn vừa nhận được ${data.earned} LIKEFOOD Xu!`
+                        : `You have earned ${data.earned} LIKEFOOD points!`,
                     icon: <Sparkles className="w-5 h-5 text-amber-500" />,
                 });
+                if (Array.isArray(data.unlockedVouchers) && data.unlockedVouchers.length > 0) {
+                    const codes = data.unlockedVouchers.map((item: { code: string }) => item.code).join(", ");
+                    toast.success(
+                        isVietnamese ? "Đã mở khóa voucher mới" : "New voucher unlocked",
+                        {
+                            description: isVietnamese
+                                ? `Mã nhận được: ${codes}`
+                                : `Unlocked codes: ${codes}`,
+                        }
+                    );
+                }
                 const todayIdx = getTodayIdx();
                 setStatus((prev) => ({
                     points: data.totalPoints,
@@ -93,6 +120,7 @@ export default function DailyCheckIn({ onClose }: { onClose?: () => void }) {
                         ...((prev?.checkedDaysThisWeek ?? []).filter((d) => d !== todayIdx)),
                         todayIdx,
                     ],
+                    milestones: data.milestones || prev?.milestones || [],
                 }));
                 // Reset animation after 3s
                 setTimeout(() => setJustCheckedIn(false), 3000);
@@ -100,7 +128,7 @@ export default function DailyCheckIn({ onClose }: { onClose?: () => void }) {
                 toast.error(data.error);
             }
         } catch {
-            toast.error("Không thể kết nối máy chủ");
+            toast.error(isVietnamese ? "Không thể kết nối máy chủ" : "Unable to connect to server");
         } finally {
             setIsCheckingIn(false);
         }
@@ -180,8 +208,12 @@ export default function DailyCheckIn({ onClose }: { onClose?: () => void }) {
                         <Gift className="w-6 h-6 text-white" />
                     </motion.div>
                     <div>
-                        <h3 className="text-lg font-black text-white leading-tight">Điểm danh nhận quà</h3>
-                        <p className="text-[11px] text-white/70 font-medium">Nhận LIKEFOOD Xu mỗi ngày</p>
+                        <h3 className="text-lg font-black text-white leading-tight">
+                            {isVietnamese ? "Điểm danh nhận quà" : "Daily check-in rewards"}
+                        </h3>
+                        <p className="text-[11px] text-white/70 font-medium">
+                            {isVietnamese ? "Nhận LIKEFOOD Xu mỗi ngày" : "Collect LIKEFOOD points every day"}
+                        </p>
                     </div>
                 </div>
 
@@ -192,7 +224,9 @@ export default function DailyCheckIn({ onClose }: { onClose?: () => void }) {
                             <Trophy className="w-3.5 h-3.5 text-amber-300" />
                             <span className="text-lg font-black text-white">{status?.points ?? 0}</span>
                         </div>
-                        <span className="text-[9px] font-bold text-white/60 uppercase tracking-wider">Xu hiện có</span>
+                        <span className="text-[9px] font-bold text-white/60 uppercase tracking-wider">
+                            {isVietnamese ? "Xu hiện có" : "Current points"}
+                        </span>
                     </div>
                     <div className="flex-1 bg-white/15 backdrop-blur-sm rounded-xl p-3 text-center">
                         <div className="flex items-center justify-center gap-1.5 mb-0.5">
@@ -201,7 +235,9 @@ export default function DailyCheckIn({ onClose }: { onClose?: () => void }) {
                                 {streakDays > 0 ? streakDays : 0}
                             </span>
                         </div>
-                        <span className="text-[9px] font-bold text-white/60 uppercase tracking-wider">Ngày liên tiếp</span>
+                        <span className="text-[9px] font-bold text-white/60 uppercase tracking-wider">
+                            {isVietnamese ? "Ngày liên tiếp" : "Streak days"}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -243,7 +279,7 @@ export default function DailyCheckIn({ onClose }: { onClose?: () => void }) {
                                     {/* TODAY badge */}
                                     {isToday && (
                                         <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[6px] font-black px-1.5 py-0.5 rounded-full whitespace-nowrap bg-primary text-white shadow-sm">
-                                            NAY
+                                            {isVietnamese ? "NAY" : "TODAY"}
                                         </span>
                                     )}
                                     {isChecked ? (
@@ -271,9 +307,88 @@ export default function DailyCheckIn({ onClose }: { onClose?: () => void }) {
 
                 {/* Legend */}
                 <div className="flex items-center gap-4 mb-4 text-[9px] text-slate-400 font-medium">
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary/30 inline-block" /> Đã điểm danh</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-300 inline-block" /> Thưởng cuối tuần</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary/30 inline-block" /> {isVietnamese ? "Đã điểm danh" : "Checked in"}</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-300 inline-block" /> {isVietnamese ? "Thưởng cuối tuần" : "Weekend bonus"}</span>
                 </div>
+
+                {/* Milestone voucher rewards */}
+                {(() => {
+                    const msList = status?.milestones || [];
+                    if (msList.length === 0) return null;
+                    const maxPts = msList[msList.length - 1].points;
+                    const pctDone = Math.min(((status?.points ?? 0) / maxPts) * 100, 100);
+                    const getIcon = (m: typeof msList[0]) => {
+                        if (m.category === "shipping") return Truck;
+                        if (m.points >= 1000) return Crown;
+                        return Percent;
+                    };
+                    return (
+                        <div className="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3.5">
+                            <div className="mb-2 flex items-center justify-between">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">
+                                    {isVietnamese ? "Mốc thưởng voucher" : "Voucher milestones"}
+                                </p>
+                                <span className="text-[10px] font-bold text-emerald-600">
+                                    {isVietnamese ? `${status?.points ?? 0} Xu` : `${status?.points ?? 0} pts`}
+                                </span>
+                            </div>
+
+                            {/* Mini Progress Bar */}
+                            <div className="relative h-2 bg-slate-100 rounded-full mb-4 overflow-hidden">
+                                <motion.div
+                                    className="h-full bg-gradient-to-r from-primary to-emerald-400 rounded-full"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${pctDone}%` }}
+                                    transition={{ duration: 1, ease: "easeOut" }}
+                                />
+                                {msList.map((m) => (
+                                    <div
+                                        key={m.code}
+                                        className={`absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border ${
+                                            m.reached ? "bg-primary border-white" : "bg-white border-slate-300"
+                                        }`}
+                                        style={{ left: `${(m.points / maxPts) * 100}%`, transform: "translate(-50%, -50%)" }}
+                                    />
+                                ))}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                                {msList.map((milestone) => {
+                                    const reached = milestone.reached;
+                                    const claimed = milestone.claimed;
+                                    const Icon = getIcon(milestone);
+                                    return (
+                                        <div
+                                            key={milestone.code}
+                                            className={`rounded-xl border px-2.5 py-2 flex items-start gap-2 ${
+                                                reached ? "border-emerald-300 bg-white" : "border-slate-200 bg-slate-50"
+                                            }`}
+                                        >
+                                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                                                reached ? "bg-gradient-to-br from-primary/20 to-emerald-100" : "bg-slate-100"
+                                            }`}>
+                                                <Icon className={`w-3.5 h-3.5 ${reached ? "text-primary" : "text-slate-400"}`} />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className={`text-[11px] font-black ${reached ? "text-emerald-700" : "text-slate-500"}`}>
+                                                    {milestone.points} {isVietnamese ? "Xu" : "Pts"}
+                                                </p>
+                                                <p className={`text-[9px] font-bold leading-snug ${reached ? "text-slate-600" : "text-slate-400"}`}>
+                                                    {isVietnamese ? milestone.description : milestone.descriptionEn}
+                                                </p>
+                                                <p className={`mt-0.5 text-[8px] font-bold ${reached ? "text-emerald-600" : "text-slate-400"}`}>
+                                                    {claimed
+                                                        ? (isVietnamese ? "✓ Đã nhận" : "✓ Claimed")
+                                                        : (isVietnamese ? "Chưa mở" : "Locked")}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    );
+                })()}
 
                 {/* CTA Button */}
                 <motion.div
@@ -296,19 +411,23 @@ export default function DailyCheckIn({ onClose }: { onClose?: () => void }) {
                         ) : status?.canCheckIn ? (
                             <span className="flex items-center gap-2">
                                 <Sparkles className="w-4 h-4" />
-                                Điểm danh — nhận {DAYS[todayIdx]?.points ?? 10} Xu
+                                {isVietnamese
+                                    ? `Điểm danh - nhận ${DAYS[todayIdx]?.points ?? 10} Xu`
+                                    : `Check in - earn ${DAYS[todayIdx]?.points ?? 10} points`}
                             </span>
                         ) : (
                             <span className="flex items-center gap-2">
                                 <CheckCircle2 className="w-4 h-4" />
-                                Đã hoàn thành hôm nay
+                                {isVietnamese ? "Đã hoàn thành hôm nay" : "Completed today"}
                             </span>
                         )}
                     </Button>
                 </motion.div>
 
                 <p className="text-center text-[9px] text-slate-400 mt-3 font-medium">
-                    T7 được <strong className="text-amber-500">+20 Xu</strong> · CN được <strong className="text-amber-500">+50 Xu</strong>
+                    {isVietnamese
+                        ? <>Mốc voucher: <strong className="text-amber-500">200 / 300 / 500 / 1000 Xu</strong></>
+                        : <>Voucher milestones: <strong className="text-amber-500">200 / 300 / 500 / 1000 points</strong></>}
                 </p>
             </div>
         </div>

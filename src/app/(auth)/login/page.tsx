@@ -20,8 +20,11 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { isValidEmailFormat } from "@/lib/validation";
 import { CaptchaField } from "@/components/auth/CaptchaField";
+import { useLanguage } from "@/lib/i18n/context";
 
 function LoginContent() {
+    const { t, isVietnamese } = useLanguage();
+    const tr = (viText: string, enKey: string) => (isVietnamese ? viText : t(enKey));
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [rememberMe, setRememberMe] = useState(false);
@@ -63,13 +66,13 @@ function LoginContent() {
         setUnverifiedEmail(false);
 
         if (!isValidEmailFormat(email)) {
-            setError("Định dạng email không hợp lệ. Vui lòng kiểm tra lại.");
+            setError(t('auth.invalidEmail'));
             setIsLoading(false);
             return;
         }
 
         if (!isCaptchaValid) {
-            setError("Vui lòng hoàn thành xác thực bảo mật.");
+            setError(tr("Vui lòng hoàn thành xác thực bảo mật.", "auth.completeSecurityCheck"));
             setIsLoading(false);
             return;
         }
@@ -86,7 +89,7 @@ function LoginContent() {
             if (result?.error) {
                 if (result.error === "EMAIL_NOT_VERIFIED") {
                     setUnverifiedEmail(true);
-                    setError("Tài khoản của bạn chưa được xác thực email.");
+                    setError(t('auth.emailNotVerified'));
                 } else if (result.error === "2FA_REQUIRED") {
                     await fetch("/api/auth/2fa/send", {
                         method: "POST",
@@ -110,7 +113,7 @@ function LoginContent() {
                     setIsLoading(false);
                     return;
                 } else {
-                    setError("Email hoặc mật khẩu không đúng.");
+                    setError(t('auth.wrongCredentials'));
                 }
             } else {
                 setIsSuccess(true);
@@ -120,7 +123,7 @@ function LoginContent() {
                 }, 2000);
             }
         } catch {
-            setError("Đã xảy ra lỗi kết nối. Vui lòng thử lại.");
+            setError(t('auth.connError'));
         } finally {
             setIsLoading(false);
         }
@@ -142,7 +145,7 @@ function LoginContent() {
             });
 
             if (result?.error) {
-                setOtpError(result.error === "2FA_REQUIRED" ? "Vui lòng nhập mã xác thực." : result.error);
+                setOtpError(result.error === "2FA_REQUIRED" ? t("auth.enter6Digits2FA") : t("auth.invalidOTP2FA"));
             } else {
                 setIsSuccess(true);
                 setTimeout(() => {
@@ -151,7 +154,7 @@ function LoginContent() {
                 }, 2000);
             }
         } catch {
-            setOtpError("Lỗi kết nối. Vui lòng thử lại.");
+            setOtpError(t('auth.connErrorTryAgain'));
         } finally {
             setIsVerifying2FA(false);
         }
@@ -206,21 +209,21 @@ function LoginContent() {
                     <div className="max-w-xl">
                         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-6">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100/50 border border-emerald-200 text-emerald-700 text-[10px] font-bold uppercase tracking-widest">
-                                <ShieldCheck className="w-3 h-3 fill-emerald-500" /> Cộng đồng ẩm thực sạch
+                                <ShieldCheck className="w-3 h-3 fill-emerald-500" /> {tr("Cộng đồng ẩm thực sạch", "auth.cleanFoodCommunity")}
                             </div>
                             <h2 className="text-5xl xl:text-6xl font-black text-slate-900 leading-[1.1] tracking-tighter uppercase">
-                                Thưởng thức <br />
-                                <span className="text-emerald-500">Giá trị nguyên bản</span>
+                                {t("auth.enjoy")} <br />
+                                <span className="text-emerald-500">{t("auth.originalValue")}</span>
                             </h2>
-                            <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-md">Chào mừng bạn quay trở lại. Hãy đăng nhập để tiếp tục hành trình khám phá những đặc sản tuyệt vời nhất.</p>
+                            <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-md">{t('auth.loginWelcomeDesc')}</p>
                         </motion.div>
 
                         <div className="mt-16 grid grid-cols-2 gap-8">
                             {[
-                                { icon: ShieldCheck, title: "Nguồn gốc rõ ràng", desc: "Nghệ nhân truyền thống." },
-                                { icon: Zap, title: "Giao hàng 2-3 ngày", desc: "Giao hàng tận tay." },
-                                { icon: Star, title: "Chuẩn 5 sao", desc: "Đánh giá chân thực." },
-                                { icon: ChefHat, title: "Quà tặng tinh tế", desc: "Đóng gói sang trọng." }
+                                { icon: ShieldCheck, title: t("auth.clearOrigin"), desc: t("auth.traditionalArtisans") },
+                                { icon: Zap, title: t("auth.expressDelivery"), desc: t("auth.doorToDoor") },
+                                { icon: Star, title: t("auth.fiveStarStandard"), desc: t("auth.authenticReview") },
+                                { icon: ChefHat, title: t("auth.elegantGift"), desc: t("auth.luxuriousPackaging") }
                             ].map((item, index) => (
                                 <motion.div key={index} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + index * 0.1 }} className="space-y-3">
                                     <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm border border-emerald-100">
@@ -252,8 +255,8 @@ function LoginContent() {
                                 </div>
                             </div>
                             <div className="space-y-3">
-                                <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tight">Xin chào bạn!</h1>
-                                <p className="text-slate-500 font-medium text-lg leading-relaxed">Đăng nhập thành công. Hãy cùng khám phá thế giới ẩm thực ngay bây giờ.</p>
+                                <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tight">{t("auth.loginGreeting")}</h1>
+                                <p className="text-slate-500 font-medium text-lg leading-relaxed">{t('auth.loginSuccessDesc')}</p>
                             </div>
                         </motion.div>
                     ) : (
@@ -265,8 +268,8 @@ function LoginContent() {
                                     </div>
                                     <span className="text-xl font-bold tracking-tighter">LIKE<span className="text-emerald-500">FOOD</span></span>
                                 </Link>
-                                <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tight mb-3">Đăng nhập</h1>
-                                <p className="text-slate-400 font-medium text-sm">Chào mừng quay trở lại! Điền thông tin của bạn vào bên dưới.</p>
+                                <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tight mb-3">{t('auth.login')}</h1>
+                                <p className="text-slate-400 font-medium text-sm">{t('auth.loginPrompt')}</p>
                             </div>
 
                             <div className="space-y-6">
@@ -276,9 +279,9 @@ function LoginContent() {
                                             <div className="w-16 h-16 mx-auto rounded-full bg-emerald-50 flex items-center justify-center border border-emerald-100">
                                                 <ShieldCheck className="w-8 h-8 text-emerald-500" />
                                             </div>
-                                            <h2 className="text-xl font-black text-slate-900 uppercase">Xác thực 2 bước</h2>
+                                            <h2 className="text-xl font-black text-slate-900 uppercase">{t("auth.twoFactorAuthTitle")}</h2>
                                             <p className="text-sm text-slate-500 font-medium">
-                                                Nhập mã xác thực đã được gửi đến email<br />
+                                                {tr("Nhập mã xác thực đã được gửi đến email", "auth.twoFactorCodeSentToEmail")}<br />
                                                 <span className="font-bold text-slate-700">{email}</span>
                                             </p>
                                         </div>
@@ -303,7 +306,7 @@ function LoginContent() {
                                             </div>
 
                                             <Button disabled={isVerifying2FA || otp.length !== 6} type="submit" className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/20">
-                                                {isVerifying2FA ? <Loader2 className="w-6 h-6 animate-spin" /> : "Xác nhận"}
+                                                {isVerifying2FA ? <Loader2 className="w-6 h-6 animate-spin" /> : t('auth.confirm2FA')}
                                             </Button>
 
                                             <div className="text-center">
@@ -313,7 +316,7 @@ function LoginContent() {
                                                     disabled={resendCooldown > 0}
                                                     className="text-xs font-bold text-slate-400 hover:text-emerald-600 transition-colors disabled:cursor-not-allowed"
                                                 >
-                                                    {resendCooldown > 0 ? `Gửi lại sau ${resendCooldown}s` : "Gửi lại mã xác thực"}
+                                                    {resendCooldown > 0 ? `${t('auth.resend2FAIn')} ${resendCooldown}s` : t('auth.resend2FA')}
                                                 </button>
                                             </div>
 
@@ -322,7 +325,7 @@ function LoginContent() {
                                                 onClick={() => { setShow2FA(false); setOtp(""); setOtpError(""); signOut({ callbackUrl: "/login" }); }}
                                                 className="w-full py-3 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors"
                                             >
-                                                ← Quay lại đăng nhập
+                                                {"<- "}{t("auth.backToLogin3")}
                                             </button>
                                         </form>
                                     </motion.div>
@@ -340,7 +343,7 @@ function LoginContent() {
                                                 type="button" onClick={() => router.push(`/resend-verify?email=${encodeURIComponent(email)}`)}
                                                 className="w-full py-4 bg-slate-900 text-white text-[11px] font-bold uppercase tracking-widest rounded-2xl hover:bg-emerald-600 transition-all shadow-lg shadow-slate-200"
                                             >
-                                                Gửi lại email xác thực
+                                                {t('auth.resendVerifyEmail')}
                                             </button>
                                         )}
 
@@ -351,7 +354,7 @@ function LoginContent() {
                                                     type="email" required value={email}
                                                     onChange={(e) => setEmail(e.target.value)}
                                                     className="w-full pl-14 pr-6 py-4 bg-slate-50 border-slate-100 border rounded-2xl outline-none focus:bg-white focus:border-emerald-500/30 focus:ring-4 focus:ring-emerald-500/5 transition-all font-medium text-sm"
-                                                    placeholder="Email đăng nhập của bạn"
+                                                    placeholder={t('auth.emailPlaceholder')}
                                                 />
                                             </div>
                                             <div className="relative group">
@@ -360,7 +363,7 @@ function LoginContent() {
                                                     type={showPassword ? "text" : "password"} required value={password}
                                                     onChange={(e) => setPassword(e.target.value)}
                                                     className="w-full pl-14 pr-12 py-4 bg-slate-50 border-slate-100 border rounded-2xl outline-none focus:bg-white focus:border-emerald-500/30 focus:ring-4 focus:ring-emerald-500/5 transition-all font-medium text-sm"
-                                                    placeholder="Mật khẩu của bạn"
+                                                    placeholder={t('auth.password')}
                                                 />
                                                 <button
                                                     type="button"
@@ -379,9 +382,9 @@ function LoginContent() {
                                                     onChange={(e) => setRememberMe(e.target.checked)}
                                                     className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer"
                                                 />
-                                                <label htmlFor="remember" className="text-xs text-slate-500 font-medium group-hover:text-slate-900 cursor-pointer">Ghi nhớ đăng nhập</label>
+                                                <label htmlFor="remember" className="text-xs text-slate-500 font-medium group-hover:text-slate-900 cursor-pointer">{t('auth.rememberMe')}</label>
                                             </div>
-                                            <Link href="/forgot-password" title="Khôi phục mật khẩu" className="text-xs font-bold text-emerald-600 hover:underline">Quên mật khẩu?</Link>
+                                            <Link href="/forgot-password" title={t('auth.forgotPassword')} className="text-xs font-bold text-emerald-600 hover:underline">{t('auth.forgotPassword')}</Link>
                                         </div>
 
                                         <div className="py-2">
@@ -389,7 +392,7 @@ function LoginContent() {
                                         </div>
 
                                         <Button disabled={isLoading || !isCaptchaValid} type="submit" className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-emerald-600 text-white font-bold uppercase tracking-widest transition-all shadow-lg shadow-slate-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                                            {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : <span className="flex items-center gap-2">Đăng nhập</span>}
+                                            {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : <span className="flex items-center gap-2">{t('auth.login')}</span>}
                                         </Button>
 
                                         <div className="relative my-8">
@@ -397,11 +400,11 @@ function LoginContent() {
                                                 <span className="w-full border-t border-slate-100" />
                                             </div>
                                             <div className="relative flex justify-center text-[10px] uppercase tracking-widest font-bold">
-                                                <span className="px-4 text-slate-400 bg-white">Hoặc</span>
+                                                <span className="px-4 text-slate-400 bg-white">{tr("Hoặc", "auth.or")}</span>
                                             </div>
                                         </div>
 
-                                        <button
+                                            <button
                                             type="button"
                                             onClick={() => signIn("google", { callbackUrl: "/" })}
                                             className="w-full h-14 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-2xl flex items-center justify-center gap-3 transition-all outline-none focus:ring-4 focus:ring-slate-100 shadow-sm"
@@ -412,7 +415,7 @@ function LoginContent() {
                                                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                                                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                                             </svg>
-                                            Tiếp tục với Google
+                                            {tr("Tiếp tục với Google", "auth.continueWithGoogle")}
                                         </button>
 
                                         <button
@@ -421,11 +424,11 @@ function LoginContent() {
                                             className="w-full h-14 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-2xl flex items-center justify-center gap-3 transition-all outline-none focus:ring-4 focus:ring-slate-100 shadow-sm mt-3"
                                         >
                                             <Mail className="w-5 h-5 text-emerald-500" />
-                                            Đăng nhập bằng Magic Link
+                                            {t('auth.loginWithMagicLink')}
                                         </button>
 
                                         <p className="text-center text-sm text-slate-500 font-medium">
-                                            Bạn mới tham gia? <Link href="/register" className="text-emerald-600 font-bold hover:underline">Tạo một tài khoản</Link>
+                                            {tr("Bạn mới tham gia?", "auth.newHere")} <Link href="/register" className="text-emerald-600 font-bold hover:underline">{t('auth.registerNow')}</Link>
                                         </p>
                                     </form>
                                 )}
@@ -436,8 +439,8 @@ function LoginContent() {
                     <div className="mt-16 pt-8 border-t border-slate-50 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300">
                         <span>&copy; 2026 LIKEFOOD by Tran Quoc Vu</span>
                         <div className="flex gap-4">
-                            <Link href="/terms" className="hover:text-emerald-500 transition-colors">Điều khoản</Link>
-                            <Link href="/privacy" className="hover:text-emerald-500 transition-colors">Bảo mật</Link>
+                            <Link href="/terms" className="hover:text-emerald-500 transition-colors">{t('auth.footerTerms')}</Link>
+                            <Link href="/privacy" className="hover:text-emerald-500 transition-colors">{t('auth.footerPrivacy')}</Link>
                         </div>
                     </div>
                 </div>

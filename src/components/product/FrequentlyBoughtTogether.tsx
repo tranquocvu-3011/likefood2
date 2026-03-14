@@ -12,7 +12,9 @@ import { ShoppingCart, Loader2, Sparkles, Check } from "lucide-react";
 import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
+import { useLanguage } from "@/lib/i18n/context";
 import { toast } from "sonner";
+import PriceDisplay from "@/components/ui/price-display";
 
 interface Product {
     id: string;
@@ -30,11 +32,17 @@ interface FrequentlyBoughtTogetherProps {
     currentProduct: Product;
 }
 
+function getEffectivePrice(p: Product) {
+    return p.salePrice != null && p.salePrice < p.price ? p.salePrice : p.price;
+}
+
 export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyBoughtTogetherProps) {
     const [recommended, setRecommended] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const { addItem } = useCart();
+    const { language } = useLanguage();
+    const vi = language === "vi";
     const [isAddingAll, setIsAddingAll] = useState(false);
 
     useEffect(() => {
@@ -44,8 +52,10 @@ export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyB
                 const res = await fetch(`/api/products/recommendations/fbt?product=${currentProduct.slug}`);
                 if (!res.ok) throw new Error("Failed to fetch FBT");
                 const data = await res.json();
-                setRecommended(data);
-                setSelectedIds(data.map((p: Product) => p.id)); // Select all by default
+                // Ensure exactly 3 recommended products (total 4 with current)
+                const limited = (data as Product[]).slice(0, 3);
+                setRecommended(limited);
+                setSelectedIds(limited.map((p: Product) => p.id));
             } catch (err) {
                 console.error("FBT Error:", err);
             } finally {
@@ -71,18 +81,23 @@ export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyB
         const selectedProducts = recommended.filter(p => selectedIds.includes(p.id));
 
         if (selectedProducts.length === 0) {
-            toast.error("Vui lòng chọn ít nhất 1 sản phẩm để thêm vào giỏ hàng");
+            toast.error(vi ? "Vui lòng chọn ít nhất 1 sản phẩm để thêm vào giỏ hàng" : "Please select at least 1 product");
             setIsAddingAll(false);
             return;
         }
 
         let addedCount = 0;
         for (const p of selectedProducts) {
+            const effectivePrice = getEffectivePrice(p);
+            const originalPrice = p.originalPrice && p.originalPrice > effectivePrice ? p.originalPrice : undefined;
             const added = addItem({
                 productId: p.id,
                 slug: p.slug,
                 name: p.name,
-                price: p.isOnSale && p.salePrice ? p.salePrice : p.price,
+                price: effectivePrice,
+                originalPrice,
+                salePrice: originalPrice ? effectivePrice : undefined,
+                isOnSale: !!originalPrice,
                 image: p.image,
                 quantity: 1,
                 inventory: p.inventory,
@@ -90,9 +105,8 @@ export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyB
             if (added) addedCount++;
         }
 
-        // Only show summary toast if at least 1 item was added (auth passed)
         if (addedCount > 1) {
-            toast.success(`Đã thêm ${addedCount} sản phẩm vào giỏ hàng!`);
+            toast.success(vi ? `Đã thêm ${addedCount} sản phẩm vào giỏ hàng!` : `Added ${addedCount} items to cart!`);
         }
         setIsAddingAll(false);
     };
@@ -100,9 +114,12 @@ export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyB
     if (isLoading) return null;
     if (recommended.length === 0) return null;
 
-    const totalPrice = recommended
+    // Total price includes current product + selected recommended
+    const currentPrice = getEffectivePrice(currentProduct);
+    const selectedTotal = recommended
         .filter(p => selectedIds.includes(p.id))
-        .reduce((sum, p) => sum + (p.isOnSale && p.salePrice ? p.salePrice : p.price), 0);
+        .reduce((sum, p) => sum + getEffectivePrice(p), 0);
+    const totalPrice = currentPrice + selectedTotal;
 
     return (
         <section className="mb-20">
@@ -111,15 +128,19 @@ export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyB
                     <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                    <h2 className="text-3xl font-black uppercase tracking-tighter">Thường được mua cùng</h2>
-                    <p className="text-xs font-bold text-slate-400 tracking-widest uppercase">Gợi ý từ lịch sử mua sắm của khách hàng</p>
+                    <h2 className="text-3xl font-black uppercase tracking-tighter">
+                        {vi ? "Gợi ý Combo" : "Combo Suggestions"}
+                    </h2>
+                    <p className="text-xs font-bold text-slate-400 tracking-widest uppercase">
+                        {vi ? "Kết hợp để có trải nghiệm hoàn hảo" : "Combine for the perfect experience"}
+                    </p>
                 </div>
             </div>
 
             <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl lg:flex items-center gap-12">
-                {/* Product Duo/Trio List */}
+                {/* Product List */}
                 <div className="flex-1 flex flex-wrap items-center justify-center lg:justify-start gap-6">
-                    {/* Current Product (Fixed) */}
+                    {/* Current Product (Fixed - show full name + price) */}
                     <div className="relative group grayscale-0 opacity-100 transition-all duration-300">
                         <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-3xl overflow-hidden bg-slate-50 border border-slate-100 relative shadow-sm">
                             <ImageWithFallback
@@ -133,7 +154,18 @@ export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyB
                                 <Check className="w-3 h-3" />
                             </div>
                         </div>
-                        <p className="mt-3 text-[10px] font-black uppercase text-slate-400 text-center truncate w-32 sm:w-40">Đang xem</p>
+                        <div className="mt-3 text-center w-32 sm:w-40">
+                            <p className="text-[10px] font-black uppercase text-slate-900 truncate">{currentProduct.name}</p>
+                            <PriceDisplay
+                                currentPrice={currentPrice}
+                                originalPrice={currentProduct.originalPrice && currentProduct.originalPrice > currentPrice ? currentProduct.originalPrice : undefined}
+                                salePrice={currentProduct.salePrice}
+                                isOnSale={!!(currentProduct.originalPrice && currentProduct.originalPrice > currentPrice)}
+                                size="sm"
+                                showDiscountBadge={false}
+                                className="justify-center gap-1"
+                            />
+                        </div>
                     </div>
 
                     {recommended.map((product) => (
@@ -160,7 +192,15 @@ export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyB
                                 </div>
                                 <div className="mt-3 text-center w-32 sm:w-40">
                                     <p className="text-[10px] font-black uppercase text-slate-900 truncate">{product.name}</p>
-                                    <p className="text-xs font-bold text-primary">${(product.isOnSale && product.salePrice ? product.salePrice : product.price).toFixed(2)}</p>
+                                    <PriceDisplay
+                                        currentPrice={getEffectivePrice(product)}
+                                        originalPrice={product.originalPrice && product.originalPrice > getEffectivePrice(product) ? product.originalPrice : undefined}
+                                        salePrice={product.salePrice}
+                                        isOnSale={!!(product.originalPrice && product.originalPrice > getEffectivePrice(product))}
+                                        size="sm"
+                                        showDiscountBadge={false}
+                                        className="justify-center gap-1"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -171,12 +211,14 @@ export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyB
                 <div className="mt-10 lg:mt-0 lg:w-80 p-8 rounded-[2rem] bg-slate-50 border border-slate-100">
                     <div className="space-y-4 mb-8">
                         <div className="flex justify-between items-center text-sm font-bold text-slate-500">
-                            <span>Sản phẩm đã chọn:</span>
+                            <span>{vi ? "Sản phẩm đã chọn:" : "Selected products:"}</span>
                             <span className="text-slate-900">{selectedIds.length + 1}</span>
                         </div>
                         <div className="flex justify-between items-end">
-                            <span className="text-sm font-black uppercase tracking-widest text-slate-400">Tổng cộng:</span>
-                            <span className="text-3xl font-black text-primary tracking-tighter">${totalPrice.toFixed(2)}</span>
+                            <span className="text-sm font-black uppercase tracking-widest text-slate-400">
+                                {vi ? "Tổng cộng:" : "Total:"}
+                            </span>
+                            <PriceDisplay currentPrice={totalPrice} size="lg" showDiscountBadge={false} className="justify-end" />
                         </div>
                     </div>
 
@@ -190,12 +232,12 @@ export default function FrequentlyBoughtTogether({ currentProduct }: FrequentlyB
                         ) : (
                             <>
                                 <ShoppingCart className="w-5 h-5 mr-3" />
-                                Mua cả bộ
+                                {vi ? "Mua cả bộ" : "Buy bundle"}
                             </>
                         )}
                     </Button>
                     <p className="mt-4 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest italic">
-                        * Tiết kiệm thời gian, tăng trải nghiệm
+                        {vi ? "* Tiết kiệm thời gian, tăng trải nghiệm" : "* Save time, enhance your experience"}
                     </p>
                 </div>
             </div>

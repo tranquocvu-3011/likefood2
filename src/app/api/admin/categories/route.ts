@@ -131,7 +131,7 @@ export async function PUT(request: NextRequest) {
             updateData.name = trimmedName;
             // Regenerate slug only if name changed
             if (trimmedName !== existing.name) {
-                let slug = makeSlug(trimmedName);
+                const slug = makeSlug(trimmedName);
                 let suffix = 0;
                 let candidateSlug = slug;
                 while (true) {

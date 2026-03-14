@@ -5,12 +5,23 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe";
 import prisma from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
     try {
+        // SEC: Require authentication
+        const authSession = await getServerSession(authOptions);
+        if (!authSession?.user?.id) {
+            return NextResponse.json(
+                { error: "Vui lòng đăng nhập để thanh toán" },
+                { status: 401 }
+            );
+        }
+
         const body = await req.json();
         const { orderId } = body;
 
@@ -35,6 +46,19 @@ export async function POST(req: NextRequest) {
 
         if (!order) {
             return NextResponse.json({ error: "Đơn hàng không tồn tại" }, { status: 404 });
+        }
+
+        // SEC: Verify ownership — user can only pay for their own orders
+        if (order.userId !== authSession.user.id) {
+            logger.security("Checkout ownership violation", {
+                attemptedBy: authSession.user.id,
+                orderId,
+                orderOwner: order.userId,
+            });
+            return NextResponse.json(
+                { error: "Bạn không có quyền thanh toán đơn hàng này" },
+                { status: 403 }
+            );
         }
 
         if (order.paymentStatus === "PAID") {

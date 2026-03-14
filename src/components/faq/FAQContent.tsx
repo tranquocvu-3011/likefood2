@@ -7,7 +7,7 @@
  * https://github.com/tranquocvu-3011/likefood
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
     Bot,
@@ -149,6 +149,18 @@ export function FAQContent() {
     const [searchQuery, setSearchQuery] = useState("");
     const [activeCategory, setActiveCategory] = useState<string>(faqs[0]?.category || "");
     const [expandedQuestion, setExpandedQuestion] = useState<number | null>(0);
+    const [supportEmail, setSupportEmail] = useState("tranquocvu3011@gmail.com");
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const { getPublicSettings } = await import("@/lib/public-settings");
+                const data = await getPublicSettings();
+                if (data.SITE_SUPPORT_EMAIL) setSupportEmail(data.SITE_SUPPORT_EMAIL);
+            } catch { /* keep default */ }
+        };
+        load();
+    }, []);
 
     const filteredFaqs = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
@@ -302,7 +314,7 @@ export function FAQContent() {
                                     {locale === "vi" ? "Liên hệ hỗ trợ" : "Contact support"}
                                 </Link>
                                 <a
-                                    href="mailto:support@likefood.com"
+                                    href={`mailto:${supportEmail}`}
                                     className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
                                 >
                                     <Mail className="h-4 w-4" />

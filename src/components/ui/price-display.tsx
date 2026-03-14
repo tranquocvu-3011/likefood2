@@ -33,16 +33,21 @@ export default function PriceDisplay({
     const discountPercent = hasDiscount ? Math.round(((basePrice - effectivePrice) / basePrice) * 100) : 0;
 
     const sizeClasses = {
-        sm: { current: "text-lg", original: "text-xs", badge: "text-[10px] px-2 py-0.5" },
-        md: { current: "text-2xl", original: "text-sm", badge: "text-xs px-3 py-1" },
-        lg: { current: "text-3xl", original: "text-lg", badge: "text-xs px-3 py-1" },
-        xl: { current: "text-5xl", original: "text-2xl", badge: "text-sm px-4 py-1.5" },
+        sm: { current: "text-lg", original: "text-xs", percent: "text-[11px]", badge: "text-[10px] px-2 py-0.5" },
+        md: { current: "text-2xl", original: "text-sm", percent: "text-sm", badge: "text-xs px-3 py-1" },
+        lg: { current: "text-3xl", original: "text-lg", percent: "text-base", badge: "text-xs px-3 py-1" },
+        xl: { current: "text-5xl", original: "text-2xl", percent: "text-lg", badge: "text-sm px-4 py-1.5" },
     };
 
     const s = sizeClasses[size];
 
     return (
         <div className={cn("flex items-baseline gap-3 flex-wrap", className)}>
+            {hasDiscount && (
+                <span className={cn("text-slate-400 line-through font-medium", s.original)}>
+                    {formatPrice(basePrice)}
+                </span>
+            )}
             <span
                 className={cn(
                     "font-black",
@@ -56,9 +61,11 @@ export default function PriceDisplay({
             </span>
             {hasDiscount && (
                 <>
-                    <span className={cn("text-slate-400 line-through font-medium", s.original)}>
-                        {formatPrice(basePrice)}
-                    </span>
+                    {discountPercent > 0 && (
+                        <span className={cn("font-bold text-rose-500", s.percent)}>
+                            -{discountPercent}%
+                        </span>
+                    )}
                     {showDiscountBadge && discountPercent > 0 && (
                         <span
                             className={cn(

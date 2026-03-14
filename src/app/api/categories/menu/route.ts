@@ -45,7 +45,13 @@ export async function GET() {
                         name: true,
                         price: true,
                         salePrice: true,
+                        originalPrice: true,
                         image: true,
+                        productImages: {
+                            orderBy: { order: "asc" },
+                            take: 1,
+                            select: { imageUrl: true }
+                        },
                     },
                 });
 
@@ -53,7 +59,11 @@ export async function GET() {
                     id: cat.id,
                     name: cat.name,
                     slug: cat.slug,
-                    products,
+                    products: products.map(p => ({
+                        ...p,
+                        image: p.image || p.productImages?.[0]?.imageUrl || null,
+                        productImages: undefined,
+                    })),
                 };
             })
         );

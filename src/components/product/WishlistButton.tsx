@@ -11,6 +11,7 @@ import { useState } from "react";
 import { Heart } from "lucide-react";
 import { useWishlistContext } from "@/contexts/WishlistContext";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface WishlistButtonProps {
     productId: string;
@@ -18,6 +19,7 @@ interface WishlistButtonProps {
 
 export default function WishlistButton({ productId }: WishlistButtonProps) {
     const { isInWishlist, toggleWishlist } = useWishlistContext();
+    const { t, isVietnamese } = useLanguage();
     const inWishlist = isInWishlist(productId);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -39,7 +41,7 @@ export default function WishlistButton({ productId }: WishlistButtonProps) {
             disabled={isLoading}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            aria-label={inWishlist ? "Đã yêu thích - Nhấn để bỏ" : "Thêm vào yêu thích"}
+            aria-label={inWishlist ? t('shop.removedFromWishlist') : t('shop.addToWishlist')}
             aria-pressed={inWishlist}
             className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-lg flex items-center justify-center sm:opacity-0 sm:group-hover:opacity-100 opacity-100 transition-opacity disabled:cursor-not-allowed"
         >

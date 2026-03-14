@@ -30,7 +30,7 @@ export async function GET(req: Request) {
         const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "10") || 10));
         const skip = (page - 1) * limit;
 
-        const where: Prisma.postWhereInput = {}; // Changed to Prisma.postWhereInput
+        const where: Prisma.postWhereInput = {};
 
         if (search) {
             where.OR = [
@@ -54,6 +54,11 @@ export async function GET(req: Request) {
                 orderBy: { createdAt: "desc" },
                 skip,
                 take: limit,
+                include: {
+                    images: {
+                        orderBy: { order: "asc" },
+                    },
+                },
             }),
             prisma.post.count({ where }),
         ]);
@@ -91,7 +96,8 @@ export async function POST(req: Request) {
             authorName,
             category,
             isPublished,
-            publishedAt
+            publishedAt,
+            galleryImages,
         } = body;
 
         if (!title || !content) {
@@ -111,7 +117,16 @@ export async function POST(req: Request) {
                 category: category || "Tin tức",
                 isPublished: isPublished ?? true,
                 publishedAt: publishedAt ? new Date(publishedAt) : new Date(),
+                images: galleryImages && galleryImages.length > 0
+                    ? {
+                        create: galleryImages.map((url: string, index: number) => ({
+                            imageUrl: url,
+                            order: index,
+                        })),
+                    }
+                    : undefined,
             },
+            include: { images: { orderBy: { order: "asc" } } },
         });
 
         return NextResponse.json(post);

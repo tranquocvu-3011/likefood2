@@ -44,7 +44,12 @@ export async function GET(request: NextRequest) {
                                 price: true,
                                 category: true,
                                 ratingAvg: true,
-                                soldCount: true
+                                soldCount: true,
+                                productImages: {
+                                    orderBy: { order: "asc" },
+                                    take: 1,
+                                    select: { imageUrl: true }
+                                }
                             }
                         }
                     }

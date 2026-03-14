@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * LIKEFOOD - Vietnamese Specialty Marketplace
@@ -184,7 +184,7 @@ export default function ProductEditor({
       categoryId: formData.categoryId || null,
       weight: formData.weight.trim() || null,
       inventory,
-      image: formData.image.trim() || null,
+      image: formData.images.length > 0 ? formData.images[0].trim() : (formData.image.trim() || null),
       images: formData.images.filter((url) => url.trim() !== ""),
       featured: formData.featured,
       badgeText: formData.badgeText.trim() || null,
@@ -578,12 +578,21 @@ export default function ProductEditor({
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.22em] text-zinc-500">Hình ảnh</p>
                 <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-100">Quản lý hình ảnh</h2>
+                <p className="mt-1 text-xs text-zinc-500">Kéo thả để sắp xếp · Ảnh đầu tiên sẽ là ảnh đại diện sản phẩm</p>
               </div>
-              <Field label="Ảnh đại diện"><input value={formData.image} onChange={(event) => updateField("image", event.target.value)} className="w-full h-14 rounded-2xl border border-zinc-700 bg-zinc-900 px-5 text-sm font-semibold text-zinc-100 outline-none transition-colors focus:border-emerald-500/50 focus:bg-zinc-800" placeholder="Primary image URL" /></Field>
-              <div className="space-y-3">
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-zinc-500">Thư viện ảnh</p>
-                <ImageUpload value={formData.images} onChange={(value) => updateField("images", value)} onRemove={(url) => updateField("images", formData.images.filter((item) => item !== url))} multiple />
-              </div>
+              <ImageUpload
+                value={formData.images}
+                onChange={(imgs) => {
+                  updateField("images", imgs);
+                  updateField("image", imgs.length > 0 ? imgs[0] : "");
+                }}
+                onRemove={(url) => {
+                  const filtered = formData.images.filter((item) => item !== url);
+                  updateField("images", filtered);
+                  updateField("image", filtered.length > 0 ? filtered[0] : "");
+                }}
+                multiple
+              />
             </CardContent>
           </Card>
         </div>
@@ -601,7 +610,23 @@ function MetricTile({ label, value }: { label: string; value: string }) {
 }
 
 function ToggleRow({ title, description, checked, onChange }: { title: string; description: string; checked: boolean; onChange: (checked: boolean) => void }) {
-  return <div className="flex items-center justify-between gap-4 rounded-[1.5rem] border border-zinc-800 bg-zinc-900/50 p-4"><div><p className="font-black text-zinc-100">{title}</p><p className="mt-1 text-sm leading-6 text-zinc-400">{description}</p></div><button type="button" onClick={() => onChange(!checked)} className={`relative inline-flex h-10 w-18 items-center rounded-full transition ${checked ? "bg-emerald-500" : "bg-zinc-700"}`}><span className={`inline-block h-8 w-8 transform rounded-full bg-white transition ${checked ? "translate-x-9" : "translate-x-1"}`} /></button></div>;
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-[1.5rem] border border-zinc-800 bg-zinc-900/50 p-4">
+      <div className="flex-1 min-w-0">
+        <p className="font-black text-zinc-100">{title}</p>
+        <p className="mt-1 text-sm leading-6 text-zinc-400">{description}</p>
+      </div>
+      <button
+        type="button"
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-8 w-14 flex-shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 ${checked ? "bg-emerald-500" : "bg-zinc-700"}`}
+      >
+        <span
+          className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform duration-200 ${checked ? "translate-x-7" : "translate-x-1"}`}
+        />
+      </button>
+    </div>
+  );
 }
 
 function InsightBlock({ icon: Icon, label, value }: { icon: typeof MapPin; label: string; value: string }) {

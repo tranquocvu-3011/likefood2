@@ -77,25 +77,28 @@ export async function POST(req: Request) {
                     });
 
                     if (order && order.paymentStatus !== "PAID") {
-                        // 1. Mark as paid
-                        await prisma.order.update({
-                            where: { id: orderId },
-                            data: {
-                                paymentStatus: "PAID",
-                                paymentIntentId: session.payment_intent as string || session.id,
-                            },
-                        });
-
-                        // 2. Decrement inventory + increment soldCount
-                        for (const item of order.orderItems) {
-                            await prisma.product.update({
-                                where: { id: item.productId },
+                        // Use transaction for atomic stock update + order status change
+                        await prisma.$transaction(async (tx) => {
+                            // 1. Mark as paid
+                            await tx.order.update({
+                                where: { id: orderId },
                                 data: {
-                                    inventory: { decrement: item.quantity },
-                                    soldCount: { increment: item.quantity },
+                                    paymentStatus: "PAID",
+                                    paymentIntentId: session.payment_intent as string || session.id,
                                 },
                             });
-                        }
+
+                            // 2. Decrement inventory + increment soldCount atomically
+                            for (const item of order.orderItems) {
+                                await tx.product.update({
+                                    where: { id: item.productId },
+                                    data: {
+                                        inventory: { decrement: item.quantity },
+                                        soldCount: { increment: item.quantity },
+                                    },
+                                });
+                            }
+                        });
 
                         logger.info(`[STRIPE] Order ${orderId} paid via Checkout Session`, { sessionId: session.id });
                     }

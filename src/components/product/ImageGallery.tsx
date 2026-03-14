@@ -11,6 +11,7 @@ import { useState, useRef, useCallback } from "react";
 import ImageWithFallback from "@/components/shared/ImageWithFallback";
 import { X, ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface ProductImage {
     id: string;
@@ -26,6 +27,7 @@ interface ImageGalleryProps {
 }
 
 export default function ImageGallery({ images, productName }: ImageGalleryProps) {
+    const { t } = useLanguage();
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [direction, setDirection] = useState(0);
@@ -131,14 +133,14 @@ export default function ImageGallery({ images, productName }: ImageGalleryProps)
                         <button
                             onClick={(e) => { e.stopPropagation(); handlePrevious(); }}
                             className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl bg-white/95 backdrop-blur-md shadow-lg flex items-center justify-center hover:bg-white hover:scale-105 active:scale-95 transition-all z-20 border border-slate-100"
-                            aria-label="Ảnh trước"
+                            aria-label={t("imageGallery.previousImage")}
                         >
                             <ChevronLeft className="w-4 h-4 text-slate-700" />
                         </button>
                         <button
                             onClick={(e) => { e.stopPropagation(); handleNext(); }}
                             className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl bg-white/95 backdrop-blur-md shadow-lg flex items-center justify-center hover:bg-white hover:scale-105 active:scale-95 transition-all z-20 border border-slate-100"
-                            aria-label="Ảnh tiếp"
+                            aria-label={t("imageGallery.nextImage")}
                         >
                             <ChevronRight className="w-4 h-4 text-slate-700" />
                         </button>
@@ -164,7 +166,7 @@ export default function ImageGallery({ images, productName }: ImageGalleryProps)
                                     ? "border-emerald-500 shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/30"
                                     : "border-slate-200 hover:border-slate-400 opacity-80 hover:opacity-100"
                                 }`}
-                            aria-label={`Xem ảnh ${idx + 1}`}
+                            aria-label={`${t("imageGallery.viewImage")} ${idx + 1}`}
                         >
                             <ImageWithFallback
                                 src={img.imageUrl}

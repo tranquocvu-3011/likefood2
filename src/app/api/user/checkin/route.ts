@@ -12,6 +12,13 @@ import { authOptions } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { applyRateLimit } from "@/lib/ratelimit";
 
+const CHECKIN_MILESTONES = [
+    { points: 200, code: "CHECKIN-200", discountType: "FIXED", discountValue: 3, maxDiscount: 3, minOrderValue: 0, category: "shipping", description: "Miễn phí ship $3", descriptionEn: "Free shipping $3" },
+    { points: 300, code: "CHECKIN-300", discountType: "PERCENTAGE", discountValue: 10, maxDiscount: 5, minOrderValue: 0, category: "checkin", description: "Giảm giá 10%, tối đa $5", descriptionEn: "10% off, max $5" },
+    { points: 500, code: "CHECKIN-500", discountType: "PERCENTAGE", discountValue: 20, maxDiscount: 8, minOrderValue: 0, category: "checkin", description: "Giảm giá 20%, tối đa $8", descriptionEn: "20% off, max $8" },
+    { points: 1000, code: "CHECKIN-1000", discountType: "PERCENTAGE", discountValue: 40, maxDiscount: 10, minOrderValue: 0, category: "checkin", description: "Giảm giá 40%, tối đa $10", descriptionEn: "40% off, max $10" },
+] as const;
+
 export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -56,6 +63,11 @@ export async function POST(req: NextRequest) {
         // Points logic: 10 points per check-in
         const pointsToEarn = 10;
 
+        const eligibleMilestones = CHECKIN_MILESTONES.filter(
+            (milestone) => user.points + pointsToEarn >= milestone.points
+        );
+        const newlyClaimedMilestones: { points: number; code: string; discountValue: number }[] = [];
+
         const updatedUser = await prisma.$transaction(async (tx) => {
             const u = await tx.user.update({
                 where: { id: userId },
@@ -74,14 +86,93 @@ export async function POST(req: NextRequest) {
                 }
             });
 
+            for (const milestone of eligibleMilestones) {
+                const coupon = await tx.coupon.upsert({
+                    where: { code: milestone.code },
+                    update: {
+                        isActive: true,
+                        endDate: new Date("2035-12-31T23:59:59.999Z"),
+                        category: milestone.category,
+                        discountType: milestone.discountType,
+                        discountValue: milestone.discountValue,
+                        minOrderValue: milestone.minOrderValue,
+                        maxDiscount: milestone.maxDiscount,
+                    },
+                    create: {
+                        code: milestone.code,
+                        discountType: milestone.discountType,
+                        discountValue: milestone.discountValue,
+                        minOrderValue: milestone.minOrderValue,
+                        maxDiscount: milestone.maxDiscount,
+                        startDate: now,
+                        endDate: new Date("2035-12-31T23:59:59.999Z"),
+                        isActive: true,
+                        usageLimit: null,
+                        usedCount: 0,
+                        category: milestone.category,
+                    },
+                });
+
+                const existingClaim = await tx.uservoucher.findUnique({
+                    where: {
+                        userId_couponId: {
+                            userId,
+                            couponId: coupon.id,
+                        },
+                    },
+                    select: { id: true },
+                });
+
+                if (!existingClaim) {
+                    await tx.uservoucher.create({
+                        data: {
+                            userId,
+                            couponId: coupon.id,
+                            status: "CLAIMED",
+                        },
+                    });
+
+                    await tx.notification.create({
+                        data: {
+                            userId,
+                            type: "VOUCHER",
+                            title: `Mở khóa voucher mốc ${milestone.points} Xu`,
+                            message: `Bạn vừa nhận voucher ${milestone.code} từ mốc điểm danh ${milestone.points} Xu.`,
+                            link: "/profile/vouchers",
+                        },
+                    });
+
+                    newlyClaimedMilestones.push({
+                        points: milestone.points,
+                        code: milestone.code,
+                        discountValue: milestone.discountValue,
+                    });
+                }
+            }
+
             return u;
         });
+
+        const milestoneStatuses = CHECKIN_MILESTONES.map((milestone) => ({
+            points: milestone.points,
+            code: milestone.code,
+            discountType: milestone.discountType,
+            discountValue: milestone.discountValue,
+            maxDiscount: milestone.maxDiscount,
+            category: milestone.category,
+            description: milestone.description,
+            descriptionEn: milestone.descriptionEn,
+            reached: updatedUser.points >= milestone.points,
+            claimed: updatedUser.points >= milestone.points,
+        }));
 
         return NextResponse.json({
             message: "Điểm danh thành công!",
             earned: pointsToEarn,
             totalPoints: updatedUser.points,
-            lastCheckIn: updatedUser.lastCheckIn
+            lastCheckIn: updatedUser.lastCheckIn,
+            unlockedVouchers: newlyClaimedMilestones,
+            milestones: milestoneStatuses,
         });
 
     } catch (_error) {
@@ -147,11 +238,47 @@ export async function GET(_req: Request) {
             return dow === 0 ? 6 : dow - 1; // 0=Mon...6=Sun
         });
 
+        const milestoneCoupons = await prisma.coupon.findMany({
+            where: {
+                code: { in: CHECKIN_MILESTONES.map((m) => m.code) },
+            },
+            select: { id: true, code: true },
+        });
+
+        const couponIdByCode = new Map(milestoneCoupons.map((coupon) => [coupon.code, coupon.id]));
+        const claimedCouponIds = new Set(
+            (await prisma.uservoucher.findMany({
+                where: {
+                    userId: session.user.id,
+                    couponId: { in: milestoneCoupons.map((coupon) => coupon.id) },
+                },
+                select: { couponId: true },
+            })).map((record) => record.couponId)
+        );
+
+        const milestones = CHECKIN_MILESTONES.map((milestone) => {
+            const couponId = couponIdByCode.get(milestone.code);
+            const reached = user.points >= milestone.points;
+            return {
+                points: milestone.points,
+                code: milestone.code,
+                discountType: milestone.discountType,
+                discountValue: milestone.discountValue,
+                maxDiscount: milestone.maxDiscount,
+                category: milestone.category,
+                description: milestone.description,
+                descriptionEn: milestone.descriptionEn,
+                reached,
+                claimed: couponId ? claimedCouponIds.has(couponId) : false,
+            };
+        });
+
         return NextResponse.json({
             points: user.points,
             lastCheckIn: user.lastCheckIn,
             canCheckIn,
             checkedDaysThisWeek,
+            milestones,
         });
     } catch (_error) {
         return NextResponse.json({ error: "Failed to fetch check-in status" }, { status: 500 });

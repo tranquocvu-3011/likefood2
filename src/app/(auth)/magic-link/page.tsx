@@ -16,7 +16,8 @@ import { useLanguage } from "@/lib/i18n/context";
 import { CaptchaField } from "@/components/auth/CaptchaField";
 
 function MagicLinkContent() {
-    const { t } = useLanguage();
+    const { t, isVietnamese } = useLanguage();
+    const tr = (viText: string, enKey: string) => (isVietnamese ? viText : t(enKey));
     const [email, setEmail] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isSent, setIsSent] = useState(false);
@@ -27,7 +28,7 @@ function MagicLinkContent() {
         e.preventDefault();
 
         if (!isCaptchaValid) {
-            toast.error("Vui lòng hoàn thành xác thực bảo mật.");
+            toast.error(tr("Vui lòng hoàn thành xác thực bảo mật.", "auth.completeSecurityCheck"));
             return;
         }
 
@@ -45,7 +46,7 @@ function MagicLinkContent() {
             } catch {
                 // Server trả về HTML (vd: 500 error page) thay vì JSON
                 if (!res.ok) {
-                    toast.error("Lỗi server. Kiểm tra cấu hình (.env, NEXTAUTH_SECRET, SMTP_FROM) và khởi động lại dev server.");
+                    toast.error(tr("Lỗi máy chủ. Hãy kiểm tra cấu hình email và thử lại.", "auth.serverConfigError"));
                     return;
                 }
             }
@@ -53,10 +54,10 @@ function MagicLinkContent() {
                 setIsSent(true);
                 toast.success(t("auth.magicLinkSent"));
             } else {
-                toast.error(data.error || "Không thể gửi. Thử lại.");
+                toast.error(tr("Không thể gửi yêu cầu. Vui lòng thử lại.", "auth.sendFailedTryAgain"));
             }
         } catch {
-            toast.error("Lỗi kết nối.");
+            toast.error(tr("Lỗi kết nối.", "auth.connectionErrorShort"));
         } finally {
             setIsLoading(false);
         }
@@ -123,7 +124,7 @@ function MagicLinkContent() {
                         </form>
                         <div className="mt-8 pt-6 border-t border-slate-50 space-y-2">
                             <Link href="/login" className="block text-xs text-slate-400 font-medium hover:text-violet-600">
-                                ← {t("auth.backToLogin")}
+                                {"<- "}{t("auth.backToLogin")}
                             </Link>
                         </div>
                     </>

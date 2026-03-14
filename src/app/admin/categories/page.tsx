@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * LIKEFOOD - Vietnamese Specialty Marketplace
@@ -42,7 +42,7 @@ export default function AdminCategoriesPage() {
                 setCategories(data);
             }
         } catch {
-            toast.error("KhÃ´ng thá»ƒ táº£i danh sÃ¡ch danh má»¥c");
+            toast.error("Không thể tải danh sách danh mục");
         } finally {
             setLoading(false);
         }
@@ -65,15 +65,15 @@ export default function AdminCategoriesPage() {
                 body: JSON.stringify({ id: cat.id, name: editName.trim() }),
             });
             if (res.ok) {
-                toast.success(`ÄÃ£ Ä‘á»•i tÃªn "${cat.name}" â†’ "${editName.trim()}"`);
+                toast.success(`Đã đổi tên "${cat.name}" → "${editName.trim()}"`);
                 setEditingId(null);
                 fetchCategories();
             } else {
                 const data = await res.json();
-                toast.error(data.error || "KhÃ´ng thá»ƒ Ä‘á»•i tÃªn danh má»¥c");
+                toast.error(data.error || "Không thể đổi tên danh mục");
             }
         } catch {
-            toast.error("Lá»—i káº¿t ná»‘i");
+            toast.error("Lỗi kết nối");
         } finally {
             setSaving(false);
         }
@@ -89,16 +89,16 @@ export default function AdminCategoriesPage() {
                 body: JSON.stringify({ name: newCategory.trim() }),
             });
             if (res.ok) {
-                toast.success(`ÄÃ£ táº¡o danh má»¥c "${newCategory.trim()}"`);
+                toast.success(`Đã tạo danh mục "${newCategory.trim()}"`);
                 setNewCategory("");
                 setShowAdd(false);
                 fetchCategories();
             } else {
                 const data = await res.json();
-                toast.error(data.error || "KhÃ´ng thá»ƒ táº¡o danh má»¥c");
+                toast.error(data.error || "Không thể tạo danh mục");
             }
         } catch {
-            toast.error("Lá»—i káº¿t ná»‘i");
+            toast.error("Lỗi kết nối");
         } finally {
             setSaving(false);
         }
@@ -106,21 +106,21 @@ export default function AdminCategoriesPage() {
 
     const handleDelete = async (cat: CategoryInfo) => {
         if (cat.productCount > 0) {
-            const ok = confirm(`Danh má»¥c "${cat.name}" cÃ³ ${cat.productCount} sáº£n pháº©m. XÃ³a sáº½ gá»¡ liÃªn káº¿t danh má»¥c khá»i cÃ¡c sáº£n pháº©m nÃ y. Tiáº¿p tá»¥c?`);
+            const ok = confirm(`Danh mục "${cat.name}" có ${cat.productCount} sản phẩm. Xóa sẽ gỡ liên kết danh mục khỏi các sản phẩm này. Tiếp tục?`);
             if (!ok) return;
         }
         setDeletingId(cat.id);
         try {
             const res = await fetch(`/api/admin/categories?id=${cat.id}`, { method: "DELETE" });
             if (res.ok) {
-                toast.success(`ÄÃ£ xÃ³a danh má»¥c "${cat.name}"`);
+                toast.success(`Đã xóa danh mục "${cat.name}"`);
                 fetchCategories();
             } else {
                 const data = await res.json();
-                toast.error(data.error || "KhÃ´ng thá»ƒ xÃ³a danh má»¥c");
+                toast.error(data.error || "Không thể xóa danh mục");
             }
         } catch {
-            toast.error("Lá»—i káº¿t ná»‘i");
+            toast.error("Lỗi kết nối");
         } finally {
             setDeletingId(null);
         }
@@ -136,7 +136,7 @@ export default function AdminCategoriesPage() {
         return (
             <div className="h-[60vh] flex flex-col items-center justify-center gap-4 text-slate-400">
                 <Loader2 className="w-10 h-10 animate-spin text-emerald-500" />
-                <p className="text-xs font-black uppercase tracking-widest">Äang táº£i danh má»¥c...</p>
+                <p className="text-xs font-black uppercase tracking-widest">Đang tải danh mục...</p>
             </div>
         );
     }
@@ -147,10 +147,10 @@ export default function AdminCategoriesPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
                     <h1 className="text-3xl font-black tracking-tight text-slate-900 font-outfit uppercase">
-                        Quáº£n lÃ½ danh má»¥c
+                        Quản lý danh mục
                     </h1>
                     <p className="text-slate-500 font-medium mt-1">
-                        {categories.length} danh má»¥c Â· {totalProducts} sáº£n pháº©m
+                        {categories.length} danh mục · {totalProducts} sản phẩm
                     </p>
                 </div>
                 <Button
@@ -158,7 +158,7 @@ export default function AdminCategoriesPage() {
                     className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-5 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 flex gap-2"
                 >
                     <Plus className="w-5 h-5" />
-                    ThÃªm danh má»¥c
+                    Thêm danh mục
                 </Button>
             </div>
 
@@ -171,7 +171,7 @@ export default function AdminCategoriesPage() {
                                 className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium outline-none focus:ring-2 focus:ring-emerald-500/20"
                                 value={newCategory}
                                 onChange={(e) => setNewCategory(e.target.value)}
-                                placeholder="TÃªn danh má»¥c má»›i..."
+                                placeholder="Tên danh mục mới..."
                                 onKeyDown={(e) => e.key === "Enter" && handleAdd()}
                                 autoFocus
                             />
@@ -201,7 +201,7 @@ export default function AdminCategoriesPage() {
                     className="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-4 py-4 font-medium outline-none focus:ring-2 focus:ring-emerald-500/10 transition-all"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="TÃ¬m kiáº¿m danh má»¥c..."
+                    placeholder="Tìm kiếm danh mục..."
                 />
             </div>
 
@@ -211,11 +211,11 @@ export default function AdminCategoriesPage() {
                     <div className="text-center py-16 bg-white rounded-2xl border border-slate-100">
                         <FolderTree className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                         <p className="text-slate-400 font-bold">
-                            {search ? "KhÃ´ng tÃ¬m tháº¥y danh má»¥c" : "ChÆ°a cÃ³ danh má»¥c nÃ o"}
+                            {search ? "Không tìm thấy danh mục" : "Chưa có danh mục nào"}
                         </p>
                         {!search && (
                             <p className="text-slate-400 text-sm mt-2">
-                                Nháº¥n &quot;ThÃªm danh má»¥c&quot; Ä‘á»ƒ táº¡o danh má»¥c má»›i
+                                Nhấn &quot;Thêm danh mục&quot; để tạo danh mục mới
                             </p>
                         )}
                     </div>
@@ -258,7 +258,7 @@ export default function AdminCategoriesPage() {
                                         </div>
                                     ) : (
                                         <div className="min-w-0">
-                                            <h3 className="font-black text-slate-900 truncate">{cat.name || "ChÆ°a phÃ¢n loáº¡i"}</h3>
+                                            <h3 className="font-black text-slate-900 truncate">{cat.name || "Chưa phân loại"}</h3>
                                             <p className="text-xs text-slate-400 font-medium">slug: {cat.slug}</p>
                                         </div>
                                     )}

@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatPrice } from "@/lib/currency";
 import { logger } from "@/lib/logger";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface OrderItem {
     id: string;
@@ -45,16 +46,16 @@ interface Order {
     items: OrderItem[];
 }
 
-function getShippingMethodLabel(method?: string | null) {
+function getShippingMethodLabel(method: string | null | undefined, vi: boolean) {
     switch (method) {
         case "standard":
-            return "Giao hàng tiêu chuẩn";
+            return vi ? "Giao hàng tiêu chuẩn" : "Standard shipping";
         case "express":
-            return "Giao hàng nhanh";
+            return vi ? "Giao hàng nhanh" : "Express shipping";
         case "overnight":
-            return "Giao hàng ưu tiên";
+            return vi ? "Giao hàng ưu tiên" : "Priority shipping";
         default:
-            return "Phương thức tiêu chuẩn";
+            return vi ? "Phương thức tiêu chuẩn" : "Standard method";
     }
 }
 
@@ -64,6 +65,8 @@ export default function OrderSuccessPage() {
     const orderId = searchParams.get("orderId");
     const [order, setOrder] = useState<Order | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const { language } = useLanguage();
+    const vi = language === "vi";
 
     const fetchOrder = useCallback(async () => {
         if (!orderId) {
@@ -98,14 +101,14 @@ export default function OrderSuccessPage() {
             return "";
         }
 
-        return new Date(order.createdAt).toLocaleString("vi-VN", {
+        return new Date(order.createdAt).toLocaleString(vi ? "vi-VN" : "en-US", {
             year: "numeric",
             month: "long",
             day: "numeric",
             hour: "2-digit",
             minute: "2-digit",
         });
-    }, [order?.createdAt]);
+    }, [order?.createdAt, vi]);
 
     if (isLoading) {
         return (
@@ -135,29 +138,33 @@ export default function OrderSuccessPage() {
                                 <CheckCircle2 className="h-10 w-10" />
                             </div>
                             <div className="space-y-3">
-                                <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">Đơn hàng đã được ghi nhận</p>
+                                <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-600">
+                                    {vi ? "Đơn hàng đã được ghi nhận" : "Order has been recorded"}
+                                </p>
                                 <h1 className="text-4xl font-black uppercase tracking-tight text-slate-950 lg:text-5xl">
-                                    Cảm ơn bạn, đơn hàng đã được tạo thành công
+                                    {vi ? "Cảm ơn bạn, đơn hàng đã được tạo thành công" : "Thank you, your order has been placed successfully"}
                                 </h1>
                                 <p className="max-w-2xl text-base leading-7 text-slate-600 lg:text-lg">
-                                    LIKEFOOD đã lưu lại đơn #{order.id.slice(-8).toUpperCase()}. Từ đây bạn có thể tiếp tục mua sắm hoặc mở chi tiết đơn để theo dõi trạng thái xử lý.
+                                    {vi
+                                        ? `LIKEFOOD đã lưu lại đơn #${order.id.slice(-8).toUpperCase()}. Từ đây bạn có thể tiếp tục mua sắm hoặc mở chi tiết đơn để theo dõi trạng thái xử lý.`
+                                        : `LIKEFOOD has saved your order #${order.id.slice(-8).toUpperCase()}. You can continue shopping or open the order details to track processing status.`}
                                 </p>
                             </div>
                             <div className="flex flex-col gap-3 sm:flex-row">
                                 <Button asChild size="xl" className="shadow-[0_16px_40px_rgba(34,197,94,0.2)]">
-                                    <Link href="/products">Tiếp tục mua sắm</Link>
+                                    <Link href="/products">{vi ? "Tiếp tục mua sắm" : "Continue shopping"}</Link>
                                 </Button>
                                 <Button asChild variant="outline" size="xl" className="border-slate-200 bg-white text-slate-950 hover:bg-slate-50">
-                                    <Link href={`/orders/${order.id}`}>Xem chi tiết đơn hàng</Link>
+                                    <Link href={`/orders/${order.id}`}>{vi ? "Xem chi tiết đơn hàng" : "View order details"}</Link>
                                 </Button>
                             </div>
                         </div>
 
                         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
                             {[
-                                { label: "Mã đơn", value: `#${order.id.slice(-8).toUpperCase()}` },
-                                { label: "Ngày đặt", value: orderDate },
-                                { label: "Tổng thanh toán", value: formatPrice(order.total) },
+                                { label: vi ? "Mã đơn" : "Order ID", value: `#${order.id.slice(-8).toUpperCase()}` },
+                                { label: vi ? "Ngày đặt" : "Order date", value: orderDate },
+                                { label: vi ? "Tổng thanh toán" : "Total", value: formatPrice(order.total) },
                             ].map((item) => (
                                 <div key={item.label} className="rounded-[1.75rem] border border-slate-200 bg-slate-50/80 p-4">
                                     <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">{item.label}</p>
@@ -174,7 +181,9 @@ export default function OrderSuccessPage() {
                             <CardContent className="p-6 lg:p-8">
                                 <div className="flex items-center gap-3">
                                     <Package className="h-5 w-5 text-primary" />
-                                    <h2 className="text-2xl font-black tracking-tight text-slate-950">Sản phẩm trong đơn</h2>
+                                    <h2 className="text-2xl font-black tracking-tight text-slate-950">
+                                        {vi ? "Sản phẩm trong đơn" : "Order items"}
+                                    </h2>
                                 </div>
                                 <div className="mt-6 space-y-4">
                                     {order.items.map((item) => (
@@ -218,26 +227,34 @@ export default function OrderSuccessPage() {
                                 <CardContent className="space-y-5 p-6 lg:p-8">
                                     <div className="flex items-center gap-3">
                                         <Truck className="h-5 w-5 text-primary" />
-                                        <h2 className="text-xl font-black tracking-tight text-slate-950">Thông tin giao hàng</h2>
+                                        <h2 className="text-xl font-black tracking-tight text-slate-950">
+                                            {vi ? "Thông tin giao hàng" : "Shipping information"}
+                                        </h2>
                                     </div>
                                     <div className="space-y-4 text-sm text-slate-600">
                                         <div>
-                                            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Địa chỉ</p>
+                                            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">
+                                                {vi ? "Địa chỉ" : "Address"}
+                                            </p>
                                             <p className="mt-1 font-medium text-slate-900">
-                                                {order.shippingAddress || "Địa chỉ sẽ được cập nhật trong chi tiết đơn hàng"}
+                                                {order.shippingAddress || (vi ? "Địa chỉ sẽ được cập nhật trong chi tiết đơn hàng" : "Address will be updated in order details")}
                                                 {order.shippingCity ? `, ${order.shippingCity}` : ""}
                                                 {order.shippingZipCode ? ` ${order.shippingZipCode}` : ""}
                                             </p>
                                         </div>
                                         {order.shippingPhone && (
                                             <div>
-                                                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Điện thoại nhận hàng</p>
+                                                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">
+                                                    {vi ? "Điện thoại nhận hàng" : "Phone"}
+                                                </p>
                                                 <p className="mt-1 font-medium text-slate-900">{order.shippingPhone}</p>
                                             </div>
                                         )}
                                         <div>
-                                            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Phương thức giao</p>
-                                            <p className="mt-1 font-medium text-slate-900">{getShippingMethodLabel(order.shippingMethod)}</p>
+                                            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">
+                                                {vi ? "Phương thức giao" : "Delivery method"}
+                                            </p>
+                                            <p className="mt-1 font-medium text-slate-900">{getShippingMethodLabel(order.shippingMethod, vi)}</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -249,15 +266,29 @@ export default function OrderSuccessPage() {
                                 <CardContent className="space-y-4 p-6 lg:p-8">
                                     <div className="flex items-center gap-3">
                                         <Mail className="h-5 w-5 text-emerald-200" />
-                                        <h2 className="text-xl font-black tracking-tight">Bước tiếp theo</h2>
+                                        <h2 className="text-xl font-black tracking-tight">
+                                            {vi ? "Bước tiếp theo" : "Next steps"}
+                                        </h2>
                                     </div>
                                     <p className="text-sm leading-7 text-white/80">
-                                        LIKEFOOD sẽ cố gắng gửi email xác nhận sớm nhất có thể. Trong lúc chờ, bạn luôn có thể mở chi tiết đơn hàng để xem trạng thái mới nhất ngay trên website.
+                                        {vi
+                                            ? "LIKEFOOD sẽ cố gắng gửi email xác nhận sớm nhất có thể. Trong lúc chờ, bạn luôn có thể mở chi tiết đơn hàng để xem trạng thái mới nhất ngay trên website."
+                                            : "LIKEFOOD will send a confirmation email as soon as possible. In the meantime, you can always open order details to check the latest status on our website."}
                                     </p>
                                     <div className="space-y-3 rounded-[1.5rem] border border-white/10 bg-white/10 p-4 text-sm text-white/85">
-                                        <p>1. Kiểm tra lại địa chỉ và thông tin nhận hàng trong trang đơn.</p>
-                                        <p>2. Theo dõi tiến trình xử lý khi đơn được xác nhận và chuyển sang vận chuyển.</p>
-                                        <p>3. Dùng nút mua lại sau này nếu bạn muốn đặt nhanh lần kế tiếp.</p>
+                                        {vi ? (
+                                            <>
+                                                <p>1. Kiểm tra lại địa chỉ và thông tin nhận hàng trong trang đơn.</p>
+                                                <p>2. Theo dõi tiến trình xử lý khi đơn được xác nhận và chuyển sang vận chuyển.</p>
+                                                <p>3. Dùng nút mua lại sau này nếu bạn muốn đặt nhanh lần kế tiếp.</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <p>1. Review your delivery address and info on the order detail page.</p>
+                                                <p>2. Track the processing progress once the order is confirmed and shipped.</p>
+                                                <p>3. Use the reorder button later for quick repeat orders.</p>
+                                            </>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>

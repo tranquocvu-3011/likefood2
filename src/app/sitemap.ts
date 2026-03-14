@@ -26,6 +26,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let productPages: MetadataRoute.Sitemap = [];
   try {
     const products = await prisma.product.findMany({
+      where: { isVisible: true, isDeleted: false },
       select: { slug: true, id: true, updatedAt: true },
     });
 
@@ -57,13 +58,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // posts fetch failed silently for sitemap
   }
 
-  // Legal & Auth + FAQ + Blog index
+  // Legal, FAQ, Blog index + policies
   const legalPages: MetadataRoute.Sitemap = [
     { url: `${BASE_URL}/posts`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
     { url: `${BASE_URL}/faq`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${BASE_URL}/terms`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${BASE_URL}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE_URL}/policies/terms`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE_URL}/policies/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE_URL}/policies/shipping`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE_URL}/policies/return`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
   ];
 
-  return [...staticPages, ...productPages, ...postPages, ...legalPages];
+  // Dynamic CMS pages
+  let cmsPages: MetadataRoute.Sitemap = [];
+  try {
+    const dynamicPages = await prisma.dynamicPage.findMany({
+      where: { isPublished: true },
+      select: { slug: true, updatedAt: true },
+    });
+    cmsPages = dynamicPages.map((p) => ({
+      url: `${BASE_URL}/pages/${p.slug}`,
+      lastModified: p.updatedAt,
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
+    }));
+  } catch {
+    // CMS pages fetch failed silently
+  }
+
+  return [...staticPages, ...productPages, ...postPages, ...legalPages, ...cmsPages];
 }

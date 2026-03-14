@@ -15,6 +15,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { logger } from "@/lib/logger";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface Order {
     id: string;
@@ -36,6 +37,7 @@ interface Order {
 export default function OrdersPage() {
     const router = useRouter();
     const { status: sessionStatus } = useSession();
+    const { t, isVietnamese } = useLanguage();
     const [orders, setOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<string>("all");
@@ -102,13 +104,13 @@ export default function OrdersPage() {
     const getStatusText = (status: string) => {
         switch (status) {
             case "PENDING":
-                return "Đang chờ";
+                return isVietnamese ? "Đang chờ" : "Pending";
             case "SHIPPING":
-                return "Đang giao";
+                return isVietnamese ? "Đang giao" : "Shipping";
             case "COMPLETED":
-                return "Hoàn thành";
+                return isVietnamese ? "Hoàn thành" : "Completed";
             case "CANCELLED":
-                return "Đã hủy";
+                return isVietnamese ? "Đã hủy" : "Cancelled";
             default:
                 return status;
         }
@@ -127,21 +129,21 @@ export default function OrdersPage() {
             <div className="page-container-wide">
                 <div className="mb-12">
                     <h1 className="text-4xl font-black uppercase tracking-tighter mb-4">
-                        Đơn hàng của tôi
+                        {isVietnamese ? "Đơn hàng của tôi" : "My orders"}
                     </h1>
                     <p className="text-slate-500 font-medium">
-                        Xem lịch sử mua hàng và theo dõi đơn hàng của bạn
+                        {isVietnamese ? "Xem lịch sử mua hàng và theo dõi đơn hàng của bạn" : "Review your purchase history and track your orders"}
                     </p>
                 </div>
 
                 {/* Filters */}
                 <div className="mb-8 flex flex-wrap gap-3">
                     {[
-                        { value: "all", label: "Tất cả" },
-                        { value: "PENDING", label: "Đang chờ" },
-                        { value: "SHIPPING", label: "Đang giao" },
-                        { value: "COMPLETED", label: "Hoàn thành" },
-                        { value: "CANCELLED", label: "Đã hủy" },
+                        { value: "all", label: isVietnamese ? "Tất cả" : "All" },
+                        { value: "PENDING", label: isVietnamese ? "Đang chờ" : "Pending" },
+                        { value: "SHIPPING", label: isVietnamese ? "Đang giao" : "Shipping" },
+                        { value: "COMPLETED", label: isVietnamese ? "Hoàn thành" : "Completed" },
+                        { value: "CANCELLED", label: isVietnamese ? "Đã hủy" : "Cancelled" },
                     ].map((option) => (
                         <button
                             key={option.value}
@@ -164,14 +166,14 @@ export default function OrdersPage() {
                                 <Clock className="w-10 h-10 text-slate-300" />
                             </div>
                             <h3 className="text-xl font-black uppercase tracking-tighter mb-2">
-                                Chưa có đơn hàng nào
+                                {isVietnamese ? "Chưa có đơn hàng nào" : "No orders yet"}
                             </h3>
                             <p className="text-slate-400 font-medium mb-8">
-                                Đơn hàng của bạn sẽ xuất hiện tại đây
+                                {isVietnamese ? "Đơn hàng của bạn sẽ xuất hiện tại đây" : "Your orders will appear here"}
                             </p>
                             <Link href="/products">
                                 <button className="px-8 py-4 bg-primary text-white rounded-full font-black uppercase tracking-widest hover:bg-primary/90 transition-all">
-                                    Mua sắm ngay
+                                    {isVietnamese ? "Mua sắm ngay" : "Shop now"}
                                 </button>
                             </Link>
                         </CardContent>
@@ -186,7 +188,7 @@ export default function OrdersPage() {
                                             <div className="flex items-center justify-between mb-4">
                                                 <div>
                                                     <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
-                                                        Mã đơn hàng
+                                                        {isVietnamese ? "Mã đơn hàng" : "Order ID"}
                                                     </p>
                                                     <p className="text-lg font-black text-slate-900">
                                                         #{order.id.slice(-8).toUpperCase()}
@@ -200,14 +202,14 @@ export default function OrdersPage() {
 
                                             <div className="flex items-center gap-4 text-sm text-slate-500 mb-4">
                                                 <span>
-                                                    {new Date(order.createdAt).toLocaleDateString("vi-VN", {
+                                                    {new Date(order.createdAt).toLocaleDateString(isVietnamese ? "vi-VN" : "en-US", {
                                                         year: "numeric",
                                                         month: "long",
                                                         day: "numeric",
                                                     })}
                                                 </span>
                                                 <span>•</span>
-                                                <span>{order.items.length} sản phẩm</span>
+                                                <span>{order.items.length} {isVietnamese ? "sản phẩm" : "items"}</span>
                                             </div>
 
                                             <div className="flex items-center gap-2">
@@ -242,7 +244,7 @@ export default function OrdersPage() {
                                         <div className="flex flex-col items-end gap-4">
                                             <div className="text-right">
                                                 <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
-                                                    Tổng tiền
+                                                    {isVietnamese ? "Tổng tiền" : "Total"}
                                                 </p>
                                                 <p className="text-2xl font-black text-primary">
                                                     ${order.total.toFixed(2)}
@@ -251,7 +253,7 @@ export default function OrdersPage() {
                                             <Link href={`/orders/${order.id}`}>
                                                 <button className="px-6 py-3 bg-slate-900 text-white rounded-full font-black uppercase tracking-widest text-xs hover:bg-slate-800 transition-all flex items-center gap-2">
                                                     <Eye className="w-4 h-4" />
-                                                    Xem chi tiết
+                                                    {isVietnamese ? "Xem chi tiết" : "View details"}
                                                 </button>
                                             </Link>
                                         </div>

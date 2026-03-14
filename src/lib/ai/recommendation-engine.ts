@@ -5,7 +5,7 @@
  * https://github.com/tranquocvu-3011/likefood
  */
 
-import type { brand, product, productvariant } from "@/generated/client";
+import type { brand, product, productimage, productvariant } from "@/generated/client";
 import prisma from "@/lib/prisma";
 
 export type RecommendationType =
@@ -37,11 +37,14 @@ export interface UserPreferences {
 }
 
 export interface ProductRecommendation {
+  id?: string;
   productId: string;
   name: string;
   slug: string;
   price: number;
   originalPrice?: number;
+  salePrice?: number;
+  isOnSale?: boolean;
   image: string | null;
   category: string;
   brand?: string;
@@ -61,6 +64,7 @@ export interface RecommendationResult {
 type ProductWithRelations = product & {
   brand: brand | null;
   productVariants: productvariant[];
+  productImages?: productimage[];
 };
 
 function getProductPrice(productRecord: ProductWithRelations): number {
@@ -71,13 +75,29 @@ function getProductPrice(productRecord: ProductWithRelations): number {
 }
 
 function toRecommendation(productRecord: ProductWithRelations, score: number, reason: string): ProductRecommendation {
+  const variantDelta = productRecord.productVariants.length
+    ? Math.min(...productRecord.productVariants.map((variant) => variant.priceAdjustment ?? 0))
+    : 0;
+
+  const regularPrice = productRecord.price + variantDelta;
+  const saleCandidate = productRecord.salePrice != null ? productRecord.salePrice + variantDelta : null;
+  const useSalePrice = !!(productRecord.isOnSale && saleCandidate != null && saleCandidate < regularPrice);
+  const currentPrice = useSalePrice ? (saleCandidate as number) : regularPrice;
+  const comparePrice = productRecord.originalPrice != null
+    ? productRecord.originalPrice + variantDelta
+    : regularPrice;
+  const hasDiscount = comparePrice > currentPrice;
+
   return {
+    id: productRecord.id,
     productId: productRecord.id,
     name: productRecord.name,
     slug: productRecord.slug ?? productRecord.id,
-    price: getProductPrice(productRecord),
-    originalPrice: productRecord.originalPrice ?? undefined,
-    image: productRecord.image ?? null,
+    price: currentPrice,
+    originalPrice: hasDiscount ? comparePrice : undefined,
+    salePrice: hasDiscount ? currentPrice : undefined,
+    isOnSale: hasDiscount,
+    image: productRecord.image || productRecord.productImages?.[0]?.imageUrl || null,
     category: productRecord.category,
     brand: productRecord.brand?.name ?? undefined,
     rating: productRecord.ratingAvg || undefined,
@@ -147,6 +167,7 @@ class RecommendationEngine {
         include: {
           brand: true,
           productVariants: { where: { isActive: true } },
+          productImages: { orderBy: { order: "asc" }, take: 1, select: { imageUrl: true } },
         },
       });
 
@@ -164,6 +185,7 @@ class RecommendationEngine {
         include: {
           brand: true,
           productVariants: { where: { isActive: true } },
+          productImages: { orderBy: { order: "asc" }, take: 1, select: { imageUrl: true } },
         },
         take: limit * 3,
         orderBy: { soldCount: "desc" },
@@ -259,6 +281,7 @@ class RecommendationEngine {
         include: {
           brand: true,
           productVariants: { where: { isActive: true } },
+          productImages: { orderBy: { order: "asc" }, take: 1, select: { imageUrl: true } },
         },
         take: limit * 3,
         orderBy: [{ soldCount: "desc" }, { ratingAvg: "desc" }],
@@ -294,6 +317,7 @@ class RecommendationEngine {
         include: {
           brand: true,
           productVariants: { where: { isActive: true } },
+          productImages: { orderBy: { order: "asc" }, take: 1, select: { imageUrl: true } },
         },
         take: limit,
         orderBy: [{ soldCount: "desc" }, { ratingAvg: "desc" }],
@@ -330,6 +354,7 @@ class RecommendationEngine {
         include: {
           brand: true,
           productVariants: { where: { isActive: true } },
+          productImages: { orderBy: { order: "asc" }, take: 1, select: { imageUrl: true } },
         },
         take: limit,
         orderBy: [{ soldCount: "desc" }, { ratingAvg: "desc" }],
@@ -355,6 +380,7 @@ class RecommendationEngine {
         include: {
           brand: true,
           productVariants: { where: { isActive: true } },
+          productImages: { orderBy: { order: "asc" }, take: 1, select: { imageUrl: true } },
         },
       });
 
@@ -374,6 +400,7 @@ class RecommendationEngine {
         include: {
           brand: true,
           productVariants: { where: { isActive: true } },
+          productImages: { orderBy: { order: "asc" }, take: 1, select: { imageUrl: true } },
         },
         take: limit,
         orderBy: [{ ratingAvg: "desc" }, { soldCount: "desc" }],
@@ -404,6 +431,7 @@ class RecommendationEngine {
         include: {
           brand: true,
           productVariants: { where: { isActive: true } },
+          productImages: { orderBy: { order: "asc" }, take: 1, select: { imageUrl: true } },
         },
         take: limit,
         orderBy: { createdAt: "desc" },

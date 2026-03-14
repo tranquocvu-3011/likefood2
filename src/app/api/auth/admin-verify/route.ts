@@ -42,7 +42,7 @@ function verifyAdminCookie(signedValue: string): { valid: boolean; value: string
 // POST: Verify OTP and create admin session
 export async function POST(req: NextRequest) {
     try {
-        // AUTH-02: Apply rate limiting to prevent brute force
+        // Apply rate limiting to prevent brute force
         const identifier = getRateLimitIdentifier(req);
         const rateResult = await applyRateLimit(identifier, admin2FARateLimit);
         if (!rateResult.success && rateResult.error) {
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
         // Xóa token đã dùng
         await prisma.twofactortoken.delete({ where: { id: token.id } });
 
-        // SEC-05: Sign the cookie value with HMAC
+        // Sign the cookie value with HMAC
         const expiresAt = Date.now() + 10 * 60 * 1000;
         const rawValue = `verified:${expiresAt}`;
         

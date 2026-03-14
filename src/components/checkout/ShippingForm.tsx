@@ -44,6 +44,7 @@ interface ShippingFormProps {
     totalPrice: number;
     formErrors: Record<string, string>;
     onNext: () => void;
+    isSubmitting?: boolean;
 }
 
 const inputBase =
@@ -86,14 +87,15 @@ export default function ShippingForm({
     totalPrice,
     formErrors,
     onNext,
+    isSubmitting = false,
 }: ShippingFormProps) {
     const vi = language === "vi";
 
     const shippingMethods = [
         {
             id: "standard",
-            name: vi ? "Giao hang tieu chuan" : "Standard Shipping",
-            time: vi ? "3-5 ngay lam viec" : "3-5 business days",
+            name: vi ? "Giao hàng tiêu chuẩn" : "Standard Shipping",
+            time: vi ? "3-5 ngày làm việc" : "3-5 business days",
             price:
                 totalPrice >= FREE_SHIPPING_THRESHOLD_USD
                     ? 0
@@ -103,16 +105,16 @@ export default function ShippingForm({
         },
         {
             id: "express",
-            name: vi ? "Giao hang nhanh" : "Express Shipping",
-            time: vi ? "1-2 ngay lam viec" : "1-2 business days",
+            name: vi ? "Giao hàng nhanh" : "Express Shipping",
+            time: vi ? "1-2 ngày làm việc" : "1-2 business days",
             price: EXPRESS_SHIPPING_FEE_USD,
             free: false,
             estimatedDays: 2,
         },
         {
             id: "overnight",
-            name: vi ? "Giao trong ngay" : "Same-day Delivery",
-            time: vi ? "Trong ngay (truoc 12h)" : "Same day (order before 12pm)",
+            name: vi ? "Giao trong ngày" : "Same-day Delivery",
+            time: vi ? "Trong ngày (trước 12h)" : "Same day (order before 12pm)",
             price: OVERNIGHT_SHIPPING_FEE_USD,
             free: false,
             estimatedDays: 1,
@@ -424,14 +426,23 @@ export default function ShippingForm({
                 </div>
             </div>
 
-            {/* ── Continue CTA ── */}
             <Button
                 type="button"
                 onClick={onNext}
-                className="w-full h-9 rounded-md bg-slate-900 hover:bg-emerald-700 text-white font-semibold text-xs tracking-wide transition-all active:scale-[0.99] flex items-center justify-center gap-1.5"
+                disabled={isSubmitting}
+                className="w-full h-9 rounded-md bg-slate-900 hover:bg-emerald-700 text-white font-semibold text-xs tracking-wide transition-all active:scale-[0.99] flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-                {vi ? "Tiếp tục thanh toán" : "Continue to payment"}
-                <ChevronRight className="w-3.5 h-3.5" />
+                {isSubmitting ? (
+                    <>
+                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        {vi ? "Đang xử lý..." : "Processing..."}
+                    </>
+                ) : (
+                    <>
+                        {vi ? "Tiếp tục thanh toán" : "Continue to payment"}
+                        <ChevronRight className="w-3.5 h-3.5" />
+                    </>
+                )}
             </Button>
         </div>
     );

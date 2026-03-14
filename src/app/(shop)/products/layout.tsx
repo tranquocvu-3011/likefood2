@@ -6,16 +6,28 @@
  */
 
 import { Metadata } from "next";
+import { cookies } from "next/headers";
 
-export const metadata: Metadata = {
-    title: "Sản Phẩm | LIKEFOOD",
-    description: "Khám phá các sản phẩm đặc sản Việt Nam chất lượng cao",
-    openGraph: {
-        title: "Sản Phẩm | LIKEFOOD",
-        description: "Khám phá các sản phẩm đặc sản Việt Nam chất lượng cao",
-        type: "website",
-    },
-};
+export async function generateMetadata(): Promise<Metadata> {
+    const cookieStore = await cookies();
+    const isEn = cookieStore.get("language")?.value === "en";
+
+    const title = isEn ? "Products | LIKEFOOD" : "Sản phẩm | LIKEFOOD";
+    const description = isEn
+        ? "Explore premium Vietnamese specialty products at LIKEFOOD."
+        : "Khám phá các sản phẩm đặc sản Việt Nam chất lượng cao tại LIKEFOOD.";
+
+    return {
+        title,
+        description,
+        alternates: { canonical: "/products" },
+        openGraph: {
+            title,
+            description,
+            type: "website",
+        },
+    };
+}
 
 // Enable ISR for product listing page
 export const revalidate = 60; // Revalidate every 60 seconds

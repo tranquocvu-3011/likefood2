@@ -17,6 +17,7 @@ import { ProductGridSkeleton } from "@/components/ui/product-skeleton";
 import FeaturedProductsSection from "@/components/home/FeaturedProductsSection";
 import PersonalizedRecommendationsSection from "@/components/home/PersonalizedRecommendationsSection";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
 
 // Lazy-load các section dưới fold để giảm JS ban đầu & cải thiện INP
@@ -48,65 +49,75 @@ const RecentPosts = dynamic(
 
 
 // SEO Metadata
-export const metadata: Metadata = {
-  title: "LIKEFOOD - Đặc Sản Việt Nam Chính Gốc Tại Hoa Kỳ | Vietnamese Specialty Food Store",
-  description: "Mua cá khô, tôm khô, mực khô, trái cây sấy và đặc sản Việt Nam chất lượng cao. Giao hàng toàn nước Mỹ trong 2-3 ngày. Miễn phí ship đơn từ $500. 100% chính hãng từ Việt Nam.",
-  keywords: [
-    "cá khô",
-    "tôm khô",
-    "mực khô",
-    "đặc sản Việt Nam",
-    "Vietnamese dried seafood",
-    "trái cây sấy",
-    "mứt tết",
-    "gia vị Việt Nam",
-    "Vietnamese food USA",
-    "Vietnamese specialty store"
-  ],
-  authors: [{ name: "LIKEFOOD Team" }],
-  creator: "LIKEFOOD",
-  publisher: "LIKEFOOD",
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  openGraph: {
-    type: 'website',
-    locale: 'vi_VN',
-    url: 'https://likefood.com',
-    siteName: 'LIKEFOOD',
-    title: 'LIKEFOOD - Đặc Sản Việt Nam Chính Gốc Tại Hoa Kỳ',
-    description: 'Mua đặc sản Việt Nam chính gốc, chất lượng cao. Giao hàng toàn nước Mỹ 2-3 ngày. Free ship đơn từ $500.',
-    images: [{
-      url: '/og-image.png',
-      width: 1200,
-      height: 630,
-      alt: 'LIKEFOOD - Vietnamese Specialty Food Store'
-    }]
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'LIKEFOOD - Đặc Sản Việt Nam Chính Gốc',
-    description: 'Cá khô, tôm khô, mực khô, đặc sản Việt Nam chất lượng cao tại Hoa Kỳ',
-    images: ['/twitter-image.png'],
-    creator: '@likefood'
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+export async function generateMetadata(): Promise<Metadata> {
+  const cookieStore = await cookies();
+  const isEn = cookieStore.get("language")?.value === "en";
+
+  const title = isEn
+    ? "LIKEFOOD - Authentic Vietnamese Specialty Store in the U.S."
+    : "LIKEFOOD - Đặc sản Việt Nam chính gốc tại Hoa Kỳ";
+  const description = isEn
+    ? "Shop premium Vietnamese dried seafood, fruits, and regional specialties. Nationwide U.S. shipping in 2-3 days. Free shipping from $500 orders."
+    : "Mua cá khô, tôm khô, mực khô, trái cây sấy và đặc sản Việt Nam chất lượng cao. Giao hàng toàn nước Mỹ trong 2-3 ngày. Miễn phí ship đơn từ $500.";
+
+  return {
+    title,
+    description,
+    keywords: [
+      "ca kho",
+      "tom kho",
+      "muc kho",
+      "đặc sản Việt Nam",
+      "Vietnamese dried seafood",
+      "trái cây sấy",
+      "mứt Tết",
+      "gia vị Việt Nam",
+      "Vietnamese food USA",
+      "Vietnamese specialty store"
+    ],
+    authors: [{ name: "LIKEFOOD Team" }],
+    creator: "LIKEFOOD",
+    publisher: "LIKEFOOD",
+    formatDetection: {
+      email: false,
+      address: false,
+      telephone: false,
+    },
+    openGraph: {
+      type: "website",
+      locale: isEn ? "en_US" : "vi_VN",
+      url: "https://likefood.com",
+      siteName: "LIKEFOOD",
+      title,
+      description,
+      images: [{
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "LIKEFOOD - Vietnamese Specialty Food Store"
+      }]
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/twitter-image.png"],
+      creator: "@likefood"
+    },
+    robots: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
-  },
-  verification: {
-    google: 'google-site-verification-code',
-  },
-};
+    // Google verification is handled in root layout.tsx via NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION env var
+  };
+}
 
 // ISR: Revalidate home page every 5 minutes
 export const revalidate = 300;

@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { Users, Package, Star, Award } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { logger } from "@/lib/logger";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface Stats {
     totalCustomers: number;
@@ -144,6 +145,8 @@ export default function StatsSection() {
         totalProducts: 0
     });
     const [isLoading, setIsLoading] = useState(true);
+    const { language } = useLanguage();
+    const vi = language === "vi";
 
     const fetchStats = useCallback(async () => {
         try {
@@ -180,8 +183,8 @@ export default function StatsSection() {
         {
             icon: Users,
             value: formatCustomers(stats.totalCustomers),
-            label: "Khách hàng",
-            sublabel: "Tin tưởng sử dụng",
+            label: vi ? "Khách hàng" : "Customers",
+            sublabel: vi ? "Tin tưởng sử dụng" : "Trusted users",
             gradient: "from-blue-500 to-cyan-400",
             textGradient: "from-blue-600 to-cyan-500",
             glowColor: "rgba(59,130,246,0.15)"
@@ -189,8 +192,8 @@ export default function StatsSection() {
         {
             icon: Package,
             value: formatOrders(stats.totalOrders),
-            label: "Đơn hàng",
-            sublabel: "Được xử lý thành công",
+            label: vi ? "Đơn hàng" : "Orders",
+            sublabel: vi ? "Được xử lý thành công" : "Successfully processed",
             gradient: "from-violet-500 to-purple-400",
             textGradient: "from-violet-600 to-purple-500",
             glowColor: "rgba(139,92,246,0.15)"
@@ -198,8 +201,8 @@ export default function StatsSection() {
         {
             icon: Star,
             value: `${stats.avgRating.toFixed(1)}/5`,
-            label: "Đánh giá",
-            sublabel: "Trung bình từ khách hàng",
+            label: vi ? "Đánh giá" : "Rating",
+            sublabel: vi ? "Trung bình từ khách hàng" : "Average from customers",
             gradient: "from-amber-400 to-orange-400",
             textGradient: "from-amber-500 to-orange-500",
             glowColor: "rgba(245,158,11,0.15)"
@@ -207,8 +210,8 @@ export default function StatsSection() {
         {
             icon: Award,
             value: stats.totalProducts > 0 ? stats.totalProducts.toString() : "—",
-            label: "Sản phẩm",
-            sublabel: "Đang có sẵn trong kho",
+            label: vi ? "Sản phẩm" : "Products",
+            sublabel: vi ? "Đang có sẵn trong kho" : "Available in stock",
             gradient: "from-emerald-500 to-green-400",
             textGradient: "from-emerald-600 to-green-500",
             glowColor: "rgba(16,185,129,0.15)"
@@ -248,7 +251,7 @@ export default function StatsSection() {
                         className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full px-3 py-1 text-xs font-semibold mb-3"
                     >
                         <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                        Thống kê thực tế
+                        {vi ? "Thống kê thực tế" : "Real Statistics"}
                     </motion.div>
 
                     <motion.h2
@@ -258,9 +261,9 @@ export default function StatsSection() {
                         transition={{ delay: 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                         className="text-2xl md:text-3xl font-black text-slate-900 mb-2 leading-tight"
                     >
-                        Con số{" "}
+                        {vi ? "Con số" : "Impressive"}{" "}
                         <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
-                            ấn tượng
+                            {vi ? "ấn tượng" : "Numbers"}
                         </span>
                     </motion.h2>
 
@@ -271,7 +274,7 @@ export default function StatsSection() {
                         transition={{ delay: 0.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                         className="text-sm md:text-base text-slate-500 font-medium max-w-lg mx-auto"
                     >
-                        Được hàng ngàn khách hàng tin tưởng trên khắp nước Mỹ
+                        {vi ? "Được hàng ngàn khách hàng tin tưởng trên khắp nước Mỹ" : "Trusted by thousands of customers across the United States"}
                     </motion.p>
                 </div>
 

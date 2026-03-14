@@ -19,7 +19,8 @@ import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 import LoadingState from "@/components/ui/loading-state";
 import EmptyState from "@/components/ui/empty-state";
-import { formatPrice } from "@/lib/currency";
+import PriceDisplay from "@/components/ui/price-display";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface WishlistProduct {
     id: string;
@@ -40,6 +41,7 @@ export default function WishlistPage() {
     const router = useRouter();
     const { status: sessionStatus } = useSession();
     const { addItem } = useCart();
+    const { t, isVietnamese } = useLanguage();
     const [products, setProducts] = useState<WishlistProduct[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [removingId, setRemovingId] = useState<string | null>(null);
@@ -78,22 +80,32 @@ export default function WishlistPage() {
             });
             if (res.ok) {
                 setProducts(prev => prev.filter(p => p.id !== productId));
-                toast.success("Đã xóa khỏi danh sách yêu thích");
+                toast.success(t('shop.removedFromWishlist'));
             }
         } catch (error) {
             logger.error("Failed to remove from wishlist", error as Error, { context: 'wishlist-page' });
-            toast.error("Không thể xóa sản phẩm");
+            toast.error(t('common.error'));
         } finally {
             setRemovingId(null);
         }
     };
 
     const handleAddToCart = (product: WishlistProduct) => {
+        const hasSalePrice = product.salePrice != null && product.salePrice < product.price;
+        const currentPrice = (hasSalePrice ? product.salePrice : product.price) ?? product.price;
+        const originalPrice = product.originalPrice != null && product.originalPrice > currentPrice
+            ? product.originalPrice
+            : hasSalePrice
+                ? product.price
+                : undefined;
         addItem({
             productId: product.id,
             slug: product.slug || undefined,
             name: product.name,
-            price: product.salePrice || product.price,
+            price: currentPrice,
+            originalPrice,
+            salePrice: originalPrice ? currentPrice : undefined,
+            isOnSale: !!originalPrice,
             image: product.image || undefined,
             quantity: 1,
             inventory: product.inventory,
@@ -102,7 +114,7 @@ export default function WishlistPage() {
     };
 
     if (sessionStatus === "loading" || isLoading) {
-        return <LoadingState fullPage text="Đang tải danh sách yêu thích..." />;
+        return <LoadingState fullPage text={isVietnamese ? "Đang tải danh sách yêu thích..." : "Loading wishlist..."} />;
     }
 
     if (products.length === 0) {
@@ -110,12 +122,12 @@ export default function WishlistPage() {
             <div className="page-container-wide py-20">
                 <EmptyState
                     icon={Heart}
-                    title="Chưa có sản phẩm yêu thích"
-                    description="Hãy thêm sản phẩm bạn thích vào danh sách yêu thích để dễ dàng tìm lại sau nhé!"
+                    title={isVietnamese ? "Chưa có sản phẩm yêu thích" : "No favorites yet"}
+                    description={isVietnamese ? "Hãy thêm sản phẩm bạn thích vào danh sách yêu thích để dễ dàng tìm lại sau nhé!" : "Add products you love to your favorites to easily find them later!"}
                     action={
                         <Link href="/products" prefetch={true}>
                             <Button className="bg-primary text-white px-10 py-5 rounded-full font-black uppercase tracking-widest shadow-2xl shadow-primary/30 hover:bg-primary/90 transition-all transform hover:scale-105 active:scale-95">
-                                Khám phá sản phẩm
+                                {isVietnamese ? "Khám phá sản phẩm" : "Explore Products"}
                             </Button>
                         </Link>
                     }
@@ -127,17 +139,27 @@ export default function WishlistPage() {
     return (
         <div className="page-container-wide py-20 bg-slate-50 min-h-screen">
             <Link href="/products" prefetch={true} className="inline-flex items-center text-sm font-black uppercase tracking-widest text-slate-400 hover:text-primary mb-12 transition-colors group">
-                <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" /> Tiếp tục mua sắm
+                <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" /> {isVietnamese ? "Tiếp tục mua sắm" : "Continue Shopping"}
             </Link>
 
             <div className="flex items-center justify-between mb-8">
                 <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tighter">
-                    Danh sách yêu thích <span className="text-primary">({products.length})</span>
+                    {isVietnamese ? "Danh sách yêu thích" : "Wishlist"} <span className="text-primary">({products.length})</span>
                 </h1>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {products.map((product) => (
+                    (() => {
+                        const hasSalePrice = product.salePrice != null && product.salePrice < product.price;
+                        const currentPrice = (hasSalePrice ? product.salePrice : product.price) ?? product.price;
+                        const comparePrice = product.originalPrice != null && product.originalPrice > currentPrice
+                            ? product.originalPrice
+                            : hasSalePrice
+                                ? product.price
+                                : undefined;
+
+                        return (
                     <div
                         key={product.id}
                         className="bg-white rounded-xl border border-slate-100 shadow-md shadow-slate-100/50 overflow-hidden group hover:shadow-xl transition-all duration-300"
@@ -159,7 +181,7 @@ export default function WishlistPage() {
                                 )}
                                 {product.isFlashSale && (
                                     <div className="absolute top-3 left-3 bg-gradient-to-r from-red-500 to-rose-600 px-3 py-1 rounded-full text-xs font-black text-white uppercase tracking-widest shadow-lg">
-                                        Flash Sale
+                                        {isVietnamese ? "Giảm sốc" : "Flash Sale"}
                                     </div>
                                 )}
                             </div>
@@ -172,15 +194,15 @@ export default function WishlistPage() {
                                 </h3>
                             </Link>
 
-                            <div className="flex items-baseline gap-2 mb-4">
-                                <span className="text-xl font-black text-primary">
-                                    {formatPrice(product.salePrice || product.price)}
-                                </span>
-                                {product.originalPrice && product.originalPrice > (product.salePrice || product.price) && (
-                                    <span className="text-sm text-slate-400 line-through">
-                                        {formatPrice(product.originalPrice)}
-                                    </span>
-                                )}
+                            <div className="mb-4">
+                                <PriceDisplay
+                                    currentPrice={currentPrice}
+                                    originalPrice={comparePrice}
+                                    salePrice={comparePrice ? currentPrice : undefined}
+                                    isOnSale={!!comparePrice}
+                                    size="md"
+                                    showDiscountBadge={false}
+                                />
                             </div>
 
                             <div className="flex items-center gap-2">
@@ -190,14 +212,14 @@ export default function WishlistPage() {
                                     className="flex-1 h-11 rounded-full bg-primary hover:bg-primary/90 text-white font-bold text-sm"
                                 >
                                     <ShoppingCart className="w-4 h-4 mr-2" />
-                                    {product.inventory > 0 ? "Thêm vào giỏ" : "Hết hàng"}
+                                    {product.inventory > 0 ? t('shop.addToCart') : t('shop.outOfStock')}
                                 </Button>
                                 <Button
                                     variant="outline"
                                     size="icon"
                                     onClick={() => handleRemoveFromWishlist(product.id)}
                                     disabled={removingId === product.id}
-                                    aria-label="Xóa khỏi danh sách yêu thích"
+                                    aria-label={t('shop.removeFromWishlist')}
                                     className="h-11 w-11 rounded-full border-2 border-slate-200 hover:border-red-500 hover:bg-red-50 hover:text-red-500 transition-all"
                                 >
                                     {removingId === product.id ? (
@@ -209,6 +231,8 @@ export default function WishlistPage() {
                             </div>
                         </div>
                     </div>
+                        );
+                    })()
                 ))}
             </div>
         </div>

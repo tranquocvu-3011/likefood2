@@ -11,6 +11,7 @@ import { useState, useRef, useEffect } from "react";
 import { ShoppingCart, Check } from "lucide-react";
 import { useCartActions } from "@/contexts/CartContext";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface QuickAddButtonProps {
     product: {
@@ -18,6 +19,9 @@ interface QuickAddButtonProps {
         slug?: string;
         name: string;
         price: number;
+        originalPrice?: number | null;
+        salePrice?: number | null;
+        isOnSale?: boolean;
         image?: string | null;
         inventory: number;
     };
@@ -27,6 +31,7 @@ export default function QuickAddButton({ product }: QuickAddButtonProps) {
     const { addItem } = useCartActions();
     const [isAdded, setIsAdded] = useState(false);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const { t } = useLanguage();
 
     useEffect(() => {
         return () => {
@@ -45,6 +50,9 @@ export default function QuickAddButton({ product }: QuickAddButtonProps) {
             slug: product.slug,
             name: product.name,
             price: product.price,
+            originalPrice: product.originalPrice ?? undefined,
+            salePrice: product.salePrice ?? undefined,
+            isOnSale: product.isOnSale,
             quantity: 1,
             image: product.image || undefined,
         });
@@ -58,7 +66,7 @@ export default function QuickAddButton({ product }: QuickAddButtonProps) {
         <motion.button
             onClick={handleQuickAdd}
             disabled={product.inventory <= 0}
-            aria-label={isAdded ? "Đã thêm vào giỏ hàng" : "Thêm vào giỏ hàng"}
+            aria-label={isAdded ? t('shop.addedToCartAria') : t('shop.addToCartAria')}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className={`

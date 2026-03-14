@@ -13,6 +13,7 @@ import { MessageCircle, Send, Loader2, User, ChevronDown, ChevronUp, HelpCircle 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { logger } from "@/lib/logger";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface QA {
     id: string;
@@ -35,6 +36,7 @@ interface ProductQAProps {
 
 export function ProductQA({ productSlug, productName }: ProductQAProps) {
     const { data: session } = useSession();
+    const { t, language } = useLanguage();
     const [questions, setQuestions] = useState<QA[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,12 +68,12 @@ export function ProductQA({ productSlug, productName }: ProductQAProps) {
         e.preventDefault();
         
         if (!session) {
-            setError("Vui lòng đăng nhập để đặt câu hỏi");
+            setError(t("productQA.loginRequired"));
             return;
         }
 
         if (newQuestion.trim().length < 5) {
-            setError("Câu hỏi phải có ít nhất 5 ký tự");
+            setError(t("productQA.questionMinLength"));
             return;
         }
 
@@ -95,14 +97,14 @@ export function ProductQA({ productSlug, productName }: ProductQAProps) {
             setNewQuestion("");
         } catch (err) {
             logger.error("Failed to submit question", err as Error, { productSlug });
-            setError(err instanceof Error ? err.message : "Lỗi khi gửi câu hỏi");
+            setError(err instanceof Error ? err.message : t("productQA.submitError"));
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString("vi-VN", {
+        return new Date(dateString).toLocaleDateString(language === "vi" ? "vi-VN" : "en-US", {
             year: "numeric",
             month: "short",
             day: "numeric",
@@ -116,26 +118,26 @@ export function ProductQA({ productSlug, productName }: ProductQAProps) {
             <div className="flex items-center gap-3 mb-8">
                 <MessageCircle className="w-6 h-6 text-primary" />
                 <h2 className="text-2xl font-black uppercase tracking-tighter">
-                    Hỏi đáp về {productName}
+                    {t("productQA.title")} {productName}
                 </h2>
                 <span className="text-sm font-medium text-slate-500">
-                    ({questions.length} câu hỏi)
+                    ({questions.length} {t("productQA.questionCount")})
                 </span>
             </div>
 
             {/* Ask Question Form */}
             <Card className="rounded-3xl border border-slate-100 shadow-lg shadow-slate-100/50 bg-white overflow-hidden mb-8">
                 <CardContent className="p-6">
-                    <h3 className="font-bold text-slate-900 mb-4">Đặt câu hỏi</h3>
+                    <h3 className="font-bold text-slate-900 mb-4">{t("productQA.askQuestion")}</h3>
                     
                     {!session ? (
                         <div className="text-center py-4">
-                            <p className="text-slate-500 mb-4">Vui lòng đăng nhập để đặt câu hỏi</p>
+                            <p className="text-slate-500 mb-4">{t("productQA.loginRequired")}</p>
                             <a 
                                 href={`/login?callbackUrl=/products/${productSlug}`}
                                 className="inline-block px-6 py-3 bg-primary text-white rounded-full font-bold text-sm hover:bg-primary/90 transition-colors"
                             >
-                                Đăng nhập
+                                {t("productQA.loginBtn")}
                             </a>
                         </div>
                     ) : (
@@ -143,7 +145,7 @@ export function ProductQA({ productSlug, productName }: ProductQAProps) {
                             <textarea
                                 value={newQuestion}
                                 onChange={(e) => setNewQuestion(e.target.value)}
-                                placeholder="Nhập câu hỏi của bạn về sản phẩm này..."
+                                placeholder={t("productQA.questionPlaceholder")}
                                 className="w-full min-h-[100px] p-4 rounded-2xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none text-sm"
                                 maxLength={500}
                             />
@@ -154,7 +156,7 @@ export function ProductQA({ productSlug, productName }: ProductQAProps) {
                             
                             <div className="flex items-center justify-between mt-4">
                                 <p className="text-xs text-slate-400">
-                                    {newQuestion.length}/500 ký tự
+                                    {newQuestion.length}/500 {t("productQA.charCount")}
                                 </p>
                                 <Button
                                     type="submit"
@@ -166,7 +168,7 @@ export function ProductQA({ productSlug, productName }: ProductQAProps) {
                                     ) : (
                                         <>
                                             <Send className="w-4 h-4 mr-2" />
-                                            Gửi câu hỏi
+                                            {t("productQA.submitQuestion")}
                                         </>
                                     )}
                                 </Button>
@@ -185,7 +187,7 @@ export function ProductQA({ productSlug, productName }: ProductQAProps) {
                 <Card className="rounded-3xl border border-slate-100 bg-slate-50">
                     <CardContent className="p-8 text-center">
                         <HelpCircle className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                        <p className="text-slate-500">Chưa có câu hỏi nào. Hãy là người đầu tiên đặt câu hỏi!</p>
+                        <p className="text-slate-500">{t("productQA.noQuestions")}</p>
                     </CardContent>
                 </Card>
             ) : (
@@ -218,7 +220,7 @@ export function ProductQA({ productSlug, productName }: ProductQAProps) {
                                             </div>
                                             <div className="flex items-center gap-2 mt-1">
                                                 <p className="text-xs text-slate-400">
-                                                    {qa.user.name || "Khách hàng"}
+                                                    {qa.user.name || t("productQA.defaultUser")}
                                                 </p>
                                                 <span className="text-slate-200">•</span>
                                                 <p className="text-xs text-slate-400">
@@ -236,7 +238,7 @@ export function ProductQA({ productSlug, productName }: ProductQAProps) {
                                                     <User className="w-4 h-4 text-green-600" />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <p className="font-bold text-sm text-green-700 mb-1">Admin / Shop</p>
+                                                    <p className="font-bold text-sm text-green-700 mb-1">{t("productQA.adminShop")}</p>
                                                     <p className="text-sm text-slate-700 leading-relaxed">{qa.answer}</p>
                                                 </div>
                                             </div>
@@ -252,7 +254,7 @@ export function ProductQA({ productSlug, productName }: ProductQAProps) {
                             onClick={() => setShowAll(true)}
                             className="w-full py-3 text-primary font-bold text-sm hover:underline"
                         >
-                            Xem tất cả {questions.length} câu hỏi
+                            {t("productQA.viewAll")} {questions.length} {t("productQA.questionCount")}
                         </button>
                     )}
                 </div>
