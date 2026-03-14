@@ -3,7 +3,8 @@
 /**
  * LIKEFOOD — SEO-004: Core Web Vitals Reporter
  *
- * Captures LCP, FID, CLS, TTFB, INP and sends to analytics.
+ * Captures LCP, CLS, TTFB, INP and sends to analytics.
+ * Note: FID was removed in web-vitals v4, replaced by INP.
  * Mount once in layout.tsx to track all pages.
  */
 
@@ -20,7 +21,6 @@ interface WebVitalMetric {
 function getRating(name: string, value: number): WebVitalMetric["rating"] {
     const thresholds: Record<string, [number, number]> = {
         LCP: [2500, 4000],
-        FID: [100, 300],
         CLS: [0.1, 0.25],
         INP: [200, 500],
         TTFB: [800, 1800],
@@ -57,7 +57,7 @@ export function WebVitalsReporter() {
     useEffect(() => {
         // Dynamically import web-vitals to avoid SSR issues
         import("web-vitals")
-            .then(({ onLCP, onFID, onCLS, onINP, onTTFB }) => {
+            .then(({ onLCP, onCLS, onINP, onTTFB }) => {
                 const handler = (metric: { name: string; value: number; id: string; delta: number }) => {
                     sendToAnalytics({
                         ...metric,
@@ -66,7 +66,6 @@ export function WebVitalsReporter() {
                 };
 
                 onLCP(handler);
-                onFID(handler);
                 onCLS(handler);
                 onINP(handler);
                 onTTFB(handler);
