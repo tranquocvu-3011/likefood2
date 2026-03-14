@@ -24,6 +24,8 @@ model user {
   lastCheckIn             DateTime?
   points                  Int                @default(0)
   twoFactorEnabled        Boolean            @default(false)
+  failedLoginAttempts     Int                @default(0)
+  lockedUntil             DateTime?
   notificationPreferences String?            @db.LongText
   activeSessions          activesession[]
   addresses               address[]
@@ -371,6 +373,11 @@ model order {
   @@index([status])
   @@index([createdAt])
   @@index([paymentIntentId])
+  // PERF-002: Composite indexes for common query patterns
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([paymentStatus])
 }
 
 model orderitem {

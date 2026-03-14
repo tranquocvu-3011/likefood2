@@ -11,6 +11,7 @@ import { logger } from "@/lib/logger";
 import type Stripe from "stripe";
 import StripeSdk from "stripe";
 import { getSystemSettingTrimmed } from "@/lib/system-settings";
+import { isValidPaymentTransition } from "@/lib/order-state-machine";
 
 export async function POST(req: Request) {
     const sig = req.headers.get("stripe-signature");
@@ -77,6 +78,13 @@ export async function POST(req: Request) {
                     });
 
                     if (order && order.paymentStatus !== "PAID") {
+                        // Validate payment transition
+                        const payTransition = isValidPaymentTransition(order.paymentStatus, "PAID");
+                        if (!payTransition.valid) {
+                            logger.error(`[STRIPE] Invalid payment transition: ${order.paymentStatus} → PAID`, new Error(payTransition.reason || ""), { context: "stripe-webhook", orderId });
+                            break;
+                        }
+
                         // Use transaction for atomic stock update + order status change
                         await prisma.$transaction(async (tx) => {
                             // 1. Mark as paid
@@ -88,12 +96,24 @@ export async function POST(req: Request) {
                                 },
                             });
 
-                            // 2. Decrement inventory + increment soldCount atomically
+                            // 2. PAY-003: Decrement inventory with guard against negative stock
                             for (const item of order.orderItems) {
+                                // First verify stock is sufficient
+                                const product = await tx.product.findUnique({
+                                    where: { id: item.productId },
+                                    select: { inventory: true, name: true },
+                                });
+
+                                if (!product || product.inventory < item.quantity) {
+                                    logger.error(`[STRIPE] Insufficient inventory for product ${item.productId}: have ${product?.inventory ?? 0}, need ${item.quantity}`, new Error("Inventory guard triggered"), { context: "stripe-webhook", orderId });
+                                    // Still mark as paid but log the issue — admin must handle manually
+                                }
+
                                 await tx.product.update({
                                     where: { id: item.productId },
                                     data: {
-                                        inventory: { decrement: item.quantity },
+                                        // Guard: never go below 0
+                                        inventory: { decrement: Math.min(item.quantity, product?.inventory ?? 0) },
                                         soldCount: { increment: item.quantity },
                                     },
                                 });
@@ -156,6 +176,20 @@ export async function POST(req: Request) {
                             paymentStatus: "REFUNDED",
                         },
                     });
+
+                    // REF-003: Void referral commissions when order is refunded
+                    try {
+                        const refundedOrders = await prisma.order.findMany({
+                            where: { paymentIntentId },
+                            select: { id: true },
+                        });
+                        const { onOrderRefunded } = await import("@/lib/referral/events.service");
+                        for (const refOrder of refundedOrders) {
+                            await onOrderRefunded(refOrder.id, `Stripe refund: ${charge.id}`);
+                        }
+                    } catch (refErr) {
+                        logger.error("[STRIPE] Failed to void referral commissions on refund", refErr as Error, { context: "stripe-webhook", paymentIntentId });
+                    }
                 }
                 break;
             }

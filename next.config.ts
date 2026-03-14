@@ -145,7 +145,7 @@ const nextConfig: NextConfig = {
                         key: "Content-Security-Policy",
                         value: [
                             "default-src 'self'",
-                            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com",
+                            "script-src 'self' 'unsafe-inline' https://js.stripe.com https://challenges.cloudflare.com https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net",
                             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
                             "font-src 'self' https://fonts.gstatic.com",
                             "img-src 'self' data: blob: https: http:",
@@ -154,6 +154,7 @@ const nextConfig: NextConfig = {
                             "object-src 'none'",
                             "base-uri 'self'",
                             "form-action 'self'",
+                            "upgrade-insecure-requests",
                         ].join("; "),
                     },
                 ],
@@ -169,6 +170,10 @@ const sentryConfig = {
   project: process.env.SENTRY_PROJECT,
   // Automatically tree-shake Sentry logger in production
   hideSourceMaps: true,
+  // Skip sourcemap upload when no auth token (local builds)
+  sourceMapsUploadOptions: {
+    enabled: !!process.env.SENTRY_AUTH_TOKEN,
+  },
 };
 
 export default withSentryConfig(withBundleAnalyzer(nextConfig), sentryConfig);

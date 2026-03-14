@@ -66,9 +66,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/src/generated ./src/generated
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
-# Copy all node_modules (needed for Prisma CLI to work)
-# This is needed for 'prisma' command at runtime
-COPY --from=builder /app/node_modules ./node_modules
+# DEV-001: Only copy required Prisma engine binaries instead of ALL node_modules
+# The standalone output already includes necessary node_modules
+# We only need the Prisma query engine for runtime
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 
 # Add node_modules/.bin to PATH so 'prisma' command works
 ENV PATH="/app/node_modules/.bin:${PATH}"

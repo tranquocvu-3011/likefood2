@@ -17,6 +17,7 @@ import {
     ORDER_STATUS_VALUES,
     normalizeOrderStatus,
 } from "@/lib/commerce";
+import { isValidOrderTransition } from "@/lib/order-state-machine";
 import { onOrderCompleted, onOrderRefunded } from "@/lib/referral/events.service";
 
 type SessionUser = {
@@ -84,9 +85,11 @@ export async function PATCH(
 
         const previousStatus = normalizeOrderStatus(order.status);
 
-        if (previousStatus === ORDER_STATUS.CANCELLED && status !== ORDER_STATUS.CANCELLED) {
+        // PAY-004: Validate state machine transition
+        const transition = isValidOrderTransition(previousStatus, status);
+        if (!transition.valid) {
             return NextResponse.json(
-                { error: "Khong the mo lai don hang da huy tu man hinh nay" },
+                { error: transition.reason || "Không thể chuyển trạng thái đơn hàng" },
                 { status: 400 }
             );
         }

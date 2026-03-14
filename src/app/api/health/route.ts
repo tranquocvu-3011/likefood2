@@ -75,7 +75,10 @@ export async function GET(req: Request) {
                 status: "error",
                 error: error instanceof Error ? error.message : "Unknown error",
             };
-            // Redis is optional, so don't degrade overall status
+            // OBS-002: Redis is required in production (SEC-004), mark as degraded
+            if (process.env.NODE_ENV === "production") {
+                health.status = "degraded";
+            }
         }
     } else {
         health.services.redis = {

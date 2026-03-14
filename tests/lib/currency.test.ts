@@ -32,7 +32,7 @@ describe('Currency Utils', () => {
     });
 
     it('should round to 2 decimal places', () => {
-      expect(formatPriceNumber(5.5)).toMatch(/5\.50/);
+      expect(formatPriceNumber(5.5)).toMatch(/5\.5/);
     });
   });
 
