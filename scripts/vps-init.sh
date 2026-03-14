@@ -12,7 +12,7 @@
 
 set -e  # Dừng nếu có lỗi
 
-DOMAIN="hoiucngocrong.shop"
+DOMAIN="likefood.vudev.io.vn"
 REPO_URL="https://github.com/tranquocvu-3011/likefood.git"
 APP_DIR="/opt/likefood"
 EMAIL="admin@${DOMAIN}"
