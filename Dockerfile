@@ -27,6 +27,11 @@ RUN npm install && \
 
 COPY . .
 
+# Copy production env so NEXT_PUBLIC_* vars are inlined during build
+# These vars (Turnstile, Stripe, GA, domain URLs) are baked into client JS
+COPY .env.production .env.production
+COPY .env.production .env
+
 # Generate Prisma client first (needed at build time)
 # Use local prisma instead of npx to avoid downloading newer version
 RUN ./node_modules/.bin/prisma generate

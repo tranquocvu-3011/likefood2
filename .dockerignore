@@ -1,7 +1,5 @@
-.env
 .env.local
 .env.*.local
-.env.production
 
 node_modules
 npm-debug.log*
