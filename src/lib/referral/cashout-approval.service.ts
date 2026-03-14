@@ -13,7 +13,7 @@ const AUTO_APPROVE_THRESHOLD_USD = 50;
 export interface CashoutRequest {
     userId: string;
     amount: number;
-    destinationType: string;
+    method: string;
     destinationData: string;
 }
 
@@ -31,14 +31,14 @@ export async function processCashoutRequest(request: CashoutRequest): Promise<Ca
     // Verify wallet balance
     const profile = await prisma.referralprofile.findUnique({
         where: { userId: request.userId },
-        select: { walletBalance: true, fraudScore: true },
+        select: { availableBalance: true, fraudScore: true },
     });
 
     if (!profile) {
         return { success: false, status: "REJECTED", message: "Referral profile not found" };
     }
 
-    if (profile.walletBalance < request.amount) {
+    if (Number(profile.availableBalance) < request.amount) {
         return { success: false, status: "REJECTED", message: "Insufficient wallet balance" };
     }
 
@@ -61,7 +61,7 @@ async function autoApproveCashout(request: CashoutRequest): Promise<CashoutResul
         // Deduct from wallet
         await tx.referralprofile.update({
             where: { userId: request.userId },
-            data: { walletBalance: { decrement: request.amount } },
+            data: { availableBalance: { decrement: request.amount } },
         });
 
         // Create approved cashout record
@@ -70,9 +70,9 @@ async function autoApproveCashout(request: CashoutRequest): Promise<CashoutResul
                 userId: request.userId,
                 amount: request.amount,
                 status: "APPROVED",
-                destinationType: request.destinationType,
+                method: request.method,
                 destinationData: request.destinationData,
-                approvedAt: new Date(),
+                processedAt: new Date(),
             },
         });
     });
@@ -105,7 +105,7 @@ async function createPendingCashout(
             userId: request.userId,
             amount: request.amount,
             status: "PENDING",
-            destinationType: request.destinationType,
+            method: request.method,
             destinationData: request.destinationData,
         },
     });

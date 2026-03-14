@@ -79,7 +79,7 @@ export function withValidation<T extends ValidatedData>(
                 });
 
                 try {
-                    data.query = schemas.query.parse(queryParams);
+                    data.query = schemas.query.parse(queryParams) as Record<string, string>;
                 } catch (error) {
                     if (error instanceof ZodError) {
                         return NextResponse.json(
