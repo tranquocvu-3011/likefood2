@@ -14,14 +14,19 @@ interface Props {
 }
 
 export async function generateStaticParams() {
-  const pages = await prisma.dynamicPage.findMany({
-    where: { isPublished: true },
-    select: { slug: true },
-  });
+  try {
+    const pages = await prisma.dynamicPage.findMany({
+      where: { isPublished: true },
+      select: { slug: true },
+    });
 
-  return pages.map((page) => ({
-    slug: page.slug.split("/"),
-  }));
+    return pages.map((page) => ({
+      slug: page.slug.split("/"),
+    }));
+  } catch {
+    // Fallback to runtime rendering when DB is unavailable during image build.
+    return [];
+  }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

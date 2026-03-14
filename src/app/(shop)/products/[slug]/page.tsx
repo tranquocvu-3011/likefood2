@@ -5,11 +5,71 @@
  */
 
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import prisma from "@/lib/prisma";
 import ProductDetailClient from "./ProductDetailClient";
+import { ProductJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 
-// ISR: revalidate every 5 minutes
+// PERF-004: ISR — revalidate every 5 minutes
 export const revalidate = 300;
+
+// PERF-004: Generate static params for top products at build time
+export async function generateStaticParams() {
+    try {
+        const products = await prisma.product.findMany({
+            where: { isDeleted: false, isVisible: true },
+            select: { slug: true },
+            take: 50,
+            orderBy: { soldCount: "desc" },
+        });
+        return products
+            .filter((p) => p.slug)
+            .map((p) => ({ slug: p.slug! }));
+    } catch {
+        // Fallback to runtime rendering when DB is unavailable during image build.
+        return [];
+    }
+}
+
+// SEO-003: Dynamic metadata per product
+export async function generateMetadata({
+    params,
+}: {
+    params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+    const { slug } = await params;
+    const product = await getProduct(slug);
+    if (!product) return { title: "Sản phẩm không tồn tại" };
+
+    const baseUrl = process.env.NEXTAUTH_URL || "https://likefood.us";
+    const url = `${baseUrl}/products/${product.slug || product.id}`;
+    const price = product.salePrice || product.price;
+
+    return {
+        title: `${product.name} | LIKEFOOD`,
+        description: product.description?.slice(0, 160) || `Mua ${product.name} chất lượng cao tại LIKEFOOD`,
+        openGraph: {
+            title: product.name,
+            description: product.description?.slice(0, 160) || "",
+            url,
+            type: "website",
+            images: product.image ? [{ url: product.image, width: 800, height: 800, alt: product.name }] : [],
+        },
+        twitter: {
+            card: "summary_large_image",
+            title: product.name,
+            description: product.description?.slice(0, 160) || "",
+            images: product.image ? [product.image] : [],
+        },
+        alternates: {
+            canonical: url,
+        },
+        other: {
+            "product:price:amount": String(price),
+            "product:price:currency": "USD",
+        },
+    };
+}
 
 async function getProduct(slug: string) {
     const product = await prisma.product.findFirst({
@@ -156,10 +216,36 @@ export default async function ProductDetailPage({
     const serializedProduct = JSON.parse(JSON.stringify(product));
     const serializedRelated = JSON.parse(JSON.stringify(relatedProducts));
 
+    const baseUrl = process.env.NEXTAUTH_URL || "https://likefood.us";
+    const productUrl = `${baseUrl}/products/${product.slug || product.id}`;
+
     return (
-        <ProductDetailClient
-            initialProduct={serializedProduct}
-            initialRelated={serializedRelated}
-        />
+        <>
+            {/* SEO-001: JSON-LD Structured Data */}
+            <ProductJsonLd
+                name={product.name}
+                description={product.description || ""}
+                image={product.image || ""}
+                price={product.price}
+                salePrice={product.salePrice}
+                availability={product.inventory > 0 ? "InStock" : "OutOfStock"}
+                ratingValue={product.avgRating}
+                ratingCount={product.reviewCount}
+                brand={product.categoryRel?.name || "LIKEFOOD"}
+                sku={product.id}
+                url={productUrl}
+            />
+            <BreadcrumbJsonLd
+                items={[
+                    { name: "Trang chủ", url: baseUrl },
+                    { name: "Sản phẩm", url: `${baseUrl}/products` },
+                    { name: product.name, url: productUrl },
+                ]}
+            />
+            <ProductDetailClient
+                initialProduct={serializedProduct}
+                initialRelated={serializedRelated}
+            />
+        </>
     );
 }
