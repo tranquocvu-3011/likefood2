@@ -7,7 +7,7 @@
  * https://github.com/tranquocvu-3011/likefood
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 interface TurnstileWidgetProps {
     siteKey?: string;
@@ -34,11 +34,20 @@ export default function TurnstileWidget({
     const containerRef = useRef<HTMLDivElement>(null);
     const widgetIdRef = useRef<string | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
+    const renderedRef = useRef(false);
+
+    // Stabilize callbacks to prevent re-renders from destroying the widget
+    const onVerifyRef = useRef(onVerify);
+    const onErrorRef = useRef(onError);
+    const onExpireRef = useRef(onExpire);
+    onVerifyRef.current = onVerify;
+    onErrorRef.current = onError;
+    onExpireRef.current = onExpire;
 
     const siteKey = (siteKeyProp ?? process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "").trim();
 
     useEffect(() => {
-        if (!siteKey) return; // No key configured — skip silently
+        if (!siteKey) return;
 
         // Load Turnstile script if not already loaded
         if (!document.getElementById("turnstile-script")) {
@@ -56,23 +65,28 @@ export default function TurnstileWidget({
 
     useEffect(() => {
         if (!isLoaded || !containerRef.current || !window.turnstile || !siteKey) return;
+        // Prevent double-render
+        if (renderedRef.current) return;
+        renderedRef.current = true;
 
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
             sitekey: siteKey,
             theme,
-            callback: onVerify,
-            "error-callback": onError,
-            "expired-callback": onExpire,
+            callback: (token: string) => onVerifyRef.current(token),
+            "error-callback": () => onErrorRef.current?.(),
+            "expired-callback": () => onExpireRef.current?.(),
         });
 
         return () => {
             if (widgetIdRef.current && window.turnstile) {
                 window.turnstile.remove(widgetIdRef.current);
+                renderedRef.current = false;
             }
         };
-    }, [isLoaded, siteKey, theme, onVerify, onError, onExpire]);
+    // Only re-render when script loads or siteKey/theme changes — NOT on callback changes
+    }, [isLoaded, siteKey, theme]);
 
-    if (!siteKey) return null; // Silently skip if no key
+    if (!siteKey) return null;
 
     return (
         <div className="flex justify-center">
