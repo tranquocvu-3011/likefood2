@@ -12,6 +12,7 @@ import type Stripe from "stripe";
 import StripeSdk from "stripe";
 import { getSystemSettingTrimmed } from "@/lib/system-settings";
 import { isValidPaymentTransition } from "@/lib/order-state-machine";
+import { notifyPaymentSuccess } from "@/lib/telegram";
 
 export async function POST(req: Request) {
     const sig = req.headers.get("stripe-signature");
@@ -121,6 +122,15 @@ export async function POST(req: Request) {
                         });
 
                         logger.info(`[STRIPE] Order ${orderId} paid via Checkout Session`, { sessionId: session.id });
+
+                        // Gửi thông báo Telegram thanh toán thành công
+                        notifyPaymentSuccess({
+                            orderId,
+                            amount: (session.amount_total || 0) / 100,
+                            currency: session.currency?.toUpperCase() || "USD",
+                            method: "STRIPE",
+                            customerEmail: session.customer_email || undefined,
+                        }).catch(() => {});
                     }
                 }
                 break;

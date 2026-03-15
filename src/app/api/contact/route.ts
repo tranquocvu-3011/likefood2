@@ -12,6 +12,7 @@ import prisma from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { contactSchema } from "@/lib/validations/contact";
 import { verifyTurnstileToken } from "@/lib/captcha";
+import { notifyContactMessage } from "@/lib/telegram";
 
 export async function POST(req: Request) {
     try {
@@ -60,6 +61,9 @@ export async function POST(req: Request) {
             subject,
             message,
         });
+
+        // Gửi thông báo Telegram (không block response)
+        notifyContactMessage({ name, email, phone: phone || "", subject, message }).catch(() => {});
 
         if (!result.success) {
             logger.error(

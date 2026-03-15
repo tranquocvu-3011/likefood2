@@ -1,18 +1,17 @@
 "use client";
 
 /**
- * ProductCardImage — Image section with fallback, skeleton, hover zoom, badge overlay
+ * ProductCardImage — Image section with fallback, skeleton, elegant hover
  * Sub-component of ProductCard
- * 
- * Mobile: Hover overlay is HIDDEN (touch devices don't have real hover)
- * Desktop: Full hover effects (gradient, shine, quick actions)
+ *
+ * Hover effect: smooth zoom (1.08x) + brightness boost + warm glow
+ * No overlay buttons — tap/click navigates directly to product
  */
 
 import Image from "next/image";
-import { memo, useState, useEffect } from "react";
+import { memo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, ArrowRight, Package } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Package } from "lucide-react";
 import WishlistButton from "./WishlistButton";
 import { useLanguage } from "@/lib/i18n/context";
 
@@ -21,26 +20,9 @@ interface ProductCardImageProps {
     name: string;
     image?: string | null;
     inventory: number;
-    // Interactions
     onQuickView: (e: React.MouseEvent) => void;
     onNavigate: () => void;
     lastAddedId: string | null;
-}
-
-/**
- * Detect if the device supports hover (has a mouse/trackpad).
- * Returns false on phones/tablets → disables hover overlays.
- */
-function useCanHover() {
-    const [canHover, setCanHover] = useState(false);
-    useEffect(() => {
-        const mql = window.matchMedia("(hover: hover) and (pointer: fine)");
-        setCanHover(mql.matches);
-        const handler = (e: MediaQueryListEvent) => setCanHover(e.matches);
-        mql.addEventListener("change", handler);
-        return () => mql.removeEventListener("change", handler);
-    }, []);
-    return canHover;
 }
 
 function ProductCardImageComponent({
@@ -48,26 +30,15 @@ function ProductCardImageComponent({
     name,
     image,
     inventory,
-    onQuickView,
-    onNavigate,
     lastAddedId,
 }: ProductCardImageProps) {
     const { t } = useLanguage();
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imgError, setImgError] = useState(false);
-    const [isHovered, setIsHovered] = useState(false);
-    const canHover = useCanHover();
-
-    // Only enable hover state on devices with a mouse
-    const showHoverEffects = canHover && isHovered;
 
     return (
-        <div
-            className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-emerald-50/20"
-            onMouseEnter={() => canHover && setIsHovered(true)}
-            onMouseLeave={() => canHover && setIsHovered(false)}
-        >
-            <div className="p-0 relative aspect-[4/3] overflow-hidden">
+        <div className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-emerald-50/20">
+            <div className="p-0 relative aspect-[4/3] overflow-hidden group/img">
                 {/* Wishlist Button */}
                 <div className="absolute top-2 right-2 z-20">
                     <WishlistButton productId={productId} />
@@ -93,29 +64,14 @@ function ProductCardImageComponent({
                         </div>
                     )}
 
-                    {/* Hover Gradient Overlay — desktop only */}
-                    <AnimatePresence>
-                        {showHoverEffects && (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/5 to-transparent z-10 pointer-events-none"
-                            />
-                        )}
-                    </AnimatePresence>
-
-                    <motion.div
-                        className="relative w-full h-full"
-                        animate={{ scale: showHoverEffects ? 1.1 : 1 }}
-                        transition={{ duration: 0.7, ease: "easeOut" }}
-                    >
+                    {/* Image with CSS-only hover: zoom + brightness — works on desktop, no stuck state on mobile */}
+                    <div className="relative w-full h-full transition-transform duration-500 ease-out group-hover/img:scale-[1.08]">
                         {image && !imgError ? (
                             <Image
                                 src={image}
                                 alt={name}
                                 fill
-                                className={`object-cover transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                                className={`object-cover transition-all duration-500 ${imageLoaded ? "opacity-100" : "opacity-0"} group-hover/img:brightness-[1.05]`}
                                 onLoad={() => setImageLoaded(true)}
                                 onError={() => { setImgError(true); setImageLoaded(true); }}
                                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -126,54 +82,15 @@ function ProductCardImageComponent({
                                 <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">No image</span>
                             </div>
                         )}
-                    </motion.div>
+                    </div>
 
-                    {/* Shine Effect on Hover — desktop only */}
-                    <AnimatePresence>
-                        {showHoverEffects && (
-                            <motion.div
-                                initial={{ x: "-100%" }}
-                                animate={{ x: "200%" }}
-                                transition={{ duration: 0.8, ease: "easeInOut" }}
-                                className="absolute inset-0 z-20 pointer-events-none bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
-                            />
-                        )}
-                    </AnimatePresence>
+                    {/* Subtle bottom gradient on hover — pure CSS, no stuck state */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity duration-500 pointer-events-none z-10" />
 
-                    {/* Quick Actions Overlay — desktop only */}
-                    <AnimatePresence>
-                        {showHoverEffects && inventory > 0 && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 8 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 4 }}
-                                transition={{ duration: 0.22 }}
-                                className="absolute bottom-2.5 left-2.5 right-2.5 z-20 flex gap-1.5"
-                            >
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={onQuickView}
-                                    aria-label={t("shop.quickViewAria")}
-                                    className="flex-1 h-8 rounded-xl bg-white/95 backdrop-blur-sm shadow-md hover:bg-white border-0 font-semibold text-[10px] uppercase tracking-wide"
-                                >
-                                    <Eye className="w-3 h-3 mr-1" />
-                                    {t("shop.quickView")}
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    className="flex-1 h-8 rounded-xl bg-slate-900 hover:bg-emerald-600 shadow-md font-semibold text-[10px] uppercase tracking-wide"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onNavigate();
-                                    }}
-                                >
-                                    <ArrowRight className="w-3 h-3 mr-1" />
-                                    {t("shop.details")}
-                                </Button>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                    {/* Shine sweep on hover — pure CSS animation */}
+                    <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+                        <div className="absolute -inset-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 translate-x-[-200%] group-hover/img:translate-x-[200%] transition-transform duration-700 ease-in-out" />
+                    </div>
                 </div>
 
                 {/* Fly to Cart Animation */}

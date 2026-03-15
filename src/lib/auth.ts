@@ -14,6 +14,7 @@ import type { user as PrismaUser } from "../generated/client";
 import { headers } from "next/headers";
 import { sendSuspiciousLoginEmail } from "@/lib/mail";
 import { verifyTurnstileTokenFromHeaders } from "@/lib/captcha";
+import { notifyLogin } from "@/lib/telegram";
 
 type AuthUser = {
     id?: string;
@@ -203,6 +204,16 @@ export const authOptions: NextAuthOptions = {
                                 new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })
                             ).catch(e => console.error("Lỗi gửi email cảnh báo:", e));
                         }
+
+                        // Gửi thông báo Telegram cho mọi lần đăng nhập
+                        notifyLogin({
+                            email: user.email!,
+                            name: user.name || undefined,
+                            ip,
+                            userAgent,
+                            isSuspicious,
+                            method: "password",
+                        }).catch(() => {});
                     }
                 }
             } catch (e) {

@@ -19,6 +19,7 @@ import {
 } from "@/lib/commerce";
 import { isValidOrderTransition } from "@/lib/order-state-machine";
 import { onOrderCompleted, onOrderRefunded } from "@/lib/referral/events.service";
+import { notifyOrderStatusChange } from "@/lib/telegram";
 
 type SessionUser = {
     role?: string;
@@ -171,6 +172,18 @@ export async function PATCH(
         } catch (e) {
             logger.error("Referral event processing failed", e as Error, { context: "referral-event" });
         }
+
+        // Gửi thông báo Telegram cập nhật trạng thái
+        try {
+            const customer = await prisma.user.findUnique({ where: { id: order.userId }, select: { name: true, email: true } });
+            notifyOrderStatusChange({
+                orderId: id,
+                oldStatus: previousStatus,
+                newStatus: status,
+                customerName: customer?.name || undefined,
+                customerEmail: customer?.email || undefined,
+            }).catch(() => {});
+        } catch {}
 
         return NextResponse.json({
             success: true,

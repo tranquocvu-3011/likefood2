@@ -12,6 +12,7 @@ import prisma from "../../../lib/prisma";
 import { updateProductRating } from "@/lib/rating";
 import { logger } from "@/lib/logger";
 import { Prisma } from "../../../generated/client";
+import { notifyNewReview } from "@/lib/telegram";
 
 // GET /api/reviews - List reviews (for a product or for user's pending reviews)
 export async function GET(request: NextRequest) {
@@ -195,6 +196,18 @@ export async function POST(request: NextRequest) {
 
         // Update product rating
         await updateProductRating(productId);
+
+        // Gửi thông báo Telegram cho review mới
+        try {
+            const product = await prisma.product.findUnique({ where: { id: productId }, select: { name: true } });
+            notifyNewReview({
+                productName: product?.name || "Sản phẩm",
+                rating,
+                comment: comment || undefined,
+                customerName: session.user.name || "Khách hàng",
+                customerEmail: session.user.email || undefined,
+            }).catch(() => {});
+        } catch {} 
 
         return NextResponse.json({
             success: true,

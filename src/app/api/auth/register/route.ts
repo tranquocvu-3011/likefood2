@@ -14,6 +14,7 @@ import { hasMXRecord } from "@/lib/validation-server";
 import { registerRateLimit, getRateLimitIdentifier, applyRateLimit } from "@/lib/ratelimit";
 import { logger } from "@/lib/logger";
 import { verifyTurnstileToken } from "@/lib/captcha";
+import { notifyNewRegistration } from "@/lib/telegram";
 
 export async function POST(req: Request) {
     try {
@@ -144,6 +145,10 @@ export async function POST(req: Request) {
                 { status: 500 }
             );
         }
+
+        // Gửi thông báo Telegram (không block response)
+        const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+        notifyNewRegistration({ name, email, phone, ip }).catch(() => {});
 
         return NextResponse.json(
             {
