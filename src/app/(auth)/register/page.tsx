@@ -235,8 +235,8 @@ export default function RegisterPage() {
                                         />
                                     </div>
 
-                                    <div className="flex gap-2">
-                                        <div className="relative min-w-[100px]">
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        <div className="relative min-w-[80px] sm:min-w-[100px]">
                                             <button
                                                 type="button"
                                                 onClick={() => setShowCountrySelector(!showCountrySelector)}
@@ -275,7 +275,7 @@ export default function RegisterPage() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div className="relative group">
                                             <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-emerald-500 transition-colors" />
                                             <input
@@ -326,7 +326,7 @@ export default function RegisterPage() {
                                 <div className="flex items-start gap-3 px-1">
                                     <input type="checkbox" required id="tos" className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer mt-0.5" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} />
                                     <label htmlFor="tos" className="text-[11px] text-slate-500 leading-relaxed font-medium cursor-pointer flex-wrap gap-1 leading-snug">
-                                        {t("auth.agreeToTerms")} <Link href="/terms" className="text-emerald-600 font-bold hover:underline mx-1">{t("auth.terms")}</Link> {t("auth.and")} <Link href="/privacy" className="text-emerald-600 font-bold hover:underline mx-1">{t("auth.privacyPolicy")}</Link> {t("auth.ofLikefood")}
+                                        {t("auth.agreeToTerms")} <Link href="/policies/terms" className="text-emerald-600 font-bold hover:underline mx-1">{t("auth.terms")}</Link> {t("auth.and")} <Link href="/policies/privacy" className="text-emerald-600 font-bold hover:underline mx-1">{t("auth.privacyPolicy")}</Link> {t("auth.ofLikefood")}
                                     </label>
                                 </div>
 
@@ -377,11 +377,11 @@ export default function RegisterPage() {
                         </motion.div>
                     </AnimatePresence>
 
-                    <div className="mt-16 pt-8 border-t border-slate-50 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300">
+                    <div className="mt-16 pt-8 border-t border-slate-50 flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] font-bold uppercase tracking-widest text-slate-300">
                         <span dangerouslySetInnerHTML={{ __html: t("auth.footerCopyright") }} />
                         <div className="flex gap-4">
-                            <Link href="/terms" className="hover:text-emerald-500 transition-colors">{t("auth.footerTerms")}</Link>
-                            <Link href="/privacy" className="hover:text-emerald-500 transition-colors">{t("auth.footerPrivacy")}</Link>
+                            <Link href="/policies/terms" className="hover:text-emerald-500 transition-colors">{t("auth.footerTerms")}</Link>
+                            <Link href="/policies/privacy" className="hover:text-emerald-500 transition-colors">{t("auth.footerPrivacy")}</Link>
                         </div>
                     </div>
                 </div>

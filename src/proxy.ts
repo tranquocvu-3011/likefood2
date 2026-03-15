@@ -162,7 +162,12 @@ export default withAuth(
                     const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
                     const isSameOrigin = normalizedOriginHost === host || originHost === host;
                     
-                    if (!isLocalhost && !isSameOrigin) {
+                    // Check nếu origin nằm trong danh sách ALLOWED_ORIGIN
+                    const allowedOriginEnv = process.env.ALLOWED_ORIGIN || "";
+                    const allowedOrigins = allowedOriginEnv.split(",").map(o => o.trim()).filter(Boolean);
+                    const isAllowedOrigin = allowedOrigins.includes(origin);
+                    
+                    if (!isLocalhost && !isSameOrigin && !isAllowedOrigin) {
                         return new NextResponse(
                             JSON.stringify({ error: "Invalid origin" }),
                             { status: 403, headers: { "Content-Type": "application/json" } }
@@ -195,17 +200,28 @@ export default withAuth(
         );
 
         if (pathname.startsWith("/api/")) {
-            const allowedOrigin = process.env.ALLOWED_ORIGIN;
+            const allowedOriginEnv = process.env.ALLOWED_ORIGIN;
             
-            if (process.env.NODE_ENV === "production" && !allowedOrigin) {
+            if (process.env.NODE_ENV === "production" && !allowedOriginEnv) {
                 throw new Error("CRITICAL: ALLOWED_ORIGIN environment variable must be set in production!");
             }
             
-            if (allowedOrigin) {
-                response.headers.set("Access-Control-Allow-Origin", allowedOrigin);
+            if (allowedOriginEnv) {
+                // Hỗ trợ nhiều origin cách nhau bởi dấu phẩy
+                const allowedOrigins = allowedOriginEnv.split(",").map(o => o.trim());
+                const requestOrigin = req.headers.get("origin");
+                
+                if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+                    response.headers.set("Access-Control-Allow-Origin", requestOrigin);
+                    response.headers.set("Vary", "Origin");
+                } else if (allowedOrigins.length === 1) {
+                    // Fallback: nếu chỉ có 1 origin thì set trực tiếp (backward compatible)
+                    response.headers.set("Access-Control-Allow-Origin", allowedOrigins[0]);
+                }
             }
             response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
             response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+            response.headers.set("Access-Control-Allow-Credentials", "true");
             response.headers.set("Access-Control-Max-Age", "86400");
         }
 

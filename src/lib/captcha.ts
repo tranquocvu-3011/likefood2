@@ -82,7 +82,8 @@ export async function getCaptchaConfig(): Promise<CaptchaConfig> {
     return { enabled: envFlag, source: "env", hasSiteKey, hasSecretKey };
   }
 
-  const defaultEnabled = process.env.NODE_ENV === "production";
+  // Default: luôn bật captcha (cả dev lẫn production) — đồng bộ với client CaptchaField
+  const defaultEnabled = true;
   return { enabled: defaultEnabled, source: "default", hasSiteKey, hasSecretKey };
 }
 

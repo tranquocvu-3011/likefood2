@@ -204,7 +204,7 @@ export default function ContactPage() {
             {/* Contact Cards */}
             <section className="relative -mt-8 z-10">
                 <div className="page-container-wide">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                         {localizedContactInfo.map((info, index) => (
                             <motion.a
                                 key={info.key}
@@ -218,7 +218,7 @@ export default function ContactPage() {
                                     <info.icon className="w-6 h-6 text-white" />
                                 </div>
                                 <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">{info.title}</div>
-                                <div className="text-sm font-bold text-slate-900 leading-relaxed">{info.value}</div>
+                                <div className="text-sm font-bold text-slate-900 leading-relaxed break-all sm:break-normal">{info.value}</div>
                             </motion.a>
                         ))}
                     </div>

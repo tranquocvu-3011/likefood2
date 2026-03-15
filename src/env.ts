@@ -30,6 +30,7 @@ export const env = createEnv({
     NEXT_PUBLIC_BASE_URL: z.string().url().optional(),
     NEXT_PUBLIC_SEO_SITE_URL: z.string().url().optional(),
     NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: z.string().optional(),
+    NEXT_PUBLIC_PRODUCTION_URL: z.string().url().optional(),
   },
 
   server: {
@@ -99,6 +100,7 @@ export const env = createEnv({
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
     NEXT_PUBLIC_SEO_SITE_URL: process.env.NEXT_PUBLIC_SEO_SITE_URL,
     NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    NEXT_PUBLIC_PRODUCTION_URL: process.env.NEXT_PUBLIC_PRODUCTION_URL,
 
     // Server-side (private)
     DATABASE_URL: process.env.DATABASE_URL,

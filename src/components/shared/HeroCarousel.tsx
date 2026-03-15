@@ -131,11 +131,11 @@ export default function HeroCarousel() {
                                 <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 text-orange-600 font-black uppercase tracking-wider px-4 py-2 text-xs md:text-sm">
                                     <Sparkles className="w-4 h-4 md:w-5 md:h-5" /> {t('shop.vietnamSpecialtiesUSA')}
                                 </div>
-                                <h1 className="font-black text-slate-900 leading-[1.1] tracking-tight text-4xl md:text-6xl lg:text-7xl">
+                                <h1 className="font-black text-slate-900 leading-[1.1] tracking-tight text-2xl sm:text-4xl md:text-6xl lg:text-7xl">
                                     {activeBanner.title}
                                 </h1>
                                 {activeBanner.subtitle && (
-                                    <p className="text-slate-600 font-medium leading-relaxed text-lg md:text-2xl">
+                                    <p className="text-slate-600 font-medium leading-relaxed text-base sm:text-lg md:text-2xl">
                                         {activeBanner.subtitle}
                                     </p>
                                 )}

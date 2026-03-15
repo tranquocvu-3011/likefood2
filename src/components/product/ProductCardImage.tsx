@@ -3,10 +3,13 @@
 /**
  * ProductCardImage — Image section with fallback, skeleton, hover zoom, badge overlay
  * Sub-component of ProductCard
+ * 
+ * Mobile: Hover overlay is HIDDEN (touch devices don't have real hover)
+ * Desktop: Full hover effects (gradient, shine, quick actions)
  */
 
 import Image from "next/image";
-import { memo, useState } from "react";
+import { memo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, ArrowRight, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,6 +27,22 @@ interface ProductCardImageProps {
     lastAddedId: string | null;
 }
 
+/**
+ * Detect if the device supports hover (has a mouse/trackpad).
+ * Returns false on phones/tablets → disables hover overlays.
+ */
+function useCanHover() {
+    const [canHover, setCanHover] = useState(false);
+    useEffect(() => {
+        const mql = window.matchMedia("(hover: hover) and (pointer: fine)");
+        setCanHover(mql.matches);
+        const handler = (e: MediaQueryListEvent) => setCanHover(e.matches);
+        mql.addEventListener("change", handler);
+        return () => mql.removeEventListener("change", handler);
+    }, []);
+    return canHover;
+}
+
 function ProductCardImageComponent({
     productId,
     name,
@@ -37,12 +56,16 @@ function ProductCardImageComponent({
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imgError, setImgError] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
+    const canHover = useCanHover();
+
+    // Only enable hover state on devices with a mouse
+    const showHoverEffects = canHover && isHovered;
 
     return (
         <div
             className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-emerald-50/20"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            onMouseEnter={() => canHover && setIsHovered(true)}
+            onMouseLeave={() => canHover && setIsHovered(false)}
         >
             <div className="p-0 relative aspect-[4/3] overflow-hidden">
                 {/* Wishlist Button */}
@@ -70,9 +93,9 @@ function ProductCardImageComponent({
                         </div>
                     )}
 
-                    {/* Hover Gradient Overlay */}
+                    {/* Hover Gradient Overlay — desktop only */}
                     <AnimatePresence>
-                        {isHovered && (
+                        {showHoverEffects && (
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -84,7 +107,7 @@ function ProductCardImageComponent({
 
                     <motion.div
                         className="relative w-full h-full"
-                        animate={{ scale: isHovered ? 1.1 : 1 }}
+                        animate={{ scale: showHoverEffects ? 1.1 : 1 }}
                         transition={{ duration: 0.7, ease: "easeOut" }}
                     >
                         {image && !imgError ? (
@@ -105,9 +128,9 @@ function ProductCardImageComponent({
                         )}
                     </motion.div>
 
-                    {/* Shine Effect on Hover */}
+                    {/* Shine Effect on Hover — desktop only */}
                     <AnimatePresence>
-                        {isHovered && (
+                        {showHoverEffects && (
                             <motion.div
                                 initial={{ x: "-100%" }}
                                 animate={{ x: "200%" }}
@@ -117,9 +140,9 @@ function ProductCardImageComponent({
                         )}
                     </AnimatePresence>
 
-                    {/* Quick Actions Overlay */}
+                    {/* Quick Actions Overlay — desktop only */}
                     <AnimatePresence>
-                        {isHovered && inventory > 0 && (
+                        {showHoverEffects && inventory > 0 && (
                             <motion.div
                                 initial={{ opacity: 0, y: 8 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -172,3 +195,4 @@ function ProductCardImageComponent({
 }
 
 export default memo(ProductCardImageComponent);
+

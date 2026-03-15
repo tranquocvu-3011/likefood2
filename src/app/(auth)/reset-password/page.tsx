@@ -268,8 +268,8 @@ function ResetPasswordContent() {
                     <div className="mt-16 pt-8 border-t border-slate-50 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300">
                         <span>&copy; 2026 LIKEFOOD</span>
                         <div className="flex gap-4">
-                            <Link href="/terms" className="hover:text-emerald-500 transition-colors">{t("auth.footerTerms")}</Link>
-                            <Link href="/privacy" className="hover:text-emerald-500 transition-colors">{t("auth.footerPrivacy")}</Link>
+                            <Link href="/policies/terms" className="hover:text-emerald-500 transition-colors">{t("auth.footerTerms")}</Link>
+                            <Link href="/policies/privacy" className="hover:text-emerald-500 transition-colors">{t("auth.footerPrivacy")}</Link>
                         </div>
                     </div>
                 </div>

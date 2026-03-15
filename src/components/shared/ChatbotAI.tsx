@@ -322,7 +322,7 @@ export default function ChatbotAI() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 24 }}
           transition={{ duration: 0.25 }}
-          className="fixed bottom-24 right-4 z-[110] sm:bottom-20 sm:right-4 lg:bottom-4"
+          className="fixed bottom-[5.5rem] right-4 z-[90] lg:bottom-6 lg:right-6 lg:z-[110]"
         >
           {/* ═══════ FAB Button ═══════ */}
           {!isOpen && (

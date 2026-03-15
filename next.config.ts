@@ -62,6 +62,11 @@ const nextConfig: NextConfig = {
                 protocol: "https",
                 hostname: "flagcdn.com",
             },
+            // VPS domain for dual environment testing
+            {
+                protocol: "https",
+                hostname: "likefood.vudev.io.vn",
+            },
             // Add your image CDN here when configured (e.g., Cloudinary, AWS S3)
             // Example for Cloudinary:
             // {
